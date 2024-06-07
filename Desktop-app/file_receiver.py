@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
 )
 from PyQt6.QtGui import QScreen
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config
 
 RECEIVER_PORT = 12347
 
@@ -21,6 +21,7 @@ class FileReceiver(QThread):
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind(('0.0.0.0', RECEIVER_PORT))
+
         server_socket.listen(5)  # Listen for multiple connections
 
         while True:
@@ -43,6 +44,7 @@ class FileReceiver(QThread):
             file_size = struct.unpack('<Q', client_socket.recv(8))[0]
             received_size = 0
 
+
             # Determine file path based on OS
             file_path = self.get_file_path(file_name)
 
@@ -56,21 +58,10 @@ class FileReceiver(QThread):
                     self.progress_update.emit(received_size * 100 // file_size)
 
     def get_file_path(self, file_name):
-        if platform.system() == 'Windows':
-            os.makedirs("c:\\Received", exist_ok=True)
-            return os.path.join("c:\\Received", file_name)
-        elif platform.system() == 'Linux':
-            home_dir = os.path.expanduser('~')
-            os.makedirs(os.path.join(home_dir, "received"), exist_ok=True)
-            return os.path.join(home_dir, "received", file_name)
-        elif platform.system() == 'Darwin':
-            home_dir = os.path.expanduser('~')
-            documents_dir = os.path.join(home_dir, "Documents")
-            os.makedirs(os.path.join(documents_dir, "received"), exist_ok=True)
-            return os.path.join(documents_dir, "received", file_name)
-        else:
+        default_dir = get_config()["save_to_directory"]
+        if not default_dir:
             raise NotImplementedError("Unsupported OS")
-        
+        return os.path.join(default_dir, file_name)
 class ReceiveApp(QWidget):
     progress_update = pyqtSignal(int)
 
@@ -109,7 +100,7 @@ class ReceiveApp(QWidget):
                 message, address = s.recvfrom(1024)
                 message = message.decode()
                 if message == 'DISCOVER':
-                    response = f'RECEIVER:{socket.gethostname()}'
+                    response = f'RECEIVER:{get_config()["device_name"]}'
                     s.sendto(response.encode(), address)
 
     def center_window(self):

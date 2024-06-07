@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QApplication
 from PyQt6.QtGui import QScreen
 from file_receiver import ReceiveApp
 from file_sender import SendApp
+from preferences import PreferencesApp
 import sys
 import os
 import platform
@@ -25,6 +26,10 @@ class MainApp(QWidget):
         self.receive_button = QPushButton('Receive File', self)
         self.receive_button.clicked.connect(self.receiveFile)
         layout.addWidget(self.receive_button)
+
+        self.preferences_button = QPushButton('Preferences', self)
+        self.preferences_button.clicked.connect(self.preferences_handler)
+        layout.addWidget(self.preferences_button)
 
         self.setLayout(layout)
 
@@ -65,6 +70,11 @@ class MainApp(QWidget):
         self.hide()
         self.receive_app = ReceiveApp()
         self.receive_app.show()
+
+    def preferences_handler(self):
+        self.hide()
+        self.preferences_app = PreferencesApp()
+        self.preferences_app.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
