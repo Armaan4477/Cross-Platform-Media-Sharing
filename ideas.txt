@@ -38,20 +38,7 @@ Auto Pause incase of network loss, resume when connection is reestablished
 Add in app update section to check for updates
 improve gui
 
-
-
 point 2 contd if needed
-import platform
-platform.node()
-or 
-Platform-Specific Commands:
-For Windows, you can use os.environ['COMPUTERNAME'] or os.environ['USERNAME'].
-For Linux, you can use socket.gethostname() to get the hostname of the device.
-For macOS, you can use platform.node().
-
-
-add preferences menu where default path, device name, maximum filesize, etc can be edited, store those in .config.json 
-
 
 android tv idea
 uske liye jo movies send karege vo app data mai hi rahega with a option to open file in vlc player
