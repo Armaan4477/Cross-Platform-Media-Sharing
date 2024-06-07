@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
-    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem
+    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit
 )
 from PyQt6.QtGui import QScreen
 import os
@@ -13,37 +13,50 @@ RECEIVER_PORT = 12347
 
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
+    file_send_completed = pyqtSignal(str)
 
-    def __init__(self, ip_address, file_path):
+    def __init__(self, ip_address, file_paths):
         super().__init__()
         self.ip_address = ip_address
-        self.file_path = file_path
+        self.file_paths = file_paths
 
     def run(self):
-        file_size = os.path.getsize(self.file_path)
-        file_name = os.path.basename(self.file_path)
+        print(self.file_paths)
+        for file_path in self.file_paths:
+            if not self.send_file(file_path):
+                return  # Stop if sending any file fails
+            self.file_send_completed.emit(file_path)
+        # Send a zero-size file name as the signal to end the transfer and close the connection
+            self.client_socket.sendall(struct.pack('<Q', 0))
+            self.client_socket.close()
+
+    def send_file(self, file_path):
+        file_size = os.path.getsize(file_path)
+        file_name = os.path.basename(file_path)
         file_name_size = len(file_name.encode())
-        
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            client_socket.connect((self.ip_address, RECEIVER_PORT))
+            self.client_socket.connect((self.ip_address, RECEIVER_PORT))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-            return
-        
-        client_socket.send(struct.pack('<Q', file_name_size))
-        client_socket.send(file_name.encode())
-        client_socket.send(struct.pack('<Q', file_size))
+            return False
+
+        self.client_socket.send(struct.pack('<Q', file_name_size))
+        self.client_socket.send(file_name.encode())
+        self.client_socket.send(struct.pack('<Q', file_size))
 
         sent_size = 0
-        with open(self.file_path, 'rb') as f:
+        with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
-                client_socket.sendall(data)
+                self.client_socket.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
-        client_socket.close()
 
+        # client_socket.sendall(struct.pack('<Q', 0))  # Send a zero-size file name as the signal to end the transfer
+        # client_socket.close()
+        return True
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
@@ -72,7 +85,6 @@ class Receiver(QListWidgetItem):
     def updateText(self):
         self.setText(f"{self._name} ({self._ip_address})")
 
-
 class SendApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -85,11 +97,18 @@ class SendApp(QWidget):
 
         layout = QVBoxLayout()
 
-        self.file_button = QPushButton('Select File', self)
+        file_selection_layout = QVBoxLayout()
+        self.file_button = QPushButton('Select Files', self)
         self.file_button.clicked.connect(self.selectFile)
-        layout.addWidget(self.file_button)
+        file_selection_layout.addWidget(self.file_button)
 
-        self.file_path = None
+        self.file_paths = []
+
+        self.file_path_display = QTextEdit(self)
+        self.file_path_display.setReadOnly(True)
+        file_selection_layout.addWidget(self.file_path_display)
+
+        layout.addLayout(file_selection_layout)
 
         self.discover_button = QPushButton('Discover Devices', self)
         self.discover_button.clicked.connect(self.discoverDevices)
@@ -98,9 +117,9 @@ class SendApp(QWidget):
         self.device_list = QListWidget(self)
         layout.addWidget(self.device_list)
 
-        self.send_button = QPushButton('Send File', self)
+        self.send_button = QPushButton('Send Files', self)
         self.send_button.setEnabled(False)
-        self.send_button.clicked.connect(self.sendSelectedFile)
+        self.send_button.clicked.connect(self.sendSelectedFiles)
         layout.addWidget(self.send_button)
 
         self.progress_bar = QProgressBar(self)
@@ -112,30 +131,19 @@ class SendApp(QWidget):
         self.setLayout(layout)
 
     def center_window(self):
-
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 800, 600
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-        
-        # screen = QApplication.primaryScreen()
-        # screen_geometry = screen.availableGeometry()
-        # screen_width = screen_geometry.width()
-        # screen_height = screen_geometry.height()
-
-        # window_width = 800
-        # window_height = 600
-
-        # x = (screen_width - window_width) / 2
-        # y = (screen_height - window_height) / 2
-
-        # self.setGeometry(int(x), int(y), window_width, window_height)
 
     def selectFile(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, 'Open File')
-        if file_path:
-            self.file_path = file_path
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files')
+        if file_paths:
+            self.file_path_display.clear()
+            for file_path in file_paths:
+                self.file_path_display.append(file_path)
+            self.file_paths = file_paths
             self.checkReadyToSend()
 
     def discoverDevices(self):
@@ -169,21 +177,32 @@ class SendApp(QWidget):
         return receivers
 
     def checkReadyToSend(self):
-        if self.file_path and self.device_list.count() > 0:
+        if self.file_paths and self.device_list.count() > 0:
             self.send_button.setEnabled(True)
 
-    def sendSelectedFile(self):
+    def sendSelectedFiles(self):
         selected_item = self.device_list.currentItem()
         if not selected_item:
             QMessageBox.critical(None, "Selection Error", "Please select a device to send the file.")
             return
         ip_address = selected_item.ip_address
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_path)
+        self.file_sender = FileSender(ip_address, self.file_paths)
         self.file_sender.progress_update.connect(self.updateProgressBar)
+        self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File transfer completed!")
+
+    def fileSent(self, file_path):
+        self.label.setText(f"File sent: {file_path}")
+
+if __name__ == '__main__':
+    import sys
+    app = QApplication(sys.argv)
+    send_app = SendApp()
+    send_app.show()
+    sys.exit(app.exec())
