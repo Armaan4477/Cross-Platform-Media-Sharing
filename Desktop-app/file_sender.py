@@ -7,34 +7,39 @@ import os
 import socket
 import struct
 from PyQt6.QtCore import QThread, pyqtSignal
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from crypt_handler import encrypt_file, PasswordDialog
+from time import sleep
 
-RECEIVER_PORT = 12347
+RECEIVER_PORT = 12348
 
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
+    config = get_config()
+    password = None
 
-    def __init__(self, ip_address, file_paths):
+    def __init__(self, ip_address, file_paths, app_instance):
         super().__init__()
         self.ip_address = ip_address
         self.file_paths = file_paths
+        self.app_instance = app_instance
 
     def run(self):
-        print(self.file_paths)
         for file_path in self.file_paths:
             if not self.send_file(file_path):
                 return  # Stop if sending any file fails
             self.file_send_completed.emit(file_path)
-        # Send a zero-size file name as the signal to end the transfer and close the connection
-            self.client_socket.sendall(struct.pack('<Q', 0))
-            self.client_socket.close()
+        
+        # Send halt signal
+        logger.debug("Sent halt signal")
+        self.client_socket.send('encyp: h'.encode())
+        sleep(0.5) # sleep for half second to make sure message is sent
+        self.client_socket.send('encyp: h'.encode())
+        sleep(0.5)
+        self.client_socket.close()
 
     def send_file(self, file_path):
-        file_size = os.path.getsize(file_path)
-        file_name = os.path.basename(file_path)
-        file_name_size = len(file_name.encode())
-
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.connect((self.ip_address, RECEIVER_PORT))
@@ -42,17 +47,41 @@ class FileSender(QThread):
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return False
 
+        if self.config['encryption']:
+            self.client_socket.send('encyp: t'.encode())
+            logger.debug("Sent encrypted transfer signal")
+            encrypted_transfer = True
+        else:
+            self.client_socket.send('encyp: f'.encode())
+            logger.debug("Sent decrypted transfer signal")
+            encrypted_transfer = False
+
+        if encrypted_transfer:
+            if not self.password:
+                self.password = PasswordDialog(self.app_instance)
+                logger.debug("Password: %s", self.password)
+            logger.debug("Encrypted transfer with password: %s", self.password)
+            file_path = encrypt_file(file_path, self.password)
+
+        sent_size = 0
+        file_size = os.path.getsize(file_path)
+        file_name = os.path.basename(file_path)
+        file_name_size = len(file_name.encode())
+        logger.debug("Sending %s, %s", file_name, file_size)
+
         self.client_socket.send(struct.pack('<Q', file_name_size))
         self.client_socket.send(file_name.encode())
         self.client_socket.send(struct.pack('<Q', file_size))
 
-        sent_size = 0
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
                 self.client_socket.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
+            if encrypted_transfer:
+                # Remove the encrypted file after transfer is completec
+                os.remove(file_path)
 
         # client_socket.sendall(struct.pack('<Q', 0))  # Send a zero-size file name as the signal to end the transfer
         # client_socket.close()
@@ -186,8 +215,9 @@ class SendApp(QWidget):
             QMessageBox.critical(None, "Selection Error", "Please select a device to send the file.")
             return
         ip_address = selected_item.ip_address
+        print(self.file_paths)
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_paths)
+        self.file_sender = FileSender(ip_address, self.file_paths, self)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()

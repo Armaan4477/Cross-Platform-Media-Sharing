@@ -2,6 +2,22 @@ import json
 import platform
 from sys import exit
 import os
+import logging
+
+# Define the logger configuration
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)s %(name)s %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
+# Create the logger instance
+logger = logging.getLogger('FileSharing: ')
+
+# Set the logger level to debug
+logger.setLevel(logging.DEBUG)
 
 config_file = ".config.json"
 
