@@ -6,6 +6,7 @@ from preferences import PreferencesApp
 import sys
 import os
 import platform
+from constant import logger
 
 class MainApp(QWidget):
     def __init__(self):
@@ -32,6 +33,7 @@ class MainApp(QWidget):
         layout.addWidget(self.preferences_button)
 
         self.setLayout(layout)
+        logger.info("Started Main App")
 
     def center_window(self):
 
@@ -62,16 +64,19 @@ class MainApp(QWidget):
         self.setGeometry(x, y, window_width, window_height)
 
     def sendFile(self):
+        logger.info("Started Send File App")
         self.hide()
         self.send_app = SendApp()
         self.send_app.show()
 
     def receiveFile(self):
+        logger.info("Started Receive File App")
         self.hide()
         self.receive_app = ReceiveApp()
         self.receive_app.show()
 
     def preferences_handler(self):
+        logger.info("Started Preferences handler menu")
         self.hide()
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
