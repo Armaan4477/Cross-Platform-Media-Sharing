@@ -8,15 +8,20 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
 )
 from PyQt6.QtGui import QScreen
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from crypt_handler import decrypt_file, PasswordDialog
+from time import sleep
 
-RECEIVER_PORT = 12347
+RECEIVER_PORT = 12348
 
 class FileReceiver(QThread):
     progress_update = pyqtSignal(int)
+    password = None
 
-    def __init__(self):
+    def __init__(self, app_instance):
         super().__init__()
+        self.app_instance = app_instance
+        self.encrypted_files = []
 
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,12 +34,53 @@ class FileReceiver(QThread):
             self.receive_files(client_socket)
             client_socket.close()  # Close the connection after receiving files
 
+        logger.debug("List of encrypted files: %s", self.encrypted_files)
+
     def receive_files(self, client_socket):
         while True:
+            encryption_flag = client_socket.recv(8)
+            if not encryption_flag:
+                logger.debug("Dropped redundant data: %s", encryption_flag)
+                break # Drop redundant data
+
+            encryption_flag = encryption_flag.decode()
+
+            logger.debug("Received: %s", encryption_flag)
+
+            if encryption_flag[-1] == 't':
+                encrypted_transfer = True
+            elif encryption_flag[-1] == 'h':
+                # h is the halting signal, break transfer and decrypt files
+                self.password = None
+                if self.encrypted_files:
+                    pass_attempts = 0
+                    for f in self.encrypted_files:
+                        while True: 
+                            if not self.password:
+                                self.password = PasswordDialog(self.app_instance)
+                                logger.debug("Password: %s", self.password)
+                            try:
+                                decrypt_file(f, self.password)
+                                break
+                            except:
+                                self.password = None
+                                if pass_attempts < 3:
+                                    QMessageBox.critical(self.app_instance, "Incorrect Password", f"Try again, Remaining attempts: {pass_attempts+1}.")
+                                    continue
+                                else:
+                                    QMessageBox.critical(self.app_instance, "Too many incorrect attempts", "File has been deleted.")
+                                    break
+                            pass_attempts += 1
+                        logger.debug("Decrypted: %s", f)
+                        os.remove(f)
+                    self.encrypted_files = []
+                break
+            else:
+                encrypted_transfer = False
+
             # Receive file name size
             file_name_size_data = client_socket.recv(8)
-            if not file_name_size_data:
-                break  # End of data
+
 
             file_name_size = struct.unpack('<Q', file_name_size_data)[0]
             if file_name_size == 0:
@@ -42,11 +88,15 @@ class FileReceiver(QThread):
 
             file_name = client_socket.recv(file_name_size).decode()
             file_size = struct.unpack('<Q', client_socket.recv(8))[0]
-            received_size = 0
 
+            logger.debug("Receiving %s, %s bytes", file_name, file_size)
+
+            received_size = 0
 
             # Determine file path based on OS
             file_path = self.get_file_path(file_name)
+            if encrypted_transfer:
+                self.encrypted_files.append(file_path)
 
             with open(file_path, "wb") as f:
                 while received_size < file_size:
@@ -57,11 +107,13 @@ class FileReceiver(QThread):
                     received_size += len(data)
                     self.progress_update.emit(received_size * 100 // file_size)
 
+
     def get_file_path(self, file_name):
         default_dir = get_config()["save_to_directory"]
         if not default_dir:
             raise NotImplementedError("Unsupported OS")
         return os.path.join(default_dir, file_name)
+
 class ReceiveApp(QWidget):
     progress_update = pyqtSignal(int)
 
@@ -84,7 +136,7 @@ class ReceiveApp(QWidget):
 
         self.setLayout(layout)
 
-        self.file_receiver = FileReceiver()
+        self.file_receiver = FileReceiver(self)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.start()
 
