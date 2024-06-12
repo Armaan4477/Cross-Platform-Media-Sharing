@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
-    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit
+    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit
 )
 from PyQt6.QtGui import QScreen
 import os
@@ -8,7 +8,7 @@ import socket
 import struct
 from PyQt6.QtCore import QThread, pyqtSignal
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
-from crypt_handler import encrypt_file, PasswordDialog
+from crypt_handler import encrypt_file
 from time import sleep
 
 RECEIVER_PORT = 12348
@@ -19,11 +19,11 @@ class FileSender(QThread):
     config = get_config()
     password = None
 
-    def __init__(self, ip_address, file_paths, app_instance):
+    def __init__(self, ip_address, file_paths, password):
         super().__init__()
         self.ip_address = ip_address
         self.file_paths = file_paths
-        self.app_instance = app_instance
+        self.password = password
 
     def run(self):
         for file_path in self.file_paths:
@@ -57,9 +57,6 @@ class FileSender(QThread):
             encrypted_transfer = False
 
         if encrypted_transfer:
-            if not self.password:
-                self.password = PasswordDialog(self.app_instance)
-                logger.debug("Password: %s", self.password)
             logger.debug("Encrypted transfer with password: %s", self.password)
             file_path = encrypt_file(file_path, self.password)
 
@@ -115,6 +112,8 @@ class Receiver(QListWidgetItem):
         self.setText(f"{self._name} ({self._ip_address})")
 
 class SendApp(QWidget):
+    config = get_config()
+
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -145,6 +144,14 @@ class SendApp(QWidget):
 
         self.device_list = QListWidget(self)
         layout.addWidget(self.device_list)
+
+        if self.config['encryption']:
+            self.password_label = QLabel('Encryption Password:', self)
+            layout.addWidget(self.password_label)
+
+            self.password_input = QLineEdit(self)
+            self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+            layout.addWidget(self.password_input)
 
         self.send_button = QPushButton('Send Files', self)
         self.send_button.setEnabled(False)
@@ -211,13 +218,22 @@ class SendApp(QWidget):
 
     def sendSelectedFiles(self):
         selected_item = self.device_list.currentItem()
+        password = None
+
         if not selected_item:
             QMessageBox.critical(None, "Selection Error", "Please select a device to send the file.")
             return
         ip_address = selected_item.ip_address
         print(self.file_paths)
+
+        if self.config['encryption']:
+            password = self.password_input.text()
+            if not self.password_input.text():
+                QMessageBox.critical(None, "Password Error", "Please enter a password.")
+                return
+
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_paths, self)
+        self.file_sender = FileSender(ip_address, self.file_paths, password)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
