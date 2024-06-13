@@ -19,9 +19,8 @@ class FileReceiver(QThread):
     decrypt_signal = pyqtSignal(list)
     password = None
 
-    def __init__(self, app_instance):
+    def __init__(self):
         super().__init__()
-        self.app_instance = app_instance
         self.encrypted_files = []
 
     def run(self):
@@ -117,7 +116,7 @@ class ReceiveApp(QWidget):
 
         self.setLayout(layout)
 
-        self.file_receiver = FileReceiver(self)
+        self.file_receiver = FileReceiver()
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.start()
