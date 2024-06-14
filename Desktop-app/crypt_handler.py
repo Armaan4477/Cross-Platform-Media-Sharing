@@ -107,7 +107,6 @@ class Decryptor(QWidget):
                     return
                 else:
                     failed = True
-                    break
             os.remove(f)
 
         if failed:
