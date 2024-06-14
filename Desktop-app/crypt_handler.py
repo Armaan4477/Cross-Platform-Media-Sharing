@@ -6,10 +6,9 @@ from cryptography.hazmat.primitives import padding
 import os
 import base64
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QMessageBox
+    QMessageBox, QInputDialog, QLineEdit
 )
 import sys
-from constant import logger
 
 def derive_key(key: str, salt: bytes) -> bytes:
     """Derive a key using PBKDF2HMAC."""
@@ -63,57 +62,17 @@ def decrypt_file(filepath: str, key: str):
         f.write(decrypted_data)
 
 
-class Decryptor(QWidget):
-    def __init__(self, file_list):
-        super().__init__()
-        self.initUI()
-        self.encrypted_files = file_list
-        self.pass_attempts = 3
-
-    def initUI(self):
-        self.setWindowTitle('Decryptor')
-        self.setGeometry(100, 100, 400, 300)
-
-        layout = QVBoxLayout()
-        self.password_label = QLabel('Decryption Password:', self)
-        layout.addWidget(self.password_label)
-
-        self.password_input = QLineEdit(self)
-        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.submit_button = QPushButton('Submit', self)
-
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.submit_button)
-        self.submit_button.clicked.connect(self.decrypt_all_files)
-        self.setLayout(layout)
-
-    def decrypt_all_files(self, pass_attempts = 3):
-        password = self.password_input.text()
+def PasswordDialog(self_instance):
+    password, ok = QInputDialog.getText(self_instance, 'Password Dialog', 'Enter Password:', echo=QLineEdit.EchoMode.Password)
+        
+    if ok:
         if not password:
-            QMessageBox.critical(self_instance, 'Input Error', 'Password cannot be empty.')
-            return
-
-        failed = False
-
-        for f in self.encrypted_files:
-            logger.debug("Decrypting %s with password %s", f, password)
-            try:
-                decrypt_file(f, password)
-                logger.debug("Decrypted: %s", f)
-            except:
-                if self.pass_attempts > 0:
-                    QMessageBox.critical(self, "Incorrect Password", f"Try again, Remaining attempts: {self.pass_attempts}.")
-                    self.pass_attempts -= 1
-                    return
-                else:
-                    failed = True
-            os.remove(f)
-
-        if failed:
-            QMessageBox.critical(self, "Too many incorrect attempts", "File has been deleted.")
+            QMessageBox.warning(self_instance, 'Input Error', 'Password cannot be empty.')
+            return PasswordDialog(self_instance)
         else:
-            QMessageBox.information(self, "Success", "Successfully decrypted files")
-        self.hide()
+            return password
+
+
 # if __name__ == '__main__':
 #     app = QApplication(sys.argv)
 #     dialog = PasswordDialog()

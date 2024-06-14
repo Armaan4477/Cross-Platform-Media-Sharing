@@ -9,18 +9,18 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
-from crypt_handler import decrypt_file, Decryptor
+from crypt_handler import decrypt_file, PasswordDialog
 from time import sleep
 
 RECEIVER_PORT = 12348
 
 class FileReceiver(QThread):
     progress_update = pyqtSignal(int)
-    decrypt_signal = pyqtSignal(list)
     password = None
 
-    def __init__(self):
+    def __init__(self, app_instance):
         super().__init__()
+        self.app_instance = app_instance
         self.encrypted_files = []
 
     def run(self):
@@ -51,9 +51,29 @@ class FileReceiver(QThread):
                 encrypted_transfer = True
             elif encryption_flag[-1] == 'h':
                 # h is the halting signal, break transfer and decrypt files
+                self.password = None
                 if self.encrypted_files:
-                    self.decrypt_signal.emit(self.encrypted_files)
-                self.encrypted_files = []
+                    pass_attempts = 0
+                    for f in self.encrypted_files:
+                        while True: 
+                            if not self.password:
+                                self.password = PasswordDialog(self.app_instance)
+                                logger.debug("Password: %s", self.password)
+                            try:
+                                decrypt_file(f, self.password)
+                                break
+                            except:
+                                self.password = None
+                                if pass_attempts < 3:
+                                    QMessageBox.critical(self.app_instance, "Incorrect Password", f"Try again, Remaining attempts: {pass_attempts+1}.")
+                                    continue
+                                else:
+                                    QMessageBox.critical(self.app_instance, "Too many incorrect attempts", "File has been deleted.")
+                                    break
+                            pass_attempts += 1
+                        logger.debug("Decrypted: %s", f)
+                        os.remove(f)
+                    self.encrypted_files = []
                 break
             else:
                 encrypted_transfer = False
@@ -116,9 +136,8 @@ class ReceiveApp(QWidget):
 
         self.setLayout(layout)
 
-        self.file_receiver = FileReceiver()
+        self.file_receiver = FileReceiver(self)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
-        self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.start()
 
         threading.Thread(target=self.listenForBroadcast, daemon=True).start()
@@ -147,10 +166,3 @@ class ReceiveApp(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
-
-    def decryptor_init(self, value):
-        logger.debug("Received decrypt signal with filelist %s", value)
-        if value:
-            self.decryptor = Decryptor(value)
-            self.decryptor.show()
-
