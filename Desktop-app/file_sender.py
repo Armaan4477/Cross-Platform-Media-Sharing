@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
-    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit
+    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QHBoxLayout
 )
 from PyQt6.QtGui import QScreen
 import os
@@ -126,18 +126,22 @@ class SendApp(QWidget):
 
         layout = QVBoxLayout()
 
-        file_selection_layout = QVBoxLayout()
+        # file_selection_layout = QHBoxLayout()
         self.file_button = QPushButton('Select Files', self)
         self.file_button.clicked.connect(self.selectFile)
-        file_selection_layout.addWidget(self.file_button)
+        layout.addWidget(self.file_button)
+        
+        self.folder_button = QPushButton('Select Folder', self)
+        self.folder_button.clicked.connect(self.selectFolder)
+        layout.addWidget(self.folder_button)
 
         self.file_paths = []
 
         self.file_path_display = QTextEdit(self)
         self.file_path_display.setReadOnly(True)
-        file_selection_layout.addWidget(self.file_path_display)
+        layout.addWidget(self.file_path_display)
 
-        layout.addLayout(file_selection_layout)
+        # layout.addLayout(layout)
 
         self.discover_button = QPushButton('Discover Devices', self)
         self.discover_button.clicked.connect(self.discoverDevices)
@@ -172,7 +176,18 @@ class SendApp(QWidget):
             self.file_path_display.clear()
             for file_path in file_paths:
                 self.file_path_display.append(file_path)
-            self.file_paths = file_paths
+            self.file_paths.extend(file_paths)  # Add to the list instead of replacing it
+            self.checkReadyToSend()
+
+    def selectFolder(self):
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        if folder_path:
+            self.file_path_display.clear()
+            for root, _, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    self.file_path_display.append(file_path)
+                    self.file_paths.append(file_path)  # Add to the list of file paths
             self.checkReadyToSend()
 
     def discoverDevices(self):
