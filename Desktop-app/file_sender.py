@@ -1,3 +1,4 @@
+import platform
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
     QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit
@@ -76,12 +77,12 @@ class FileSender(QThread):
                 self.client_socket.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
-            if encrypted_transfer:
-                # Remove the encrypted file after transfer is completec
-                os.remove(file_path)
+                # elif platform.system() == 'Darwin':
 
         # client_socket.sendall(struct.pack('<Q', 0))  # Send a zero-size file name as the signal to end the transfer
         # client_socket.close()
+        # f.close()
+        os.remove(file_path)
         return True
 
 class Receiver(QListWidgetItem):
