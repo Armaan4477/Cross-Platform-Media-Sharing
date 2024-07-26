@@ -6,7 +6,7 @@ from preferences import PreferencesApp
 import sys
 import os
 import platform
-from constant import logger
+from constant import logger,get_config
 
 class MainApp(QWidget):
     def __init__(self):
@@ -62,6 +62,12 @@ class MainApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
+
+        #Check if the folder to receive files exists
+        dest = get_config()["save_to_directory"]
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+            logger.info("Created folder to receive files")
 
     def sendFile(self):
         logger.info("Started Send File App")
