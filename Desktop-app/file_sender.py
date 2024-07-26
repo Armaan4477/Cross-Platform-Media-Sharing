@@ -82,7 +82,8 @@ class FileSender(QThread):
         # client_socket.sendall(struct.pack('<Q', 0))  # Send a zero-size file name as the signal to end the transfer
         # client_socket.close()
         # f.close()
-        os.remove(file_path)
+        if self.config['encryption']:
+            os.remove(file_path)
         return True
 
 class Receiver(QListWidgetItem):
