@@ -22,6 +22,7 @@ class FileReceiver(QThread):
     def __init__(self):
         super().__init__()
         self.encrypted_files = []
+        self.broadcasting = True
 
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,6 +38,7 @@ class FileReceiver(QThread):
         logger.debug("List of encrypted files: %s", self.encrypted_files)
 
     def receive_files(self, client_socket):
+        self.broadcasting = False  # Stop broadcasting
         while True:
             encryption_flag = client_socket.recv(8)
             if not encryption_flag:
@@ -60,7 +62,6 @@ class FileReceiver(QThread):
 
             # Receive file name size
             file_name_size_data = client_socket.recv(8)
-
 
             file_name_size = struct.unpack('<Q', file_name_size_data)[0]
             if file_name_size == 0:
@@ -87,12 +88,14 @@ class FileReceiver(QThread):
                     received_size += len(data)
                     self.progress_update.emit(received_size * 100 // file_size)
 
+        self.broadcasting = True  # Resume broadcasting
 
     def get_file_path(self, file_name):
         default_dir = get_config()["save_to_directory"]
         if not default_dir:
             raise NotImplementedError("Unsupported OS")
         return os.path.join(default_dir, file_name)
+
 
 class ReceiveApp(QWidget):
     progress_update = pyqtSignal(int)
@@ -121,7 +124,8 @@ class ReceiveApp(QWidget):
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.start()
 
-        threading.Thread(target=self.listenForBroadcast, daemon=True).start()
+        self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
+        self.broadcast_thread.start()
 
     def listenForBroadcast(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -130,11 +134,13 @@ class ReceiveApp(QWidget):
             s.bind(('', BROADCAST_PORT))
 
             while True:
-                message, address = s.recvfrom(1024)
-                message = message.decode()
-                if message == 'DISCOVER':
-                    response = f'RECEIVER:{get_config()["device_name"]}'
-                    s.sendto(response.encode(), address)
+                if self.file_receiver.broadcasting:
+                    message, address = s.recvfrom(1024)
+                    message = message.decode()
+                    if message == 'DISCOVER':
+                        response = f'RECEIVER:{get_config()["device_name"]}'
+                        s.sendto(response.encode(), address)
+                sleep(1)  # Avoid busy-waiting
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
@@ -153,4 +159,3 @@ class ReceiveApp(QWidget):
         if value:
             self.decryptor = Decryptor(value)
             self.decryptor.show()
-
