@@ -101,8 +101,15 @@ class FileReceiver(QThread):
                         received_size += len(data)
                         self.progress_update.emit(received_size * 100 // file_size)
         # Delete the metadata file if it exists
-        if self.metadata:
-            os.remove(self.get_file_path('metadata.json'))
+        # if self.metadata:
+        #     print("This is the path to metadata:",self.get_file_path('metadata.json'))
+        #     # #add if condition if os is windows
+        #     # if platform.system() == 'Windows':
+        #     #     os.remove(self.get_file_path('metadata.json'))
+        #     # if platform.system() == 'Linux':
+        #     #     os.remove(self.get_file_path('metadata.json'))
+        #     # if platform.system() == 'Darwin':
+        #     #     os.remove(self.get_file_path('metadata.json'))
         self.broadcasting = True  # Resume broadcasting
 
     def receive_metadata(self, client_socket, file_size):

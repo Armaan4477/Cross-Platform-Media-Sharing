@@ -68,6 +68,9 @@ class FileSender(QThread):
             if not file_path.endswith('.delete'):
                 self.send_file(file_path)
 
+        #delete metadata.json after sending
+        os.remove(metadata_file_path)
+
     def send_file(self, file_path):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
