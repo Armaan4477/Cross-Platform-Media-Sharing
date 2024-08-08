@@ -21,6 +21,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".Send_files"/>
+        <activity android:name=".Receive_files"/>
+
     </application>
 
 </manifest>
