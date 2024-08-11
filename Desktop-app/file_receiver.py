@@ -11,6 +11,7 @@ from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
+import json
 
 RECEIVER_PORT = 12348
 
@@ -23,6 +24,8 @@ class FileReceiver(QThread):
         super().__init__()
         self.encrypted_files = []
         self.broadcasting = True
+        self.metadata = None
+        self.destination_folder = None
 
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -74,29 +77,84 @@ class FileReceiver(QThread):
 
             received_size = 0
 
-            # Determine file path based on OS
-            file_path = self.get_file_path(file_name)
-            if encrypted_transfer:
-                self.encrypted_files.append(file_path)
+            if file_name == 'metadata.json':
+                self.metadata = self.receive_metadata(client_socket, file_size)
+                self.destination_folder = self.create_folder_structure(self.metadata)
 
-            with open(file_path, "wb") as f:
-                while received_size < file_size:
-                    data = client_socket.recv(4096)
-                    if not data:
-                        break
-                    f.write(data)
-                    received_size += len(data)
-                    self.progress_update.emit(received_size * 100 // file_size)
+            else:
+                file_path = self.get_file_path(file_name)
+                if file_path.endswith('.delete'):
+                    continue
+                if self.metadata:
+                    relative_path = self.get_relative_path_from_metadata(file_name)
+                    file_path = os.path.join(self.destination_folder, relative_path)
 
+                if encrypted_transfer:
+                    self.encrypted_files.append(file_path)
+                
+                with open(file_path, "wb") as f:
+                    while received_size < file_size:
+                        data = client_socket.recv(4096)
+                        if not data:
+                            break
+                        f.write(data)
+                        received_size += len(data)
+                        self.progress_update.emit(received_size * 100 // file_size)
+        # Delete the metadata file if it exists
+        # if self.metadata:
+        #     print("This is the path to metadata:",self.get_file_path('metadata.json'))
+        #     # #add if condition if os is windows
+        #     # if platform.system() == 'Windows':
+        #     #     os.remove(self.get_file_path('metadata.json'))
+        #     # if platform.system() == 'Linux':
+        #     #     os.remove(self.get_file_path('metadata.json'))
+        #     # if platform.system() == 'Darwin':
+        #     #     os.remove(self.get_file_path('metadata.json'))
         self.broadcasting = True  # Resume broadcasting
+
+    def receive_metadata(self, client_socket, file_size):
+        received_data = b""
+        while len(received_data) < file_size:
+            chunk = client_socket.recv(4096)
+            if not chunk:
+                break
+            received_data += chunk
+        metadata_json = received_data.decode()
+        return json.loads(metadata_json)
+
+    def create_folder_structure(self, metadata):
+        default_dir = get_config()["save_to_directory"]
+        # Extract the base folder name from the last index
+        top_level_folder = metadata[-1].get('base_folder_name', '')
+        
+        # Destination folder
+        destination_folder = os.path.join(default_dir, top_level_folder)
+        os.makedirs(destination_folder, exist_ok=True)
+        
+        # Process folder structure up to the second-to-last index
+        for file_info in metadata[:-1]:  # Exclude the last entry
+            #skip the iteration if the path key value is '.'
+            if file_info['path'] == '.delete':
+                continue
+            folder_path = os.path.dirname(file_info['path'])
+            full_folder_path = os.path.join(destination_folder, folder_path)
+            os.makedirs(full_folder_path, exist_ok=True)
+        
+        return destination_folder
+
+
+    def get_relative_path_from_metadata(self, file_name):
+        for file_info in self.metadata:
+            if os.path.basename(file_info['path']) == file_name:
+                return file_info['path']
+        return file_name
 
     def get_file_path(self, file_name):
         default_dir = get_config()["save_to_directory"]
         if not default_dir:
             raise NotImplementedError("Unsupported OS")
         return os.path.join(default_dir, file_name)
-
-
+    
 class ReceiveApp(QWidget):
     progress_update = pyqtSignal(int)
 

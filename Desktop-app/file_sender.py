@@ -1,3 +1,4 @@
+import json
 import platform
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
@@ -28,9 +29,11 @@ class FileSender(QThread):
 
     def run(self):
         for file_path in self.file_paths:
-            if not self.send_file(file_path):
-                return  # Stop if sending any file fails
-            self.file_send_completed.emit(file_path)
+            # Check if the file is a folder
+            if os.path.isdir(file_path):
+                self.send_folder(file_path)
+            else:
+                self.send_file(file_path)
         
         # Send halt signal
         logger.debug("Sent halt signal")
@@ -39,6 +42,34 @@ class FileSender(QThread):
         self.client_socket.send('encyp: h'.encode())
         sleep(0.5)
         self.client_socket.close()
+
+    def send_folder(self, folder_path):
+        # Send metadata with the original folder name on the last index
+        metadata = []
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, folder_path)
+                file_size = os.path.getsize(file_path)
+                metadata.append({
+                    'path': relative_path,
+                    'size': file_size
+                })
+        metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
+        metadata_json = json.dumps(metadata)
+        metadata_file_path = os.path.join(folder_path, 'metadata.json')
+        with open(metadata_file_path, 'w') as f:
+            f.write(metadata_json)
+
+        self.send_file(metadata_file_path)
+
+        for file_info in metadata:
+            file_path = os.path.join(folder_path, file_info['path'])
+            if not file_path.endswith('.delete'):
+                self.send_file(file_path)
+
+        #delete metadata.json after sending
+        os.remove(metadata_file_path)
 
     def send_file(self, file_path):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,18 +101,14 @@ class FileSender(QThread):
         self.client_socket.send(struct.pack('<Q', file_name_size))
         self.client_socket.send(file_name.encode())
         self.client_socket.send(struct.pack('<Q', file_size))
-
+        
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
                 self.client_socket.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
-                # elif platform.system() == 'Darwin':
 
-        # client_socket.sendall(struct.pack('<Q', 0))  # Send a zero-size file name as the signal to end the transfer
-        # client_socket.close()
-        # f.close()
         if self.config['encryption']:
             os.remove(file_path)
         return True
@@ -131,6 +158,11 @@ class SendApp(QWidget):
         self.file_button = QPushButton('Select Files', self)
         self.file_button.clicked.connect(self.selectFile)
         file_selection_layout.addWidget(self.file_button)
+
+        #Create a button for folder selection
+        self.folder_button = QPushButton('Select Folder', self)
+        self.folder_button.clicked.connect(self.selectFolder)
+        file_selection_layout.addWidget(self.folder_button)
 
         self.file_paths = []
 
@@ -182,6 +214,15 @@ class SendApp(QWidget):
             for file_path in file_paths:
                 self.file_path_display.append(file_path)
             self.file_paths = file_paths
+            self.checkReadyToSend()
+
+    def selectFolder(self):
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        if folder_path:
+            self.file_path_display.clear()
+            self.file_path_display.append(folder_path)
+            self.file_paths = [folder_path]
+            print(self.file_paths)
             self.checkReadyToSend()
 
     def discoverDevices(self):
