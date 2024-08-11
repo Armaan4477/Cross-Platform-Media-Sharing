@@ -2,3 +2,4 @@
 /output
 *.pyc
 .config.json
+*.xcuserstate
