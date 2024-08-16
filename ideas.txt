@@ -1,45 +1,43 @@
-seperate class files for python app
-Actual Device name to be shown in discovery (contd at bottom of txt file)
-Android app
-IpadOS/IOS app
-web app
-device discovery using bluetooth
-file transfer over bluetooth
-file transfer over wifi direct
-app icon
-share multiple files at once
-share whole folder at once
-when multiple files are sent, optional window that shows the whole list
-can give priority to some file from new optional window if its needed urgently when many files are shared at once
-when file is selected to be sent show the name and size of the file that has been selected in the window
-optional encryption
-add auto discovery when user clicks on send for the first time
-add option to change store location of the file after clicking on receive
-Add confirmation dialog which ask the user if they are sure to receive the file or not, give prompt to sender that file sharing was cancelled
-For encryted file mode, there should be a pin which when matched and approved begins file transfer, 3 failed attemps for pin matching cancels file share 
-when file is sent give button to ask if they want to send one more file 
-add button to go back to main send receive Window
-Add option to view folder after file transfer is complete
-align window to center of screen
-Add tip a coffee button which links to upi Id 
-add credits dialog which links to github or linkedin account
-add direct repo link for open source contribution
-drag and drop support in send section of the app
-Limit sharing speed for file to reduce network congrestion
-file preview mode which only downloads and views the file without storing it (files smaller than 100mb)
-Background run and transfer mode
-notifications for the app
-cloud file sharing option that allows the user to store data in the cloud for 4 hours max then deletes it(max 2gb) (possible pro mode feature?)
-send notes along with files
-File compression for bigger files to optimise send times
-advaned telemetry which shows copy speed approx time remaining and total time
-Pause and resume feature
-Auto Pause incase of network loss, resume when connection is reestablished
-Add in app update section to check for updates
-improve gui
+In Progress
+1) Actual Device name to be shown in discovery- Armaan/ Nishal
+2) Android app- Nishal
+3) IpadOS/IOS app- Armaan
+4) Share multiple files at once- Samay
+5) Share whole folder at once- Samay
+6) Optional encryption for Desktop- Samay
+7) Add auto discovery when user clicks on send for the first time- Samay/Armaan/Nishal
 
-point 2 contd if needed
 
-android tv idea
-uske liye jo movies send karege vo app data mai hi rahega with a option to open file in vlc player
-and vo inbuilt file manager ke sath hi movies vagera delete kar sakege
+
+Future Ideas:
+1) Device discovery using bluetooth
+2) File transfer over bluetooth
+3) File transfer over wifi direct
+4) App icon for all Platforms
+5) When multiple files are sent, optional window that shows the whole list
+6) Can give priority to some file from new optional window if its needed urgently when many files are shared at once
+7) When file is selected to be sent show the name and size of the file that has been selected in the window
+8) Optional Encryption for Android/IOS
+9) Add confirmation dialog which ask the user if they are sure to receive the file or not, give prompt to sender that file sharing was cancelled
+10) When file is sent give button to ask if they want to send one more file 
+11) Add option to view folder after file transfer is complete
+12) Add button to go back to main send receive Window
+13) Add credits dialog which links to github or linkedin account
+14) Add direct repo link for open source contribution
+15) Drag and drop support in send section of the app
+16) Limit sharing speed for file to reduce network congrestion
+17) File preview mode which only downloads and views the file without storing it (files smaller than 100mb)
+18) Background run and transfer mode
+19) Notifications for the app, implement after background run mode
+20) Send notes along with files
+21) Advaned telemetry which shows copy speed approx time remaining and total time
+22) Pause and resume feature
+23) Auto Pause incase of network loss, resume when connection is reestablished
+24) Add tip a coffee button which links to upi Id 
+25) Improve gui- to be done all for platforms in the end
+
+
+Crazy Future idea: 
+1) Web app
+2) Android TV app:
+    The movies we send will remain in the app data with an option to open the file in VLC player and with the built-in file manager, you will be able to delete movies and other files
