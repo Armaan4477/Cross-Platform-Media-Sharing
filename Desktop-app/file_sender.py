@@ -27,6 +27,39 @@ class FileSender(QThread):
         self.file_paths = file_paths
         self.password = password
 
+    def initialize_connection(self):
+        # """Initialize the connection and return the device type as a string."""
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.client_socket.connect((self.ip_address, RECEIVER_PORT))
+        except ConnectionRefusedError:
+            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+            return None
+
+        # Send and receive a json file containing whether this device is a python, java, or swift device
+        device_data = {
+            'device_type': 'python',
+            'os': platform.system()
+        }
+        device_data_json = json.dumps(device_data)
+        self.client_socket.send(struct.pack('<Q', len(device_data_json)))
+        self.client_socket.send(device_data_json.encode())
+
+        # Receive the json file from the receiver
+        receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
+        receiver_json = self.client_socket.recv(receiver_json_size).decode()
+        receiver_data = json.loads(receiver_json)
+        logger.debug("Receiver data: %s", receiver_data)
+
+        device_type = receiver_data.get('device_type', 'unknown')
+        if device_type in ['python', 'java', 'swift']:
+            logger.debug(f"Receiver is a {device_type} device")
+            return device_type
+        else:
+            QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
+            self.client_socket.close()
+            return None
+
     def run(self):
         for file_path in self.file_paths:
             # Check if the file is a folder
@@ -44,7 +77,12 @@ class FileSender(QThread):
         self.client_socket.close()
 
     def send_folder(self, folder_path):
-        # Send metadata with the original folder name on the last index
+        device_type = getattr(self, 'device_type', None)
+        if not device_type:
+            device_type = self.initialize_connection()
+            if not device_type:
+                return False
+
         metadata = []
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -61,6 +99,14 @@ class FileSender(QThread):
         with open(metadata_file_path, 'w') as f:
             f.write(metadata_json)
 
+        # Send encryption flag based on the configuration
+        if self.config['encryption']:
+            self.client_socket.send('encyp: t'.encode())
+            logger.debug("Sent encrypted transfer signal")
+        else:
+            self.client_socket.send('encyp: f'.encode())
+            logger.debug("Sent decrypted transfer signal")
+
         self.send_file(metadata_file_path)
 
         for file_info in metadata:
@@ -68,29 +114,15 @@ class FileSender(QThread):
             if not file_path.endswith('.delete'):
                 self.send_file(file_path)
 
-        #delete metadata.json after sending
         os.remove(metadata_file_path)
 
+
     def send_file(self, file_path):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.client_socket.connect((self.ip_address, RECEIVER_PORT))
-        except ConnectionRefusedError:
-            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-            return False
-
-        if self.config['encryption']:
-            self.client_socket.send('encyp: t'.encode())
-            logger.debug("Sent encrypted transfer signal")
-            encrypted_transfer = True
-        else:
-            self.client_socket.send('encyp: f'.encode())
-            logger.debug("Sent decrypted transfer signal")
-            encrypted_transfer = False
-
-        if encrypted_transfer:
-            logger.debug("Encrypted transfer with password: %s", self.password)
-            file_path = encrypt_file(file_path, self.password)
+        device_type = getattr(self, 'device_type', None)
+        if not device_type:
+            device_type = self.initialize_connection()
+            if not device_type:
+                return False
 
         sent_size = 0
         file_size = os.path.getsize(file_path)
@@ -98,10 +130,19 @@ class FileSender(QThread):
         file_name_size = len(file_name.encode())
         logger.debug("Sending %s, %s", file_name, file_size)
 
+        # Send encryption flag based on the configuration
+        if self.config['encryption']:
+            self.client_socket.send('encyp: t'.encode())
+            logger.debug("Sent encrypted transfer signal")
+            file_path = encrypt_file(file_path, self.password)
+        else:
+            self.client_socket.send('encyp: f'.encode())
+            logger.debug("Sent decrypted transfer signal")
+
         self.client_socket.send(struct.pack('<Q', file_name_size))
         self.client_socket.send(file_name.encode())
         self.client_socket.send(struct.pack('<Q', file_size))
-        
+
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
@@ -111,7 +152,9 @@ class FileSender(QThread):
 
         if self.config['encryption']:
             os.remove(file_path)
+
         return True
+
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
@@ -252,7 +295,8 @@ class SendApp(QWidget):
                         receivers.append({'ip': address[0], 'name': device_name})
             except socket.timeout:
                 pass
-
+        #Check device type
+        #if 
         return receivers
 
     def checkReadyToSend(self):

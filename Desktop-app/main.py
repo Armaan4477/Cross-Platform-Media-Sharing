@@ -72,6 +72,7 @@ class MainApp(QWidget):
     def sendFile(self):
         logger.info("Started Send File App")
         self.hide()
+        # Call broadcast receiver 
         self.send_app = SendApp()
         self.send_app.show()
 
