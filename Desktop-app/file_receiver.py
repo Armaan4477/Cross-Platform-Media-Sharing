@@ -12,6 +12,7 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
+from file_receive_swift import file_receive_swift
 
 RECEIVER_PORT = 12348
 
@@ -62,6 +63,10 @@ class FileReceiver(QThread):
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             # You can handle Java-specific operations here if needed
+        elif sender_device_type == "swift":
+            file_receive_swift()
+            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
+            # You can handle Swift-specific operations here if needed
         else:
             logger.debug("Unknown device type received.")
 
