@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct SendView: View {
-    @StateObject private var sendingDiscovery = SendingDiscovery()
+    @EnvironmentObject var sendingDiscovery: SendingDiscovery
     @State private var selectedDevice: String? = nil
 
     var body: some View {
         VStack {
             Button(action: {
-                sendingDiscovery.discoverDevices()
+                sendingDiscovery.setupUDPListener()
+                sendingDiscovery.sendDiscoverMessage()
             }) {
                 Text("Discover Devices")
                     .font(.title)
@@ -48,11 +49,5 @@ struct SendView: View {
             .disabled(selectedDevice == nil)
         }
         .padding()
-    }
-}
-
-struct SendView_Previews: PreviewProvider {
-    static var previews: some View {
-        SendView()
     }
 }

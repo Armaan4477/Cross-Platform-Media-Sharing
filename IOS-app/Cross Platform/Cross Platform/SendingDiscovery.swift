@@ -1,64 +1,38 @@
 import Foundation
 import Network
-import SwiftUI
+import Combine
+import UIKit
 
 class SendingDiscovery: ObservableObject {
-    @Published var devices: [String] = []
+    @Published var devices: [String] = [] // List of discovered devices
     private var udpListener: NWListener?
-    private let udpPort: NWEndpoint.Port = 12345
     private let udpQueue = DispatchQueue(label: "UDPQueue")
-    
-    func discoverDevices() {
-        devices.removeAll()
+    private let udpPort: NWEndpoint.Port = 12345 // Port for UDP communication
 
-        // Stop any previous listener if it exists
-        udpListener?.cancel()
-
-        // Start a UDP listener to listen for device responses
+    // Set up the UDP listener to listen for incoming messages
+    func setupUDPListener() {
         do {
             udpListener = try NWListener(using: .udp, on: udpPort)
             udpListener?.newConnectionHandler = { [weak self] connection in
-                self?.handleNewConnection(connection)
+                self?.handleNewUDPConnection(connection)
             }
             udpListener?.start(queue: udpQueue)
             print("UDP Listener started on port \(udpPort.rawValue)")
         } catch {
-            print("Failed to start UDP listener: \(error)")
-            return
+            print("Failed to create UDP listener: \(error)")
         }
-
-        // Send the discovery message
-        let connection = NWConnection(host: NWEndpoint.Host("255.255.255.255"), port: udpPort, using: .udp)
-        connection.start(queue: udpQueue)
-        let discoverMessage = "DISCOVER".data(using: .utf8)
-        connection.send(content: discoverMessage, completion: .contentProcessed { [weak self] error in
-            if let error = error {
-                print("Failed to send discovery message: \(error)")
-            } else {
-                print("Discovery message sent")
-            }
-            connection.cancel()
-        })
     }
 
-    private func handleNewConnection(_ connection: NWConnection) {
+    // Handle incoming UDP connections
+    private func handleNewUDPConnection(_ connection: NWConnection) {
         connection.start(queue: udpQueue)
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        connection.receiveMessage { [weak self] data, _, _, _ in
             guard let self = self else { return }
-            if let error = error {
-                print("Failed to receive data: \(error)")
-                return
-            }
-            guard let data = data, isComplete else {
-                if let data = data {
-                    let message = String(data: data, encoding: .utf8) ?? "Invalid data"
-                    print("Received incomplete or invalid data: \(message)")
-                }
-                return
-            }
+            guard let data = data else { return }
             let message = String(data: data, encoding: .utf8) ?? "Invalid data"
             print("Received message: \(message)")
-            
+
+            // Check if the message starts with "RECEIVER:"
             if message.hasPrefix("RECEIVER:") {
                 let deviceName = message.replacingOccurrences(of: "RECEIVER:", with: "")
                 DispatchQueue.main.async {
@@ -71,16 +45,26 @@ class SendingDiscovery: ObservableObject {
         }
     }
 
-    
+    // Send a DISCOVER message
+    func sendDiscoverMessage() {
+        print("Sending DISCOVER message")
+        let connection = NWConnection(host: NWEndpoint.Host("255.255.255.255"), port: udpPort, using: .udp)
+        connection.start(queue: udpQueue)
+        let discoverMessage = "DISCOVER".data(using: .utf8)
+        
+        connection.send(content: discoverMessage, completion: .contentProcessed { error in
+            if let error = error {
+                print("Failed to send DISCOVER message: \(error)")
+            } else {
+                print("DISCOVER message sent successfully")
+            }
+            connection.cancel()
+        })
+    }
+
     func connectToDevice(_ device: String) {
         // Implement connection logic to the selected device
         print("Connecting to \(device)")
         // Here you can implement the connection logic to the selected device
-    }
-
-    // Helper method to get device name
-    private func getDeviceName() -> String {
-        // Return the device name. Customize this as needed.
-        return UIDevice.current.name
     }
 }
