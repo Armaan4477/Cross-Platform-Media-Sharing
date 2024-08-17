@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		082DA8B62C5A97A0000B40AA /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082DA8B52C5A97A0000B40AA /* NetworkManager.swift */; };
-		084E13F92C708BBA008FFCAB /* DeviceDiscoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084E13F82C708BBA008FFCAB /* DeviceDiscoveryView.swift */; };
-		084E13FB2C708DA6008FFCAB /* FileReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084E13FA2C708DA6008FFCAB /* FileReceiver.swift */; };
 		08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */; };
 		08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCC2C554FC500C10FB5 /* ContentView.swift */; };
 		08938FCF2C554FC500C10FB5 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCE2C554FC500C10FB5 /* Item.swift */; };
@@ -20,8 +18,6 @@
 
 /* Begin PBXFileReference section */
 		082DA8B52C5A97A0000B40AA /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
-		084E13F82C708BBA008FFCAB /* DeviceDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDiscoveryView.swift; sourceTree = "<group>"; };
-		084E13FA2C708DA6008FFCAB /* FileReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReceiver.swift; sourceTree = "<group>"; };
 		08938FC72C554FC500C10FB5 /* Cross Platform.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Cross Platform.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cross_PlatformApp.swift; sourceTree = "<group>"; };
 		08938FCC2C554FC500C10FB5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -67,11 +63,9 @@
 				08938FCC2C554FC500C10FB5 /* ContentView.swift */,
 				08938FCE2C554FC500C10FB5 /* Item.swift */,
 				08938FD02C554FC600C10FB5 /* Assets.xcassets */,
+				08938FD22C554FC600C10FB5 /* Preview Content */,
 				082DA8B52C5A97A0000B40AA /* NetworkManager.swift */,
 				08FABC1D2C68FA680074FC89 /* ReceiveView.swift */,
-				084E13F82C708BBA008FFCAB /* DeviceDiscoveryView.swift */,
-				08938FD22C554FC600C10FB5 /* Preview Content */,
-				084E13FA2C708DA6008FFCAB /* FileReceiver.swift */,
 			);
 			path = "Cross Platform";
 			sourceTree = "<group>";
@@ -155,10 +149,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				082DA8B62C5A97A0000B40AA /* NetworkManager.swift in Sources */,
-				084E13F92C708BBA008FFCAB /* DeviceDiscoveryView.swift in Sources */,
 				08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */,
 				08FABC1E2C68FA680074FC89 /* ReceiveView.swift in Sources */,
-				084E13FB2C708DA6008FFCAB /* FileReceiver.swift in Sources */,
 				08938FCF2C554FC500C10FB5 /* Item.swift in Sources */,
 				08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */,
 			);

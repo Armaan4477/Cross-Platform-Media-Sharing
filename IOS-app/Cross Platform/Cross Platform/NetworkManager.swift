@@ -14,7 +14,7 @@ class NetworkManager: ObservableObject {
     private var connections: [NWConnection] = []
 
     init() {
-        setupUDPListener()
+        // Do not set up listeners here to avoid unnecessary network activity
     }
 
     func setupUDPListener() {
@@ -37,8 +37,6 @@ class NetworkManager: ObservableObject {
             if message == "DISCOVER" {
                 let response = "RECEIVER:\(UIDevice.current.name)"
                 connection.send(content: response.data(using: .utf8), completion: .contentProcessed({ _ in }))
-            } else {
-                self.devices.append(message ?? "Unknown Device")
             }
         }
     }
