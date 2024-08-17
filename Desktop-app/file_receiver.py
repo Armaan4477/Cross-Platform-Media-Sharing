@@ -73,7 +73,7 @@ class FileReceiver(QThread):
             if not encryption_flag:
                 break  # End of data transmission
 
-            encryption_flag = encryption_flag.decode().strip()
+            encryption_flag = encryption_flag.decode()
             logger.debug("Received encryption flag: %s", encryption_flag)
 
             if encryption_flag[-1] == 't':
@@ -84,8 +84,11 @@ class FileReceiver(QThread):
                     self.decrypt_signal.emit(self.encrypted_files)
                 self.encrypted_files = []
                 break
-            else:
+            elif encryption_flag[-1] == 'f':
                 encrypted_transfer = False
+            else:
+                logger.error("Unknown encryption flag: %s", encryption_flag)
+                continue
 
             # Receive file name size
             file_name_size_data = client_socket.recv(8)
