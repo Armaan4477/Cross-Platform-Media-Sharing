@@ -12,7 +12,6 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
-from file_receive_swift import FileReceiveSwift
 
 RECEIVER_PORT = 12348
 
@@ -27,7 +26,6 @@ class FileReceiver(QThread):
         self.broadcasting = True
         self.metadata = None
         self.destination_folder = None
-        self.file_receive_swift = FileReceiveSwift()
 
     def run(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,13 +63,77 @@ class FileReceiver(QThread):
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             # You can handle Java-specific operations here if needed
         elif sender_device_type == "swift":
-            self.file_receive_swift.swift_device()
-            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
+            self.receive_files_swift(client_socket)
+            logger.debug("Connected to a Swift device, but this feature is only half implemented yet.")
             # You can handle Swift-specific operations here if needed
         else:
             logger.debug("Unknown device type received.")
 
     def receive_files(self, client_socket):
+        self.broadcasting = False  # Stop broadcasting
+
+        while True:
+            encryption_flag = client_socket.recv(8)
+            if not encryption_flag:
+                break  # End of data transmission
+
+            encryption_flag = encryption_flag.decode().strip()
+            logger.debug("Received encryption flag: %s", encryption_flag)
+
+            if encryption_flag[-1] == 't':
+                encrypted_transfer = True
+            elif encryption_flag[-1] == 'h':
+                # Halting signal, break transfer and decrypt files
+                if self.encrypted_files:
+                    self.decrypt_signal.emit(self.encrypted_files)
+                self.encrypted_files = []
+                break
+            else:
+                encrypted_transfer = False
+
+            # Receive file name size
+            file_name_size_data = client_socket.recv(8)
+            if len(file_name_size_data) < 8:
+                logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
+                break  # Handle the case where we receive less than 8 bytes
+
+            file_name_size = struct.unpack('<Q', file_name_size_data)[0]
+            if file_name_size == 0:
+                break  # End of transfer signal
+
+            file_name = client_socket.recv(file_name_size).decode()
+            file_size = struct.unpack('<Q', client_socket.recv(8))[0]
+
+            logger.debug("Receiving %s, %s bytes", file_name, file_size)
+
+            received_size = 0
+
+            if file_name == 'metadata.json':
+                self.metadata = self.receive_metadata(client_socket, file_size)
+                self.destination_folder = self.create_folder_structure(self.metadata)
+            else:
+                file_path = self.get_file_path(file_name)
+                if file_path.endswith('.delete'):
+                    continue
+                if self.metadata:
+                    relative_path = self.get_relative_path_from_metadata(file_name)
+                    file_path = os.path.join(self.destination_folder, relative_path)
+
+                if encrypted_transfer:
+                    self.encrypted_files.append(file_path)
+
+                with open(file_path, "wb") as f:
+                    while received_size < file_size:
+                        data = client_socket.recv(4096)
+                        if not data:
+                            break
+                        f.write(data)
+                        received_size += len(data)
+                        self.progress_update.emit(received_size * 100 // file_size)
+
+        self.broadcasting = True  # Resume broadcasting
+
+    def receive_files_swift(self, client_socket):
         self.broadcasting = False  # Stop broadcasting
 
         while True:
