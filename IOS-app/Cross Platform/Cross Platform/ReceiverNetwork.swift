@@ -3,19 +3,11 @@ import Network
 import Combine
 import UIKit
 
-class NetworkManager: ObservableObject {
+class ReceiverNetwork: ObservableObject {
     @Published var devices: [String] = []
     private var udpListener: NWListener?
-    private var tcpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
-    private let tcpQueue = DispatchQueue(label: "TCPQueue")
     private let udpPort: NWEndpoint.Port = 12345
-    private let tcpPort: NWEndpoint.Port = 12348
-    private var connections: [NWConnection] = []
-
-    init() {
-        // Do not set up listeners here to avoid unnecessary network activity
-    }
 
     func setupUDPListener() {
         do {

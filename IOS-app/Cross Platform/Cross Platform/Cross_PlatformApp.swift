@@ -31,16 +31,14 @@
 //    }
 //}
 
-
 import SwiftUI
-import SwiftData
 
 @main
 struct Cross_PlatformApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(NetworkManager())
+                .environmentObject(ReceiverNetwork())
         }
     }
 }
