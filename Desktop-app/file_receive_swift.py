@@ -12,8 +12,14 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from time import sleep
 import json
 
-class file_receive_swift(QThread):
-    logger.debug("This is the transfer to the swift receiver file. Discovery is successful.")
+class FileReceiveSwift(QThread):
+    def __init__(self):
+        super().__init__()
 
-
-   
+    def run(self):
+        logger.debug("This is the transfer to the swift receiver file. Discovery is successful.")
+        
+    def swift_device(self):
+        # Add the logic to handle file transfer from Swift devices
+        logger.debug("Handling file transfer from a Swift device.")
+        # Implement the file receiving logic here

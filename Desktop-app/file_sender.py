@@ -38,7 +38,7 @@ class FileSender(QThread):
 
         # Send and receive a json file containing whether this device is a python, java, or swift device
         device_data = {
-            'device_type': 'python',
+            'device_type': 'swift',
             'os': platform.system()
         }
         device_data_json = json.dumps(device_data)
