@@ -137,63 +137,42 @@ class FileReceiver(QThread):
         self.broadcasting = False  # Stop broadcasting
 
         while True:
-            encryption_flag = client_socket.recv(8)
-            if not encryption_flag:
-                break  # End of data transmission
+        # Receive file name size
+           file_name_size_data = client_socket.recv(8)
+           if len(file_name_size_data) < 8:
+               logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
+               break  # Handle the case where we receive less than 8 bytes
 
-            encryption_flag = encryption_flag.decode().strip()
-            logger.debug("Received encryption flag: %s", encryption_flag)
+           file_name_size = struct.unpack('<Q', file_name_size_data)[0]
+           if file_name_size == 0:
+               break  # End of transfer signal
 
-            if encryption_flag[-1] == 't':
-                encrypted_transfer = True
-            elif encryption_flag[-1] == 'h':
-                # Halting signal, break transfer and decrypt files
-                if self.encrypted_files:
-                    self.decrypt_signal.emit(self.encrypted_files)
-                self.encrypted_files = []
-                break
-            else:
-                encrypted_transfer = False
+           file_name = client_socket.recv(file_name_size).decode()
+           file_size = struct.unpack('<Q', client_socket.recv(8))[0]
 
-            # Receive file name size
-            file_name_size_data = client_socket.recv(8)
-            if len(file_name_size_data) < 8:
-                logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
-                break  # Handle the case where we receive less than 8 bytes
+           logger.debug("Receiving %s, %s bytes", file_name, file_size)
 
-            file_name_size = struct.unpack('<Q', file_name_size_data)[0]
-            if file_name_size == 0:
-                break  # End of transfer signal
+           received_size = 0
 
-            file_name = client_socket.recv(file_name_size).decode()
-            file_size = struct.unpack('<Q', client_socket.recv(8))[0]
+           if file_name == 'metadata.json':
+               self.metadata = self.receive_metadata(client_socket, file_size)
+               self.destination_folder = self.create_folder_structure(self.metadata)
+           else:
+               file_path = self.get_file_path(file_name)
+               if file_path.endswith('.delete'):
+                   continue
+               if self.metadata:
+                   relative_path = self.get_relative_path_from_metadata(file_name)
+                   file_path = os.path.join(self.destination_folder, relative_path)
 
-            logger.debug("Receiving %s, %s bytes", file_name, file_size)
-
-            received_size = 0
-
-            if file_name == 'metadata.json':
-                self.metadata = self.receive_metadata(client_socket, file_size)
-                self.destination_folder = self.create_folder_structure(self.metadata)
-            else:
-                file_path = self.get_file_path(file_name)
-                if file_path.endswith('.delete'):
-                    continue
-                if self.metadata:
-                    relative_path = self.get_relative_path_from_metadata(file_name)
-                    file_path = os.path.join(self.destination_folder, relative_path)
-
-                if encrypted_transfer:
-                    self.encrypted_files.append(file_path)
-
-                with open(file_path, "wb") as f:
-                    while received_size < file_size:
-                        data = client_socket.recv(4096)
-                        if not data:
-                            break
-                        f.write(data)
-                        received_size += len(data)
-                        self.progress_update.emit(received_size * 100 // file_size)
+               with open(file_path, "wb") as f:
+                   while received_size < file_size:
+                       data = client_socket.recv(4096)
+                       if not data:
+                           break
+                       f.write(data)
+                       received_size += len(data)
+                       self.progress_update.emit(received_size * 100 // file_size)
 
         self.broadcasting = True  # Resume broadcasting
 

@@ -1,20 +1,34 @@
 import SwiftUI
 
 struct ReceiveView: View {
-    @EnvironmentObject var networkManager: NetworkManager
+    @StateObject private var fileReceiver = FileReceiver()
 
     var body: some View {
         VStack {
-            Text("Waiting for file transfer")
+            Text("Receiving Files")
                 .font(.title)
                 .padding()
 
-            List(networkManager.devices, id: \.self) { device in
-                Text(device)
+            // Here, you can add progress indicators or other UI elements related to receiving files
+
+            Button(action: {
+                // Trigger file reception process here
+                fileReceiver.start() // Start the file receiving process
+            }) {
+                Text("Start Receiving")
+                    .font(.title)
+                    .padding()
+                    .background(Color.red)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
+            .padding(.bottom, 20)
         }
         .onAppear {
-            networkManager.setupUDPListener()
+            fileReceiver.start() // Ensure file receiving starts when the view appears
+        }
+        .onDisappear {
+            fileReceiver.stop() // Optionally stop the receiver when the view disappears
         }
     }
 }
@@ -22,6 +36,5 @@ struct ReceiveView: View {
 struct ReceiveView_Previews: PreviewProvider {
     static var previews: some View {
         ReceiveView()
-            .environmentObject(NetworkManager())
     }
 }

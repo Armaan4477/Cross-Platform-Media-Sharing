@@ -2,41 +2,50 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var isReceiving = false
+    @State private var showDiscoveryView = false
+    @StateObject private var networkManager = NetworkManager()
 
     var body: some View {
-        VStack {
-            Text("Cross Platform Data Sharing")
-                .font(.largeTitle)
-                .padding()
+        NavigationView {
+            VStack {
+                Text("Cross Platform Data Sharing")
+                    .font(.largeTitle)
+                    .padding()
 
-            if isReceiving {
-                ReceiveView()
-            } else {
-                Button(action: {
-                    // Action for sending data
-                }) {
-                    Text("Send")
-                        .font(.title)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.bottom, 20)
+                if isReceiving {
+                    ReceiveView()
+                } else {
+                    NavigationLink(
+                        destination: DeviceDiscoveryView(networkManager: networkManager),
+                        isActive: $showDiscoveryView
+                    ) {
+                        Button(action: {
+                            showDiscoveryView = true
+                        }) {
+                            Text("Send")
+                                .font(.title)
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                        .padding(.bottom, 20)
+                    }
 
-                Button(action: {
-                    isReceiving = true
-                }) {
-                    Text("Receive")
-                        .font(.title)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    Button(action: {
+                        isReceiving = true
+                    }) {
+                        Text("Receive")
+                            .font(.title)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
                 }
             }
+            .padding()
         }
-        .padding()
     }
 }
 
