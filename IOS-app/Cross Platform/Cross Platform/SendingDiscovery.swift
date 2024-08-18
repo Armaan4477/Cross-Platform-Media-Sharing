@@ -11,6 +11,8 @@ class SendingDiscovery: ObservableObject {
 
     // Set up the UDP listener to listen for incoming messages
     func setupUDPListener() {
+        stopUDPListener() // Stop any existing listener before starting a new one
+        
         do {
             udpListener = try NWListener(using: .udp, on: udpPort)
             udpListener?.newConnectionHandler = { [weak self] connection in
@@ -21,6 +23,13 @@ class SendingDiscovery: ObservableObject {
         } catch {
             print("Failed to create UDP listener: \(error)")
         }
+    }
+
+    // Stop the UDP listener
+    func stopUDPListener() {
+        udpListener?.cancel()
+        udpListener = nil
+        print("UDP Listener stopped")
     }
 
     // Handle incoming UDP connections
