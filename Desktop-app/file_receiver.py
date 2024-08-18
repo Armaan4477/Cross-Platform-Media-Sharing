@@ -28,53 +28,54 @@ class FileReceiver(QThread):
         self.destination_folder = None
 
     def run(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind(('0.0.0.0', RECEIVER_PORT))
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(('0.0.0.0', RECEIVER_PORT))
 
-        server_socket.listen(5)  # Listen for multiple connections
+        self.server_socket.listen(5)  # Listen for multiple connections
 
         while True:
-            client_socket, addr = server_socket.accept()
-            self.handle_device_type(client_socket)
+            self.client_socket, addr = self.server_socket.accept()
+            self.handle_device_type()
             #client_socket.close()  # Close the connection after receiving files
 
         logger.debug("List of encrypted files: %s", self.encrypted_files)
 
-    def handle_device_type(self, client_socket):
+    def handle_device_type(self):
         """Handles the device type negotiation and file receiving process."""
-
         # Send device information as JSON
         device_data = {
             "device_type": "python",
             "os": platform.system()
         }
         device_data_json = json.dumps(device_data)
-        client_socket.send(struct.pack('<Q', len(device_data_json)))
-        client_socket.send(device_data_json.encode())
+        self.client_socket.send(struct.pack('<Q', len(device_data_json)))
+        self.client_socket.send(device_data_json.encode())
 
         # Receive and process the device information from the sender
-        device_json_size = struct.unpack('<Q', client_socket.recv(8))[0]
-        device_json = client_socket.recv(device_json_size).decode()
+        device_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
+        device_json = self.client_socket.recv(device_json_size).decode()
         device_info = json.loads(device_json)
         sender_device_type = device_info.get("device_type", "unknown")
         if sender_device_type == "python":
-            self.receive_files(client_socket)
+            self.receive_files()
+            self.client_socket.close()
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             # You can handle Java-specific operations here if needed
         else:
             logger.debug("Unknown device type received.")
 
-    def receive_files(self, client_socket):
+    def receive_files(self):
         self.broadcasting = False  # Stop broadcasting
 
         while True:
-            encryption_flag = client_socket.recv(8)
-            if not encryption_flag:
-                break  # End of data transmission
+            # Receive and decode encryption flag
+            encryption_flag = self.client_socket.recv(8).decode()
+            logger.debug("Received: %s", encryption_flag)
 
-            encryption_flag = encryption_flag.decode()
-            logger.debug("Received encryption flag: %s", encryption_flag)
+            if not encryption_flag:
+                logger.debug("Dropped redundant data: %s", encryption_flag)
+                break  # Drop redundant data
 
             if encryption_flag[-1] == 't':
                 encrypted_transfer = True
@@ -84,31 +85,28 @@ class FileReceiver(QThread):
                     self.decrypt_signal.emit(self.encrypted_files)
                 self.encrypted_files = []
                 break
-            elif encryption_flag[-1] == 'f':
-                encrypted_transfer = False
             else:
-                logger.error("Unknown encryption flag: %s", encryption_flag)
-                continue
+                encrypted_transfer = False
 
             # Receive file name size
-            file_name_size_data = client_socket.recv(8)
-            if len(file_name_size_data) < 8:
-                logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
-                break  # Handle the case where we receive less than 8 bytes
-
+            file_name_size_data = self.client_socket.recv(8)
             file_name_size = struct.unpack('<Q', file_name_size_data)[0]
+            
             if file_name_size == 0:
                 break  # End of transfer signal
 
-            file_name = client_socket.recv(file_name_size).decode()
-            file_size = struct.unpack('<Q', client_socket.recv(8))[0]
+            # Receive file name
+            file_name = self._receive_data(self.client_socket, file_name_size).decode()
 
+            # Receive file size
+            file_size_data = self.client_socket.recv(8)
+            file_size = struct.unpack('<Q', file_size_data)[0]
             logger.debug("Receiving %s, %s bytes", file_name, file_size)
 
             received_size = 0
 
             if file_name == 'metadata.json':
-                self.metadata = self.receive_metadata(client_socket, file_size)
+                self.metadata = self.receive_metadata(file_size)
                 self.destination_folder = self.create_folder_structure(self.metadata)
             else:
                 file_path = self.get_file_path(file_name)
@@ -121,9 +119,11 @@ class FileReceiver(QThread):
                 if encrypted_transfer:
                     self.encrypted_files.append(file_path)
 
+                # Receive file data in chunks
                 with open(file_path, "wb") as f:
                     while received_size < file_size:
-                        data = client_socket.recv(4096)
+                        chunk_size = min(4096, file_size - received_size)
+                        data = self._receive_data(self.client_socket, chunk_size)
                         if not data:
                             break
                         f.write(data)
@@ -132,12 +132,23 @@ class FileReceiver(QThread):
 
         self.broadcasting = True  # Resume broadcasting
 
+    def _receive_data(self, socket, size):
+        """Helper function to receive a specific amount of data."""
+        received_data = b""
+        while len(received_data) < size:
+            chunk = socket.recv(size - len(received_data))
+            if not chunk:
+                break
+            received_data += chunk
+        return received_data
 
-    def receive_metadata(self, client_socket, file_size):
+
+
+    def receive_metadata(self, file_size):
         """Receive metadata from the sender."""
         received_data = b""
         while len(received_data) < file_size:
-            chunk = client_socket.recv(4096)
+            chunk = self.client_socket.recv(4096)
             if not chunk:
                 break
             received_data += chunk

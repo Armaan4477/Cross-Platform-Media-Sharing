@@ -116,7 +116,7 @@ class FileSender(QThread):
         logger.debug("Sending %s, %s", file_name, file_size)
 
         encryption_flag = 'encyp: t' if self.config['encryption'] else 'encyp: f'
-        self.client_socket.send(encryption_flag.ljust(8).encode())  # Pad to 8 bytes
+        self.client_socket.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
         
         self.client_socket.send(struct.pack('<Q', file_name_size))
