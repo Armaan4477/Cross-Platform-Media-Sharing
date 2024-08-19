@@ -3,3 +3,4 @@
 *.pyc
 .config.json
 *.xcuserstate
+/cross
