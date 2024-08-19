@@ -4,10 +4,10 @@ import Combine
 import UIKit
 
 class SendingDiscovery: ObservableObject {
-    @Published var devices: [String] = [] // List of discovered devices
+    @Published var devices: [String] = []
     private var udpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
-    private let udpPort: NWEndpoint.Port = 12345 // Port for UDP communication
+    private let udpPort: NWEndpoint.Port = 12345
 
     // Set up the UDP listener to listen for incoming messages
     func setupUDPListener() {
@@ -35,9 +35,16 @@ class SendingDiscovery: ObservableObject {
     // Handle incoming UDP connections
     private func handleNewUDPConnection(_ connection: NWConnection) {
         connection.start(queue: udpQueue)
-        connection.receiveMessage { [weak self] data, _, _, _ in
+        connection.receiveMessage { [weak self] data, _, _, error in
             guard let self = self else { return }
-            guard let data = data else { return }
+            if let error = error {
+                print("Error receiving message: \(error.localizedDescription)")
+                return
+            }
+            guard let data = data else {
+                print("Received data is nil")
+                return
+            }
             let message = String(data: data, encoding: .utf8) ?? "Invalid data"
             print("Received message: \(message)")
 
@@ -57,13 +64,14 @@ class SendingDiscovery: ObservableObject {
     // Send a DISCOVER message
     func sendDiscoverMessage() {
         print("Sending DISCOVER message")
-        let connection = NWConnection(host: NWEndpoint.Host("255.255.255.255"), port: udpPort, using: .udp)
+        let broadcastAddress = "255.255.255.255"
+        let connection = NWConnection(host: NWEndpoint.Host(broadcastAddress), port: udpPort, using: .udp)
         connection.start(queue: udpQueue)
         let discoverMessage = "DISCOVER".data(using: .utf8)
         
         connection.send(content: discoverMessage, completion: .contentProcessed { error in
             if let error = error {
-                print("Failed to send DISCOVER message: \(error)")
+                print("Failed to send DISCOVER message: \(error.localizedDescription)")
             } else {
                 print("DISCOVER message sent successfully")
             }
