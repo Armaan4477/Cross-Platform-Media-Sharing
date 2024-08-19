@@ -39,8 +39,9 @@ Future Ideas:
 21) Advaned telemetry which shows copy speed approx time remaining and total time- Python/Android/IOS
 22) Pause and resume feature- Python/Android/IOS
 23) Auto Pause incase of network loss, resume when connection is reestablished- Python/Android/IOS
-24) Add tip a coffee button which links to upi Id- Python/Android/IOS
-25) Improve gui- to be done all for platforms in the end- Python/Android/IOS
+24) When sending a folder show the number of total files, number of files completed and number of files remaining.
+25) Add tip a coffee button which links to upi Id- Python/Android/IOS
+26) Improve gui- to be done all for platforms in the end- Python/Android/IOS
 
 
 Crazy Future idea: 
