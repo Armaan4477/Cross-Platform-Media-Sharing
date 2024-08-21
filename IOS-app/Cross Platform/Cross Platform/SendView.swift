@@ -7,8 +7,7 @@ struct SendView: View {
     var body: some View {
         VStack {
             Button(action: {
-                sendingDiscovery.setupUDPListener()
-                sendingDiscovery.sendDiscoverMessage()
+                sendingDiscovery.startContinuousDiscovery()
             }) {
                 Text("Discover Devices")
                     .font(.title)
@@ -47,6 +46,18 @@ struct SendView: View {
             }
             .padding()
             .disabled(selectedDevice == nil)
+
+            Button(action: {
+                sendingDiscovery.stopContinuousDiscovery()
+            }) {
+                Text("Stop Discovery")
+                    .font(.title)
+                    .padding()
+                    .background(Color.red)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .padding()
         }
         .padding()
     }
