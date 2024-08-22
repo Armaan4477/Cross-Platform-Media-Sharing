@@ -18,6 +18,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private ListView listDevices;
     private ArrayList<String> devices = new ArrayList<>();
     private ArrayAdapter<String> adapter;
+    private DatagramSocket socket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,25 +38,37 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private void discoverDevices() {
         new Thread(() -> {
+            DatagramSocket socket = null;
             try {
-                DatagramSocket socket = new DatagramSocket();
+                socket = new DatagramSocket();
                 socket.setBroadcast(true);
 
                 byte[] sendData = "DISCOVER".getBytes();
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("255.255.255.255"), UDP_PORT);
                 socket.send(sendPacket);
 
-                socket.close();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
             }
         }).start();
     }
 
     private void startReceiverThread() {
         new Thread(() -> {
+            DatagramSocket socket = null;
             try {
-                DatagramSocket socket = new DatagramSocket(UDP_PORT);
+                // Close any existing socket bound to the port
+                if (this.socket != null && !this.socket.isClosed()) {
+                    this.socket.close();
+                }
+
+                socket = new DatagramSocket(UDP_PORT);
+                this.socket = socket; // Store the socket reference for future use
+
                 byte[] recvBuf = new byte[15000];
 
                 while (true) {
@@ -75,7 +88,19 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
             }
         }).start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (socket != null && !socket.isClosed()) {
+            socket.close();
+        }
     }
 }
