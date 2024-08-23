@@ -1,5 +1,6 @@
 package com.an.crossplatform;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -12,10 +13,11 @@ import java.net.InetAddress;
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345;
-    private static final String DEVICE_NAME = "Android sucker";
+    //private static final String DEVICE_NAME = "Android sucker";
     private static final int senderPort = 12346;
     //private static final String DISCOVER_MESSAGE = "DISCOVER";
     //private static final String RECEIVE_MESSAGE_PREFIX = "RECEIVER";
+    private String DEVICE_NAME;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +26,9 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
         TextView txtWaiting = findViewById(R.id.txt_waiting);
         txtWaiting.setText("Waiting to receive file...");
+
+        // Get the device name
+        DEVICE_NAME = Build.MODEL;
 
         startListeningForDiscover();
     }
