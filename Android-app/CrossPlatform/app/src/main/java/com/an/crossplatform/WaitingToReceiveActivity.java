@@ -12,7 +12,9 @@ import java.net.InetAddress;
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345;
-    private static final String DEVICE_NAME = "MyDevice";
+    private static final String DEVICE_NAME = "Android sucker";
+    private static final String DISCOVER_MESSAGE = "DISCOVER";
+    private static final String RECEIVE_MESSAGE_PREFIX = "RECEIVER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +30,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private void startListeningForDiscover() {
         new Thread(() -> {
             try {
-                DatagramSocket socket = new DatagramSocket(UDP_PORT);
+                DatagramSocket socket = new DatagramSocket(UDP_PORT); // Ensure UDP_PORT is the port Android app uses for sending DISCOVER
                 byte[] recvBuf = new byte[15000];
 
                 while (true) {
@@ -38,10 +40,11 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     String message = new String(receivePacket.getData()).trim();
                     if (message.equals("DISCOVER")) {
                         InetAddress senderAddress = receivePacket.getAddress();
-                        byte[] sendData = ("RECEIVE" + DEVICE_NAME).getBytes();
-                        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, UDP_PORT);
+                        int senderPort = receivePacket.getPort(); // Get the port of the sender
+                        byte[] sendData = ("RECEIVER" + ":" + DEVICE_NAME).getBytes();
+                        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, senderPort); // Respond to senderPort
                         socket.send(sendPacket);
-                        Log.d("WaitingToReceive", "Sent RECEIVE message to: " + senderAddress.getHostAddress());
+                        Log.d("WaitingToReceive", "Sent RECEIVE message to: " + senderAddress.getHostAddress() + " on port " + senderPort);
                     }
                 }
             } catch (Exception e) {
