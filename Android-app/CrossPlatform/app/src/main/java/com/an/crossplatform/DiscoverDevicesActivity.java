@@ -5,15 +5,14 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.AdapterView;
-import android.widget.Toast;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
@@ -25,7 +24,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private DatagramSocket discoverSocket;
     private DatagramSocket responseSocket;
-    private HashSet<String> discoveredDevices = new HashSet<>(); // To keep track of unique devices
+    private boolean isDiscovering = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,10 +42,9 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             startReceiverThread();
         });
 
-        // Set the items in the ListView to be selectable
-        listDevices.setOnItemClickListener((adapterView, view, position, id) -> {
-            String selectedDevice = devices.get(position);
-            Toast.makeText(this, "Selected: " + selectedDevice, Toast.LENGTH_SHORT).show();
+        listDevices.setOnItemClickListener((parent, view, position, id) -> {
+            stopDiscovering();
+            highlightSelectedDevice(view);
         });
     }
 
@@ -59,6 +57,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             Log.d("DiscoverDevices", "Closing previous responseSocket");
             responseSocket.close();
         }
+        isDiscovering = true;
     }
 
     private void discoverDevices() {
@@ -73,7 +72,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
                 Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
 
-                for (int i = 0; i < 120; i++) { // 120 iterations for 2 minutes
+                for (int i = 0; i < 120 && isDiscovering; i++) { // 120 iterations for 2 minutes
                     socket.send(sendPacket);
                     Log.d("DiscoverDevices", "Sent DISCOVER message iteration: " + (i + 1));
                     Thread.sleep(1000);
@@ -98,7 +97,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
                 byte[] recvBuf = new byte[15000];
 
-                while (true) {
+                while (isDiscovering) {
                     DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
                     socket.receive(receivePacket);
 
@@ -111,15 +110,14 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     if (message.startsWith("RECEIVER")) {
                         String deviceIP = receivePacket.getAddress().getHostAddress();
                         String deviceName = message.substring("RECEIVER:".length());
-                        String deviceInfo = deviceIP + " - " + deviceName;
 
-                        if (!discoveredDevices.contains(deviceInfo)) {
-                            discoveredDevices.add(deviceInfo);
-                            runOnUiThread(() -> {
+                        runOnUiThread(() -> {
+                            String deviceInfo = deviceIP + " - " + deviceName;
+                            if (!devices.contains(deviceInfo)) {
                                 devices.add(deviceInfo);
                                 adapter.notifyDataSetChanged();
-                            });
-                        }
+                            }
+                        });
                     } else {
                         Log.d("DiscoverDevices", "Unexpected message: " + message);
                     }
@@ -134,9 +132,21 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         }).start();
     }
 
+    private void stopDiscovering() {
+        isDiscovering = false;
+        resetSockets();
+    }
+
+    private void highlightSelectedDevice(android.view.View view) {
+        for (int i = 0; i < listDevices.getChildCount(); i++) {
+            listDevices.getChildAt(i).setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
+        }
+        view.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_blue_light));
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        resetSockets();
+        stopDiscovering();
     }
 }
