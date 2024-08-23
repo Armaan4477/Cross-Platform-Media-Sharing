@@ -37,6 +37,18 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
                     socket.receive(receivePacket);
 
+                    // Extract the raw data
+                    byte[] rawData = receivePacket.getData();
+                    int length = receivePacket.getLength();
+                    String rawMessage = new String(rawData, 0, length).trim();
+
+                    // Log the raw data and additional details
+                    Log.d("WaitingToReceive", "Received raw message: " + rawMessage);
+                    Log.d("WaitingToReceive", "Message length: " + length);
+                    Log.d("WaitingToReceive", "Sender address: " + receivePacket.getAddress().getHostAddress());
+                    Log.d("WaitingToReceive", "Sender port: " + receivePacket.getPort());
+
+
                     String message = new String(receivePacket.getData()).trim();
                     if (message.equals("DISCOVER")) {
                         InetAddress senderAddress = receivePacket.getAddress();
