@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var networkManager: NetworkManager
+    @State private var isReceiving = false
 
     var body: some View {
         VStack {
@@ -9,19 +9,31 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .padding()
 
-            Button(action: {
-                networkManager.scanForDevices()
-            }) {
-                Text("Scan for Devices")
-                    .font(.title)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
+            if isReceiving {
+                ReceiveView()
+            } else {
+                Button(action: {
+                    // Action for sending data
+                }) {
+                    Text("Send")
+                        .font(.title)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.bottom, 20)
 
-            List(networkManager.devices, id: \.self) { device in
-                Text(device)
+                Button(action: {
+                    isReceiving = true
+                }) {
+                    Text("Receive")
+                        .font(.title)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
             }
         }
         .padding()
@@ -31,6 +43,5 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
-            .environmentObject(NetworkManager())
     }
 }

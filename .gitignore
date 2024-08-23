@@ -2,4 +2,3 @@
 /output
 *.pyc
 .config.json
-Desktop-app/device_data.json

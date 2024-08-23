@@ -14,11 +14,10 @@ class NetworkManager: ObservableObject {
     private var connections: [NWConnection] = []
 
     init() {
-        setupUDPListener()
-        setupTCPListener()
+        // Do not set up listeners here to avoid unnecessary network activity
     }
 
-    private func setupUDPListener() {
+    func setupUDPListener() {
         do {
             udpListener = try NWListener(using: .udp, on: udpPort)
             udpListener?.newConnectionHandler = { [weak self] connection in
@@ -27,18 +26,6 @@ class NetworkManager: ObservableObject {
             udpListener?.start(queue: udpQueue)
         } catch {
             print("Failed to create UDP listener: \(error)")
-        }
-    }
-
-    private func setupTCPListener() {
-        do {
-            tcpListener = try NWListener(using: .tcp, on: tcpPort)
-            tcpListener?.newConnectionHandler = { [weak self] connection in
-                self?.handleNewTCPConnection(connection)
-            }
-            tcpListener?.start(queue: tcpQueue)
-        } catch {
-            print("Failed to create TCP listener: \(error)")
         }
     }
 
@@ -54,28 +41,7 @@ class NetworkManager: ObservableObject {
         }
     }
 
-    private func handleNewTCPConnection(_ connection: NWConnection) {
-        connection.start(queue: tcpQueue)
-        self.connections.append(connection)
-        receiveFiles(connection)
-    }
-
-    private func receiveFiles(_ connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, _, isComplete, error in
-            guard let self = self, let data = data else { return }
-            
-            // Handle the received data, parse file information, etc.
-            // This is a simplified example; you'll need to implement the complete file handling logic
-
-            // Call receiveFiles again to keep receiving data
-            if !isComplete {
-                self.receiveFiles(connection)
-            }
-        }
-    }
-
     func scanForDevices() {
-        // This method can be used to initiate a scan, sending out a "DISCOVER" message to the network
         let connection = NWConnection(host: NWEndpoint.Host("255.255.255.255"), port: udpPort, using: .udp)
         connection.start(queue: udpQueue)
         let discoverMessage = "DISCOVER".data(using: .utf8)
