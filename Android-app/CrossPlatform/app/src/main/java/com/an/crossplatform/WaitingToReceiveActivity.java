@@ -13,8 +13,8 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345;
     private static final String DEVICE_NAME = "Android sucker";
-    private static final String DISCOVER_MESSAGE = "DISCOVER";
-    private static final String RECEIVE_MESSAGE_PREFIX = "RECEIVER";
+    //private static final String DISCOVER_MESSAGE = "DISCOVER";
+    //private static final String RECEIVE_MESSAGE_PREFIX = "RECEIVER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
