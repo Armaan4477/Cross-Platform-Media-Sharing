@@ -13,6 +13,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345;
     private static final String DEVICE_NAME = "Android sucker";
+    private static final int senderPort = 12346;
     //private static final String DISCOVER_MESSAGE = "DISCOVER";
     //private static final String RECEIVE_MESSAGE_PREFIX = "RECEIVER";
 
@@ -52,7 +53,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     String message = new String(receivePacket.getData()).trim();
                     if (message.equals("DISCOVER")) {
                         InetAddress senderAddress = receivePacket.getAddress();
-                        int senderPort = receivePacket.getPort(); // Get the port of the sender
+                       // int senderPort = receivePacket.getPort(); // Get the port of the sender
                         byte[] sendData = ("RECEIVER" + ":" + DEVICE_NAME).getBytes();
                         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, senderPort); // Respond to senderPort
                         socket.send(sendPacket);
