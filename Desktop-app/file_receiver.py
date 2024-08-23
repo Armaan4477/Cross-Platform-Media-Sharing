@@ -255,19 +255,22 @@ class ReceiveApp(QWidget):
         self.broadcast_thread.start()
 
     def listenForBroadcast(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('', BROADCAST_PORT))
+       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+           s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+           s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+           s.bind(('', BROADCAST_PORT))
 
-            while True:
-                if self.file_receiver.broadcasting:
-                    message, address = s.recvfrom(1024)
-                    message = message.decode()
-                    if message == 'DISCOVER':
-                        response = f'RECEIVER:{get_config()["device_name"]}'
-                        s.sendto(response.encode(), address)
-                sleep(1)  # Avoid busy-waiting
+           while True:
+               if self.file_receiver.broadcasting:
+                   message, address = s.recvfrom(1024)
+                   message = message.decode()
+                   if message == 'DISCOVER':
+                       response = f'RECEIVER:{get_config()["device_name"]}'
+                       # Create a new socket to send the response on LISTEN_PORT
+                       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
+                           response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
+               sleep(1)  # Avoid busy-waiting
+
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
