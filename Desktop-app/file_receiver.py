@@ -63,7 +63,7 @@ class FileReceiver(QThread):
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             # You can handle Java-specific operations here if needed
         elif sender_device_type == "swift":
-            self.receive_files_swift(client_socket)
+           # self.receive_files_swift(client_socket)
             logger.debug("Connected to a Swift device, but this feature is only half implemented yet.")
             # You can handle Swift-specific operations here if needed
         else:
@@ -125,7 +125,7 @@ class FileReceiver(QThread):
 
                 with open(file_path, "wb") as f:
                     while received_size < file_size:
-                        data = client_socket.recv(4096)
+                        data = self.client_socket.recv(4096)
                         if not data:
                             break
                         f.write(data)
