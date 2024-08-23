@@ -5,7 +5,6 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -13,6 +12,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
@@ -24,7 +24,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private DatagramSocket discoverSocket;
     private DatagramSocket responseSocket;
-    private boolean isDiscovering = true;
+    private AtomicBoolean isDiscovering = new AtomicBoolean(false);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,23 +57,22 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             Log.d("DiscoverDevices", "Closing previous responseSocket");
             responseSocket.close();
         }
-        isDiscovering = true;
     }
 
     private void discoverDevices() {
+        isDiscovering.set(true); // Set the flag to true
         new Thread(() -> {
-            DatagramSocket socket = null;
             try {
-                socket = new DatagramSocket();
-                socket.setBroadcast(true);
+                discoverSocket = new DatagramSocket();
+                discoverSocket.setBroadcast(true);
 
                 byte[] sendData = "DISCOVER".getBytes();
                 InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
                 Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
 
-                for (int i = 0; i < 120 && isDiscovering; i++) { // 120 iterations for 2 minutes
-                    socket.send(sendPacket);
+                for (int i = 0; i < 120 && isDiscovering.get(); i++) { // 120 iterations for 2 minutes
+                    discoverSocket.send(sendPacket);
                     Log.d("DiscoverDevices", "Sent DISCOVER message iteration: " + (i + 1));
                     Thread.sleep(1000);
                 }
@@ -81,8 +80,8 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                if (socket != null && !socket.isClosed()) {
-                    socket.close();
+                if (discoverSocket != null && !discoverSocket.isClosed()) {
+                    discoverSocket.close(); // Ensure socket is closed when done
                 }
             }
         }).start();
@@ -90,16 +89,15 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private void startReceiverThread() {
         new Thread(() -> {
-            DatagramSocket socket = null;
             try {
-                socket = new DatagramSocket(RESPONSE_PORT); // Bind to port 12346
+                responseSocket = new DatagramSocket(RESPONSE_PORT); // Bind to port 12346
                 Log.d("DiscoverDevices", "Listening for RECEIVER messages on port " + RESPONSE_PORT);
 
                 byte[] recvBuf = new byte[15000];
 
-                while (isDiscovering) {
+                while (isDiscovering.get()) {
                     DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
-                    socket.receive(receivePacket);
+                    responseSocket.receive(receivePacket);
 
                     String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
                     Log.d("DiscoverDevices", "Received raw message: " + message);
@@ -125,16 +123,16 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                if (socket != null && !socket.isClosed()) {
-                    socket.close();
+                if (responseSocket != null && !responseSocket.isClosed()) {
+                    responseSocket.close(); // Ensure socket is closed when done
                 }
             }
         }).start();
     }
 
     private void stopDiscovering() {
-        isDiscovering = false;
-        resetSockets();
+        isDiscovering.set(false); // Set the flag to false
+        resetSockets(); // Close sockets to stop sending and receiving
     }
 
     private void highlightSelectedDevice(android.view.View view) {
