@@ -145,14 +145,22 @@ class FileReceiver(QThread):
 
 
     def receive_metadata(self, file_size):
-        """Receive metadata from the sender."""
         received_data = b""
         while len(received_data) < file_size:
-            chunk = self.client_socket.recv(4096)
+            chunk = self.client_socket.recv(min(4096, file_size - len(received_data)))
             if not chunk:
                 break
             received_data += chunk
-        metadata_json = received_data.decode()
+        
+        # Attempt to decode only if it's valid UTF-8
+        try:
+            metadata_json = received_data.decode('utf-8')
+        except UnicodeDecodeError as e:
+            logger.error(f"Failed to decode metadata as UTF-8: {e}")
+            # Handle the error, maybe return None or raise an error
+            return None
+
+        logger.debug(f"Received metadata: {metadata_json}")
         return json.loads(metadata_json)
 
     def create_folder_structure(self, metadata):
