@@ -101,10 +101,13 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     if (message.startsWith("RECEIVER")) {
                         String deviceIP = receivePacket.getAddress().getHostAddress();
                         String deviceName = message.substring("RECEIVER:".length());
+                        String deviceEntry = deviceIP + " - " + deviceName;
 
                         runOnUiThread(() -> {
-                            devices.add(deviceIP + " - " + deviceName);
-                            adapter.notifyDataSetChanged();
+                            if (!devices.contains(deviceEntry)) {  // Check if the device is already listed
+                                devices.add(deviceEntry);
+                                adapter.notifyDataSetChanged();
+                            }
                         });
                     } else {
                         Log.d("DiscoverDevices", "Unexpected message: " + message);
