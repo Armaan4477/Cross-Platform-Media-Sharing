@@ -90,7 +90,7 @@ class Decryptor(QWidget):
     def decrypt_all_files(self, pass_attempts = 3):
         password = self.password_input.text()
         if not password:
-            QMessageBox.critical(self_instance, 'Input Error', 'Password cannot be empty.')
+            QMessageBox.critical(self_instance, 'Input Error', 'Password cannot be empty.') # type: ignore
             return
 
         failed = False

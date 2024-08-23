@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ReceiveView: View {
-    @EnvironmentObject var networkManager: NetworkManager
+    @EnvironmentObject var receiverNetwork: ReceiverNetwork
 
     var body: some View {
         VStack {
@@ -9,12 +9,12 @@ struct ReceiveView: View {
                 .font(.title)
                 .padding()
 
-            List(networkManager.devices, id: \.self) { device in
+            List(receiverNetwork.devices, id: \.self) { device in
                 Text(device)
             }
         }
         .onAppear {
-            networkManager.setupUDPListener()
+            receiverNetwork.setupUDPListener()
         }
     }
 }
@@ -22,6 +22,6 @@ struct ReceiveView: View {
 struct ReceiveView_Previews: PreviewProvider {
     static var previews: some View {
         ReceiveView()
-            .environmentObject(NetworkManager())
+            .environmentObject(ReceiverNetwork())
     }
 }
