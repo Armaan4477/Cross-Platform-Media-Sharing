@@ -5,12 +5,15 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.AdapterView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
@@ -22,6 +25,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private DatagramSocket discoverSocket;
     private DatagramSocket responseSocket;
+    private HashSet<String> discoveredDevices = new HashSet<>(); // To keep track of unique devices
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +41,12 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             resetSockets();
             discoverDevices();
             startReceiverThread();
+        });
+
+        // Set the items in the ListView to be selectable
+        listDevices.setOnItemClickListener((adapterView, view, position, id) -> {
+            String selectedDevice = devices.get(position);
+            Toast.makeText(this, "Selected: " + selectedDevice, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -101,14 +111,15 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     if (message.startsWith("RECEIVER")) {
                         String deviceIP = receivePacket.getAddress().getHostAddress();
                         String deviceName = message.substring("RECEIVER:".length());
-                        String deviceEntry = deviceIP + " - " + deviceName;
+                        String deviceInfo = deviceIP + " - " + deviceName;
 
-                        runOnUiThread(() -> {
-                            if (!devices.contains(deviceEntry)) {  // Check if the device is already listed
-                                devices.add(deviceEntry);
+                        if (!discoveredDevices.contains(deviceInfo)) {
+                            discoveredDevices.add(deviceInfo);
+                            runOnUiThread(() -> {
+                                devices.add(deviceInfo);
                                 adapter.notifyDataSetChanged();
-                            }
-                        });
+                            });
+                        }
                     } else {
                         Log.d("DiscoverDevices", "Unexpected message: " + message);
                     }
