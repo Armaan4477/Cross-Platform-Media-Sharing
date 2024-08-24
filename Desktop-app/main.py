@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QApplication
 from PyQt6.QtGui import QScreen
 from file_receiver import ReceiveApp
 from file_sender import SendApp
-from broadcast import Broadcast
 from preferences import PreferencesApp
 import sys
 import os
@@ -73,12 +72,9 @@ class MainApp(QWidget):
     def sendFile(self):
         logger.info("Started Send File App")
         self.hide()
-        # Call the broadcast screen
-        self.broadcast_app = Broadcast()
-        self.broadcast_app.show()
         # Call broadcast receiver 
-        # self.send_app = SendApp()
-        # self.send_app.show()
+        self.send_app = SendApp()
+        self.send_app.show()
 
     def receiveFile(self):
         logger.info("Started Receive File App")
