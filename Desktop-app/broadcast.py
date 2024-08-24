@@ -104,7 +104,7 @@ class Broadcast(QWidget):
                 logger.info(f"Connected with Python device {device_name}")
                 self.client_socket.close()
                 self.hide()
-                self.file_sender = SendApp(device_ip,device_name,self.receiver_data)
+                self.file_sender = SendApp(device_ip,device_name)
                 self.file_sender.show()
 
     def initialize_connection(self, ip_address):
@@ -127,10 +127,10 @@ class Broadcast(QWidget):
         # Receive the JSON file from the receiver
         receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
         receiver_json = self.client_socket.recv(receiver_json_size).decode()
-        self.receiver_data = json.loads(receiver_json)
-        logger.debug("Receiver data: %s", self.receiver_data)
+        receiver_data = json.loads(receiver_json)
+        logger.debug("Receiver data: %s", receiver_data)
 
-        device_type = self.receiver_data.get('device_type', 'unknown')
+        device_type = receiver_data.get('device_type', 'unknown')
         if device_type in ['python', 'java', 'swift']:
             logger.debug(f"Receiver is a {device_type} device")
             return device_type
