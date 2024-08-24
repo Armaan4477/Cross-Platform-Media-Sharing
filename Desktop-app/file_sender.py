@@ -21,11 +21,12 @@ class FileSender(QThread):
     config = get_config()
     password = None
 
-    def __init__(self, ip_address, file_paths, password=None):
+    def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
         super().__init__()
         self.ip_address = ip_address
         self.file_paths = file_paths
         self.password = password
+        self.receiver_data = receiver_data
 
     def initialize_connection(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,6 +77,8 @@ class FileSender(QThread):
 
     def send_folder(self, folder_path):
         print("Sending folder")
+        
+        # Collect metadata for all files
         metadata = []
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -86,26 +89,26 @@ class FileSender(QThread):
                     'path': relative_path,
                     'size': file_size
                 })
+        
+        # Add metadata for folder structure
         metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
         metadata_json = json.dumps(metadata)
         metadata_file_path = os.path.join(folder_path, 'metadata.json')
+
+        # Write metadata to file
         with open(metadata_file_path, 'w') as f:
             f.write(metadata_json)
 
-        # if self.config['encryption']:
-        #     self.client_socket.send('encyp: t'.encode())
-        #     logger.debug("Sent encrypted transfer signal")
-        # else:
-        #     self.client_socket.send('encyp: f'.encode())
-        #     logger.debug("Sent decrypted transfer signal")
-
+        # Send metadata file
         self.send_file(metadata_file_path)
 
+        # Send all files
         for file_info in metadata:
             file_path = os.path.join(folder_path, file_info['path'])
             if not file_path.endswith('.delete'):
                 self.send_file(file_path)
 
+        # Clean up metadata file
         os.remove(metadata_file_path)
 
     def send_file(self, file_path):
@@ -165,9 +168,10 @@ class Receiver(QListWidgetItem):
 class SendApp(QWidget):
     config = get_config()
 
-    def __init__(self,ip_address,device_name):
+    def __init__(self,ip_address,device_name,receiver_data):
         self.ip_address = ip_address
         self.device_name = device_name
+        self.receiver_data = receiver_data
         super().__init__()
         self.initUI()
 
@@ -301,7 +305,7 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_paths, password)
+        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
