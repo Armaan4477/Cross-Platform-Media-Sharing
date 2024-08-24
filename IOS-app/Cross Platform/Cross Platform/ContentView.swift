@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var isReceiving = false
+    @State private var showSendView = false
 
     var body: some View {
         VStack {
@@ -13,7 +14,7 @@ struct ContentView: View {
                 ReceiveView()
             } else {
                 Button(action: {
-                    // Action for sending data
+                    showSendView.toggle()
                 }) {
                     Text("Send")
                         .font(.title)
@@ -23,6 +24,9 @@ struct ContentView: View {
                         .cornerRadius(10)
                 }
                 .padding(.bottom, 20)
+                .sheet(isPresented: $showSendView) {
+                    SendView()
+                }
 
                 Button(action: {
                     isReceiving = true

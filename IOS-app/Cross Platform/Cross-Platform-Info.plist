@@ -6,18 +6,46 @@
     <array>
         <dict/>
     </array>
+    
+    <!-- Allow arbitrary loads for network access -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
 
+    <!-- Local network usage description -->
     <key>NSLocalNetworkUsageDescription</key>
     <string>This app requires access to the local network to discover and connect to other devices.</string>
+
+    <!-- Bonjour services for local network discovery -->
     <key>NSBonjourServices</key>
     <array>
-        <string>_udp.</string>
+        <string>_services._dns-sd._udp.</string>
+        <string>_udp.local.</string>
     </array>
+
+    <!-- Additional network-related permissions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app requires location access to improve network functionality and device discovery.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app requires continuous location access to enhance network and device discovery even in the background.</string>
+
+    <!-- Additional network security configurations -->
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+
+    <!-- Background modes for network activity -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>external-accessory</string>
+        <string>fetch</string>
+    </array>
+
+    <!-- Multicast entitlement -->
+    <key>com.apple.developer.networking.multicast</key>
+    <true/>
 
 </dict>
 </plist>

@@ -7,17 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		082DA8B62C5A97A0000B40AA /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082DA8B52C5A97A0000B40AA /* NetworkManager.swift */; };
 		08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */; };
 		08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCC2C554FC500C10FB5 /* ContentView.swift */; };
 		08938FCF2C554FC500C10FB5 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCE2C554FC500C10FB5 /* Item.swift */; };
 		08938FD12C554FC600C10FB5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 08938FD02C554FC600C10FB5 /* Assets.xcassets */; };
 		08938FD42C554FC600C10FB5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 08938FD32C554FC600C10FB5 /* Preview Assets.xcassets */; };
+		08C759602C70F7E70083D63B /* ReceiverNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C7595F2C70F7E70083D63B /* ReceiverNetwork.swift */; };
+		08C759622C70FAFB0083D63B /* SendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C759612C70FAFB0083D63B /* SendView.swift */; };
+		08C759642C70FB0F0083D63B /* SendingDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C759632C70FB0F0083D63B /* SendingDiscovery.swift */; };
 		08FABC1E2C68FA680074FC89 /* ReceiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FABC1D2C68FA680074FC89 /* ReceiveView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		082DA8B52C5A97A0000B40AA /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		08938FC72C554FC500C10FB5 /* Cross Platform.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Cross Platform.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cross_PlatformApp.swift; sourceTree = "<group>"; };
 		08938FCC2C554FC500C10FB5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -25,6 +26,9 @@
 		08938FD02C554FC600C10FB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		08938FD32C554FC600C10FB5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		08938FDA2C55505C00C10FB5 /* Cross-Platform-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Cross-Platform-Info.plist"; sourceTree = SOURCE_ROOT; };
+		08C7595F2C70F7E70083D63B /* ReceiverNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverNetwork.swift; sourceTree = "<group>"; };
+		08C759612C70FAFB0083D63B /* SendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendView.swift; sourceTree = "<group>"; };
+		08C759632C70FB0F0083D63B /* SendingDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendingDiscovery.swift; sourceTree = "<group>"; };
 		08FABC1D2C68FA680074FC89 /* ReceiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -64,8 +68,10 @@
 				08938FCE2C554FC500C10FB5 /* Item.swift */,
 				08938FD02C554FC600C10FB5 /* Assets.xcassets */,
 				08938FD22C554FC600C10FB5 /* Preview Content */,
-				082DA8B52C5A97A0000B40AA /* NetworkManager.swift */,
 				08FABC1D2C68FA680074FC89 /* ReceiveView.swift */,
+				08C7595F2C70F7E70083D63B /* ReceiverNetwork.swift */,
+				08C759612C70FAFB0083D63B /* SendView.swift */,
+				08C759632C70FB0F0083D63B /* SendingDiscovery.swift */,
 			);
 			path = "Cross Platform";
 			sourceTree = "<group>";
@@ -148,8 +154,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				082DA8B62C5A97A0000B40AA /* NetworkManager.swift in Sources */,
 				08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */,
+				08C759602C70F7E70083D63B /* ReceiverNetwork.swift in Sources */,
+				08C759622C70FAFB0083D63B /* SendView.swift in Sources */,
+				08C759642C70FB0F0083D63B /* SendingDiscovery.swift in Sources */,
 				08FABC1E2C68FA680074FC89 /* ReceiveView.swift in Sources */,
 				08938FCF2C554FC500C10FB5 /* Item.swift in Sources */,
 				08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */,
@@ -211,7 +219,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -268,7 +276,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
