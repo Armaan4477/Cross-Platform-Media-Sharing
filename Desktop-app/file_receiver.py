@@ -62,10 +62,6 @@ class FileReceiver(QThread):
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             # You can handle Java-specific operations here if needed
-        elif sender_device_type == "swift":
-           # self.receive_files_swift(client_socket)
-            logger.debug("Connected to a Swift device, but this feature is only half implemented yet.")
-            # You can handle Swift-specific operations here if needed
         else:
             logger.debug("Unknown device type received.")
 
@@ -123,57 +119,16 @@ class FileReceiver(QThread):
                 if encrypted_transfer:
                     self.encrypted_files.append(file_path)
 
+                # Receive file data in chunks
                 with open(file_path, "wb") as f:
                     while received_size < file_size:
-                        data = self.client_socket.recv(4096)
+                        chunk_size = min(4096, file_size - received_size)
+                        data = self._receive_data(self.client_socket, chunk_size)
                         if not data:
                             break
                         f.write(data)
                         received_size += len(data)
                         self.progress_update.emit(received_size * 100 // file_size)
-
-        self.broadcasting = True  # Resume broadcasting
-
-    def receive_files_swift(self, client_socket):
-        self.broadcasting = False  # Stop broadcasting
-
-        while True:
-        # Receive file name size
-           file_name_size_data = client_socket.recv(8)
-           if len(file_name_size_data) < 8:
-               logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
-               break  # Handle the case where we receive less than 8 bytes
-
-           file_name_size = struct.unpack('<Q', file_name_size_data)[0]
-           if file_name_size == 0:
-               break  # End of transfer signal
-
-           file_name = client_socket.recv(file_name_size).decode()
-           file_size = struct.unpack('<Q', client_socket.recv(8))[0]
-
-           logger.debug("Receiving %s, %s bytes", file_name, file_size)
-
-           received_size = 0
-
-           if file_name == 'metadata.json':
-               self.metadata = self.receive_metadata(client_socket, file_size)
-               self.destination_folder = self.create_folder_structure(self.metadata)
-           else:
-               file_path = self.get_file_path(file_name)
-               if file_path.endswith('.delete'):
-                   continue
-               if self.metadata:
-                   relative_path = self.get_relative_path_from_metadata(file_name)
-                   file_path = os.path.join(self.destination_folder, relative_path)
-
-               with open(file_path, "wb") as f:
-                   while received_size < file_size:
-                       data = client_socket.recv(4096)
-                       if not data:
-                           break
-                       f.write(data)
-                       received_size += len(data)
-                       self.progress_update.emit(received_size * 100 // file_size)
 
         self.broadcasting = True  # Resume broadcasting
 
@@ -183,88 +138,53 @@ class FileReceiver(QThread):
         while len(received_data) < size:
             chunk = socket.recv(size - len(received_data))
             if not chunk:
-                break
+                raise ConnectionError("Connection closed before data was completely received.")
             received_data += chunk
         return received_data
 
 
-
     def receive_metadata(self, file_size):
-        received_data = b""
-        while len(received_data) < file_size:
-            chunk = self.client_socket.recv(min(4096, file_size - len(received_data)))
-            if not chunk:
-                break
-            received_data += chunk
-        
-        # Attempt to decode only if it's valid UTF-8
+        """Receive metadata from the sender."""
+        received_data = self._receive_data(self.client_socket, file_size)
         try:
             metadata_json = received_data.decode('utf-8')
+            return json.loads(metadata_json)
         except UnicodeDecodeError as e:
-            logger.error(f"Failed to decode metadata as UTF-8: {e}")
-            # Handle the error, maybe return None or raise an error
-            return None
-
-        logger.debug(f"Received metadata: {metadata_json}")
-        return json.loads(metadata_json)
+            logger.error("Unicode decode error: %s", e)
+            raise
+        except json.JSONDecodeError as e:
+            logger.error("JSON decode error: %s", e)
+            raise
 
     def create_folder_structure(self, metadata):
-        if self.device_info.get('os') == 'Windows':
-            """Create folder structure based on metadata."""
-            default_dir = get_config()["save_to_directory"]
-            # Extract the base folder name from the last index
-            top_level_folder = metadata[-1].get('base_folder_name', '')
+        """Create folder structure based on metadata."""
+        # Get the default directory from configuration
+        default_dir = get_config()["save_to_directory"]
+        
+        # Extract the base folder name from the last metadata entry
+        top_level_folder = metadata[-1].get('base_folder_name', '')
 
-            # Destination folder
-            destination_folder = os.path.join(default_dir, top_level_folder)
-            os.makedirs(destination_folder, exist_ok=True)
+        # Define the destination folder path
+        destination_folder = os.path.join(default_dir, top_level_folder)
+        
+        # Create the destination folder if it does not exist
+        os.makedirs(destination_folder, exist_ok=True)
 
-            # Process folder structure up to the second-to-last index
-            for file_info in metadata[:-1]:
-                # Skip the iteration if the path key value is '.delete'
-                if file_info['path'] == '.delete':
-                    continue
-                folder_path = os.path.dirname(file_info['path'])
-                full_folder_path = os.path.join(destination_folder, folder_path)
-                os.makedirs(full_folder_path, exist_ok=True)
-        elif self.device_info.get('os') == 'Linux':
-            """Create folder structure based on metadata."""
-            default_dir = get_config()["save_to_directory"]
-            # Extract the base folder name from the last index
-            top_level_folder = metadata[-1].get('base_folder_name', '')
-
-            # Destination folder
-            destination_folder = os.path.join(default_dir, top_level_folder)
-            os.makedirs(destination_folder, exist_ok=True)
-
-            # Process folder structure up to the second-to-last index
-            for file_info in metadata[:-1]:  # Exclude the last entry
-                # Skip the iteration if the path key value is '.delete'
-                if file_info['path'] == '.delete':
-                    continue
-                folder_path = os.path.dirname(file_info['path'])
-                full_folder_path = os.path.join(destination_folder, folder_path)
-                os.makedirs(full_folder_path, exist_ok=True)
-        elif self.device_info.get('os') == 'Darwin':
-            """Create folder structure based on metadata."""
-            default_dir = get_config()["save_to_directory"]
-            # Extract the base folder name from the last index
-            top_level_folder = metadata[-1].get('base_folder_name', '')
-
-            # Destination folder
-            destination_folder = os.path.join(default_dir, top_level_folder)
-            os.makedirs(destination_folder, exist_ok=True)
-
-            # Process folder structure up to the second-to-last index
-            for file_info in metadata[:-1]:
-                # Skip the iteration if the path key value is '.delete'
-                if file_info['path'] == '.delete':
-                    continue
-                folder_path = os.path.dirname(file_info['path'])
-                full_folder_path = os.path.join(destination_folder, folder_path)
-                os.makedirs(full_folder_path, exist_ok=True)
-        else:
-            raise NotImplementedError("Unsupported OS")
+        # Process each file info in metadata (excluding the last entry)
+        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
+            # Skip any paths marked for deletion
+            if file_info['path'] == '.delete':
+                continue
+            
+            # Get the folder path from the file info
+            folder_path = os.path.dirname(file_info['path'])
+            
+            # Create the full folder path
+            full_folder_path = os.path.join(destination_folder, folder_path)
+            
+            # Create the directory if it does not exist
+            if not os.path.exists(full_folder_path):
+                os.makedirs(full_folder_path)
 
         return destination_folder
 
@@ -314,22 +234,19 @@ class ReceiveApp(QWidget):
         self.broadcast_thread.start()
 
     def listenForBroadcast(self):
-       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-           s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-           s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-           s.bind(('', BROADCAST_PORT))
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('', BROADCAST_PORT))
 
-           while True:
-               if self.file_receiver.broadcasting:
-                   message, address = s.recvfrom(1024)
-                   message = message.decode()
-                   if message == 'DISCOVER':
-                       response = f'RECEIVER:{get_config()["device_name"]}'
-                       # Create a new socket to send the response on LISTEN_PORT
-                       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
-                           response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
-               sleep(1)  # Avoid busy-waiting
-
+            while True:
+                if self.file_receiver.broadcasting:
+                    message, address = s.recvfrom(1024)
+                    message = message.decode()
+                    if message == 'DISCOVER':
+                        response = f'RECEIVER:{get_config()["device_name"]}'
+                        s.sendto(response.encode(), address)
+                sleep(1)  # Avoid busy-waiting
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
