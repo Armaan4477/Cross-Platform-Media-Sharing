@@ -54,8 +54,8 @@ class FileReceiver(QThread):
         # Receive and process the device information from the sender
         device_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
         device_json = self.client_socket.recv(device_json_size).decode()
-        device_info = json.loads(device_json)
-        sender_device_type = device_info.get("device_type", "unknown")
+        self.device_info = json.loads(device_json)
+        sender_device_type = self.device_info.get("device_type", "unknown")
         if sender_device_type == "python":
             self.receive_files()
             self.client_socket.close()
@@ -209,23 +209,62 @@ class FileReceiver(QThread):
         return json.loads(metadata_json)
 
     def create_folder_structure(self, metadata):
-        """Create folder structure based on metadata."""
-        default_dir = get_config()["save_to_directory"]
-        # Extract the base folder name from the last index
-        top_level_folder = metadata[-1].get('base_folder_name', '')
+        if self.device_info.get('os') == 'Windows':
+            """Create folder structure based on metadata."""
+            default_dir = get_config()["save_to_directory"]
+            # Extract the base folder name from the last index
+            top_level_folder = metadata[-1].get('base_folder_name', '')
 
-        # Destination folder
-        destination_folder = os.path.join(default_dir, top_level_folder)
-        os.makedirs(destination_folder, exist_ok=True)
+            # Destination folder
+            destination_folder = os.path.join(default_dir, top_level_folder)
+            os.makedirs(destination_folder, exist_ok=True)
 
-        # Process folder structure up to the second-to-last index
-        for file_info in metadata[:-1]:  # Exclude the last entry
-            # Skip the iteration if the path key value is '.delete'
-            if file_info['path'] == '.delete':
-                continue
-            folder_path = os.path.dirname(file_info['path'])
-            full_folder_path = os.path.join(destination_folder, folder_path)
-            os.makedirs(full_folder_path, exist_ok=True)
+            # Process folder structure up to the second-to-last index
+            for file_info in metadata[:-1]:
+                # Skip the iteration if the path key value is '.delete'
+                if file_info['path'] == '.delete':
+                    continue
+                folder_path = os.path.dirname(file_info['path'])
+                full_folder_path = os.path.join(destination_folder, folder_path)
+                os.makedirs(full_folder_path, exist_ok=True)
+        elif self.device_info.get('os') == 'Linux':
+            """Create folder structure based on metadata."""
+            default_dir = get_config()["save_to_directory"]
+            # Extract the base folder name from the last index
+            top_level_folder = metadata[-1].get('base_folder_name', '')
+
+            # Destination folder
+            destination_folder = os.path.join(default_dir, top_level_folder)
+            os.makedirs(destination_folder, exist_ok=True)
+
+            # Process folder structure up to the second-to-last index
+            for file_info in metadata[:-1]:  # Exclude the last entry
+                # Skip the iteration if the path key value is '.delete'
+                if file_info['path'] == '.delete':
+                    continue
+                folder_path = os.path.dirname(file_info['path'])
+                full_folder_path = os.path.join(destination_folder, folder_path)
+                os.makedirs(full_folder_path, exist_ok=True)
+        elif self.device_info.get('os') == 'Darwin':
+            """Create folder structure based on metadata."""
+            default_dir = get_config()["save_to_directory"]
+            # Extract the base folder name from the last index
+            top_level_folder = metadata[-1].get('base_folder_name', '')
+
+            # Destination folder
+            destination_folder = os.path.join(default_dir, top_level_folder)
+            os.makedirs(destination_folder, exist_ok=True)
+
+            # Process folder structure up to the second-to-last index
+            for file_info in metadata[:-1]:
+                # Skip the iteration if the path key value is '.delete'
+                if file_info['path'] == '.delete':
+                    continue
+                folder_path = os.path.dirname(file_info['path'])
+                full_folder_path = os.path.join(destination_folder, folder_path)
+                os.makedirs(full_folder_path, exist_ok=True)
+        else:
+            raise NotImplementedError("Unsupported OS")
 
         return destination_folder
 
