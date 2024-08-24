@@ -15,6 +15,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private static final int UDP_PORT = 12345;
     private static final int senderPort = 12346;
     private String DEVICE_NAME;
+    //private static final String DEVICE_NAME = "Android sucker";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
