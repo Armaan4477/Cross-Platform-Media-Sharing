@@ -1,5 +1,6 @@
 package com.an.crossplatform;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -8,9 +9,16 @@ import android.widget.ListView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import org.json.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,13 +26,15 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private static final int DISCOVER_PORT = 12345; // Port for sending DISCOVER messages
     private static final int RESPONSE_PORT = 12346; // Port for receiving responses
-    private Button btnDiscover;
+    private Button btnDiscover, btnConnect;
     private ListView listDevices;
     private ArrayList<String> devices = new ArrayList<>();
     private ArrayAdapter<String> adapter;
     private DatagramSocket discoverSocket;
     private DatagramSocket responseSocket;
     private AtomicBoolean isDiscovering = new AtomicBoolean(false);
+    private String selectedDeviceIP;
+    private String selectedDeviceName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +42,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_discover_devices);
 
         btnDiscover = findViewById(R.id.btn_discover);
+        btnConnect = findViewById(R.id.btn_connect);
         listDevices = findViewById(R.id.list_devices);
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, devices);
         listDevices.setAdapter(adapter);
@@ -45,6 +56,17 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         listDevices.setOnItemClickListener((parent, view, position, id) -> {
             stopDiscovering();
             highlightSelectedDevice(view);
+            String[] deviceInfo = devices.get(position).split(" - ");
+            selectedDeviceIP = deviceInfo[0];
+            selectedDeviceName = deviceInfo[1];
+            btnConnect.setEnabled(true);
+        });
+
+        btnConnect.setOnClickListener(v -> {
+            if (selectedDeviceIP != null) {
+                System.out.println("Selected device IP: " + selectedDeviceIP);
+                exchangeJsonAndStartSendFileActivity();
+            }
         });
     }
 
@@ -141,6 +163,53 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         }
         view.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_blue_light));
     }
+
+    private void exchangeJsonAndStartSendFileActivity() {
+        new Thread(() -> {
+            try {
+                // Establish a socket connection to the selected device IP on the RESPONSE_PORT
+                Socket socket = new Socket(selectedDeviceIP, RESPONSE_PORT);
+
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                DataInputStream dis = new DataInputStream(socket.getInputStream());
+
+                // Create a JSON object containing the device information
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("device_type", "java"); // Or "android" as per your requirement
+                jsonObject.put("os", "Android");
+
+                // Convert the JSON object to a UTF-8 encoded byte array
+                String jsonString = jsonObject.toString();
+                byte[] jsonBytes = jsonString.getBytes(StandardCharsets.UTF_8);
+
+                // Send the length of the JSON byte array followed by the JSON data itself
+                dos.writeInt(jsonBytes.length); // Writing the length of the byte array
+                dos.write(jsonBytes); // Writing the actual JSON byte array
+                dos.flush();
+
+                // Receive the JSON data from the receiver
+                int jsonLength = dis.readInt();
+                byte[] receivedJsonBytes = new byte[jsonLength];
+                dis.readFully(receivedJsonBytes);
+                String receivedJsonString = new String(receivedJsonBytes, StandardCharsets.UTF_8);
+                Log.d("DiscoverDevices", "Received JSON data: " + receivedJsonString);
+                Log.d("DiscoverDevices", "Sent JSON data: " + jsonString);
+
+                // Close the socket after sending the data
+                socket.close();
+
+                // Start SendFileActivity and pass the encoded JSON string
+                Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
+                intent.putExtra("receiverJson", jsonString); // You can also pass the original JSON string
+                startActivity(intent);
+                finish();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
 
     @Override
     protected void onDestroy() {

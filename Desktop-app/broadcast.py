@@ -4,7 +4,7 @@ import platform
 import socket
 import struct
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox
+    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox, QPushButton
 )
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QScreen
@@ -50,6 +50,10 @@ class Broadcast(QWidget):
         self.device_list.itemClicked.connect(self.connect_to_device)
         layout.addWidget(self.device_list)
 
+        self.refresh_button = QPushButton('Refresh')
+        self.refresh_button.clicked.connect(self.discover_devices)
+        layout.addWidget(self.refresh_button)
+
         self.setLayout(layout)
         self.discover_devices()
 
@@ -61,6 +65,7 @@ class Broadcast(QWidget):
         self.setGeometry(x, y, window_width, window_height)
 
     def discover_devices(self):
+        print("Discovering devices")
         self.device_list.clear()
         receivers = self.discover_receivers()
         for receiver in receivers:
@@ -106,6 +111,8 @@ class Broadcast(QWidget):
                 self.hide()
                 self.file_sender = SendApp(device_ip,device_name,self.receiver_data)
                 self.file_sender.show()
+            elif device_type == 'java':
+                logger.info(f"Connected with Java device {device_name}")
 
     def initialize_connection(self, ip_address):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
