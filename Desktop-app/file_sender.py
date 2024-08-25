@@ -21,46 +21,47 @@ class FileSender(QThread):
     config = get_config()
     password = None
 
-    def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
+    def __init__(self, ip_address, file_paths, password=None, receiver_data=None, client_socket=None):
         super().__init__()
         self.ip_address = ip_address
         self.file_paths = file_paths
         self.password = password
         self.receiver_data = receiver_data
+        self.client_socket = client_socket
 
-    def initialize_connection(self):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.client_socket.connect((self.ip_address, RECEIVER_PORT))
-        except ConnectionRefusedError:
-            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-            return None
+    # def initialize_connection(self):
+    #     self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     try:
+    #         self.client_socket.connect((self.ip_address, RECEIVER_PORT))
+    #     except ConnectionRefusedError:
+    #         QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+    #         return None
         
-        device_data = {
-            'device_type': 'python',
-            'os': platform.system()
-        }
-        device_data_json = json.dumps(device_data)
-        self.client_socket.send(struct.pack('<Q', len(device_data_json)))
-        self.client_socket.send(device_data_json.encode())
+    #     device_data = {
+    #         'device_type': 'python',
+    #         'os': platform.system()
+    #     }
+    #     device_data_json = json.dumps(device_data)
+    #     self.client_socket.send(struct.pack('<Q', len(device_data_json)))
+    #     self.client_socket.send(device_data_json.encode())
 
-        receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
-        receiver_json = self.client_socket.recv(receiver_json_size).decode()
-        receiver_data = json.loads(receiver_json)
-        logger.debug("Receiver data: %s", receiver_data)
+    #     receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
+    #     receiver_json = self.client_socket.recv(receiver_json_size).decode()
+    #     receiver_data = json.loads(receiver_json)
+    #     logger.debug("Receiver data: %s", receiver_data)
 
-        device_type = receiver_data.get('device_type', 'unknown')
-        if device_type == 'python':
-            logger.debug("Receiver is a python device")
-            return device_type
-        else:
-            QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-            self.client_socket.close()
-            return None
+    #     device_type = receiver_data.get('device_type', 'unknown')
+    #     if device_type == 'python':
+    #         logger.debug("Receiver is a python device")
+    #         return device_type
+    #     else:
+    #         QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
+    #         self.client_socket.close()
+    #         return None
 
     def run(self):
-        if not self.initialize_connection():
-            return
+        # if not self.initialize_connection():
+        #     return
 
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
@@ -168,10 +169,11 @@ class Receiver(QListWidgetItem):
 class SendApp(QWidget):
     config = get_config()
 
-    def __init__(self,ip_address,device_name,receiver_data):
+    def __init__(self,ip_address,device_name,receiver_data,client_socket):
         self.ip_address = ip_address
         self.device_name = device_name
         self.receiver_data = receiver_data
+        self.client_socket = client_socket
         super().__init__()
         self.initUI()
 
@@ -305,7 +307,7 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data)
+        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data,self.client_socket)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()

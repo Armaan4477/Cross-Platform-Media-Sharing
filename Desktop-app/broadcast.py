@@ -107,9 +107,9 @@ class Broadcast(QWidget):
 
             if device_type == 'python':
                 logger.info(f"Connected with Python device {device_name}")
-                self.client_socket.close()
+                #self.client_socket.close()
                 self.hide()
-                self.file_sender = SendApp(device_ip,device_name,self.receiver_data)
+                self.file_sender = SendApp(device_ip,device_name,self.receiver_data,self.client_socket)
                 self.file_sender.show()
             elif device_type == 'java':
                 logger.info(f"Connected with Java device {device_name}")
