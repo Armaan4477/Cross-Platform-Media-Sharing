@@ -125,7 +125,8 @@ class Broadcast(QWidget):
         # Send and receive a JSON file containing device type information
         device_data = {
             'device_type': 'python',
-            'os': platform.system()
+            'os': platform.system(),
+            'ip': socket.gethostbyname(socket.gethostname())
         }
         device_data_json = json.dumps(device_data)
         self.client_socket.send(struct.pack('<Q', len(device_data_json)))

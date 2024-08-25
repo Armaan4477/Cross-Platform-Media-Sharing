@@ -62,7 +62,7 @@ class FileSender(QThread):
     def run(self):
         # if not self.initialize_connection():
         #     return
-
+        self.client_socket.send('START'.encode())
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
                 self.send_folder(file_path)
