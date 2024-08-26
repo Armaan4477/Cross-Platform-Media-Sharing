@@ -33,13 +33,12 @@ class FileSender(QThread):
 
     def initialize_connection(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.bind(('', SENDER_DATA))
         try:
             self.client_socket.connect((self.ip_address, RECEIVER_DATA))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-            return None
-                
+            return False
+        return True
 
     def run(self):
         if not self.initialize_connection():
@@ -183,13 +182,6 @@ class SendApp(QWidget):
 
         layout.addLayout(file_selection_layout)
 
-        # self.discover_button = QPushButton('Discover Devices', self)
-        # self.discover_button.clicked.connect(self.discoverDevices)
-        # layout.addWidget(self.discover_button)
-
-        # self.device_list = QListWidget(self)
-        # layout.addWidget(self.device_list)
-
         if self.config['encryption']:
             self.password_label = QLabel('Encryption Password:', self)
             layout.addWidget(self.password_label)
@@ -236,39 +228,8 @@ class SendApp(QWidget):
             print(self.file_paths)
             self.checkReadyToSend()
 
-    # def discoverDevices(self):
-    #     self.device_list.clear()
-    #     receivers = self.discover_receivers()
-    #     for receiver in receivers:
-    #         item = Receiver(receiver['name'], receiver['ip'])
-    #         self.device_list.addItem(item)
-    #     self.checkReadyToSend()
-
-    # def discover_receivers(self):
-    #     receivers = []
-    #     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-    #         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    #         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #         s.bind(('', LISTEN_PORT))
-
-    #         s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-
-    #         s.settimeout(2)
-    #         try:
-    #             while True:
-    #                 message, address = s.recvfrom(1024)
-    #                 message = message.decode()
-    #                 if message.startswith('RECEIVER:'):
-    #                     device_name = message.split(':')[1]
-    #                     receivers.append({'ip': address[0], 'name': device_name})
-    #         except socket.timeout:
-    #             pass
-    #     #Check device type
-    #     #if 
-    #     return receivers
-
     def checkReadyToSend(self):
-        if self.file_paths :
+        if self.file_paths:
             self.send_button.setEnabled(True)
 
     def sendSelectedFiles(self):

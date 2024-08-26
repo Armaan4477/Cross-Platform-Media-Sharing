@@ -11,39 +11,54 @@ SENDER_DATA = 57000
 RECEIVER_DATA = 58000
 
 class ReceiveWorkerPython(QThread):
-    def __init__(self):
+    progress_update = pyqtSignal(int)
+    decrypt_signal = pyqtSignal(list)
+    password = None
+
+    def __init__(self, client_ip):
         super().__init__()
         self.client_socket = None
-        self.data_socket = None
+        self.server_socket = None
         self.encrypted_files = []
         self.broadcasting = True
         self.metadata = None
         self.destination_folder = None
+        self.store_client_ip = client_ip
+        logger.debug(f"Client IP address stored: {self.store_client_ip}")
 
-    # def initialize_connection(self):
-    #     self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     self.client_socket.bind(('', SENDER_DATA))
-    #     try:
-    #         self.client_socket.connect((self.ip_address, RECEIVER_DATA))
-    #     except ConnectionRefusedError:
-    #         QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-    #         return None
     def initialize_connection(self):
+        # Close all previous server_sockets
+        if self.server_socket:
+            self.server_socket.close()
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('0.0.0.0', RECEIVER_DATA))
+        try:
+            # Bind the server socket to a local port
+            self.server_socket.bind(('', RECEIVER_DATA))
+            # Start listening for incoming connections
+            self.server_socket.listen(1)
+            print("Waiting for a connection...")
+        except Exception as e:
+            QMessageBox.critical(None, "Server Error", f"Failed to initialize the server: {str(e)}")
+            return None
 
-        self.server_socket.listen(5)  # Listen for multiple connections
+    def accept_connection(self):
+        try:
+            # Accept a connection from a client
+            self.client_socket, self.client_address = self.server_socket.accept()
+            print(f"Connected to {self.client_address}")
+        except Exception as e:
+            QMessageBox.critical(None, "Connection Error", f"Failed to accept connection: {str(e)}")
+            return None
 
-        while True:
-            self.client_socket, addr = self.server_socket.accept()
-            #self.handle_device_type()
-            #client_socket.close()  # Close the connection after receiving files
-
-        logger.debug("List of encrypted files: %s", self.encrypted_files)
+    def run(self):
+        self.initialize_connection()
+        self.accept_connection()
+        if self.client_socket:
+            self.receive_files()
+        else:
+            logger.error("Failed to establish a connection.")
 
     def receive_files(self):
-        self.broadcasting = False  # Stop broadcasting
-
         while True:
             try:
                 # Receive and decode encryption flag
@@ -112,8 +127,6 @@ class ReceiveWorkerPython(QThread):
                 logger.error("Socket error: %s", e)
                 break
 
-        self.broadcasting = True  # Resume broadcasting
-
     def _receive_data(self, socket, size):
         """Helper function to receive a specific amount of data."""
         received_data = b""
@@ -144,3 +157,9 @@ class ReceiveWorkerPython(QThread):
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of the file from the metadata."""
         return self.metadata['files'].get(file_name, file_name)
+    
+    def close_connection(self):
+        if self.client_socket:
+            self.client_socket.close()
+        if self.server_socket:
+            self.server_socket.close()
