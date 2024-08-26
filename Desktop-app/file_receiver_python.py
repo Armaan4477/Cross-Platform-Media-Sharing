@@ -2,10 +2,11 @@ import os
 import socket
 import struct
 import json
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
 from PyQt6.QtGui import QScreen
 from constant import get_config, logger
+from crypt_handler import decrypt_file, Decryptor
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -163,3 +164,59 @@ class ReceiveWorkerPython(QThread):
             self.client_socket.close()
         if self.server_socket:
             self.server_socket.close()
+
+class ReceiveAppP(QWidget):
+    progress_update = pyqtSignal(int)
+
+    def __init__(self, client_ip):
+        super().__init__()
+        self.client_ip = client_ip
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('Receive File')
+        self.setGeometry(100, 100, 300, 200)
+        self.center_window()
+
+        layout = QVBoxLayout()
+
+        self.label = QLabel("Waiting for file...", self)
+        layout.addWidget(self.label)
+
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
+
+        self.setLayout(layout)
+
+        client_ip = self.client_ip
+        self.file_receiver = ReceiveWorkerPython(client_ip)
+        self.file_receiver.progress_update.connect(self.updateProgressBar)
+        self.file_receiver.decrypt_signal.connect(self.decryptor_init)
+        self.file_receiver.start()
+
+        QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
+
+    def center_window(self):
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        window_width, window_height = 800, 600
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
+
+    def updateProgressBar(self, value):
+        self.progress_bar.setValue(value)
+        if value >= 100:
+            self.label.setText("File received successfully!")
+
+    def decryptor_init(self, value):
+        logger.debug("Received decrypt signal with filelist %s", value)
+        if value:
+            self.decryptor = Decryptor(value)
+            self.decryptor.show()
+
+if __name__ == '__main__':
+    import sys
+    app = QApplication(sys.argv)
+    receive_app = ReceiveAppP()
+    receive_app.show()
+    app.exec()
