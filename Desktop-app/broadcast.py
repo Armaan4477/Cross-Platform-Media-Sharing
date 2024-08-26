@@ -11,7 +11,10 @@ from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
 
-RECEIVER_PORT = 12348
+SENDER_JSON = 53000
+RECEIVER_JSON = 54000
+SENDER_DATA = 57000
+RECEIVER_DATA = 58000
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
@@ -110,7 +113,8 @@ class Broadcast(QWidget):
     def initialize_connection(self, ip_address):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self.client_socket.connect((ip_address, RECEIVER_PORT))
+            self.client_socket.bind(('', SENDER_JSON))
+            self.client_socket.connect((ip_address, RECEIVER_JSON))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return None

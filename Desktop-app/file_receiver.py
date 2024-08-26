@@ -12,8 +12,12 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
+from file_receiver_python import ReceiveWorkerPython
 
-RECEIVER_PORT = 12348
+SENDER_JSON = 53000
+RECEIVER_JSON = 54000
+SENDER_DATA = 57000
+RECEIVER_DATA = 58000
 
 class FileReceiver(QThread):
     progress_update = pyqtSignal(int)
@@ -29,7 +33,7 @@ class FileReceiver(QThread):
 
     def run(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('0.0.0.0', RECEIVER_PORT))
+        self.server_socket.bind(('0.0.0.0', RECEIVER_JSON))
 
         self.server_socket.listen(5)  # Listen for multiple connections
 
@@ -57,6 +61,7 @@ class FileReceiver(QThread):
         self.device_info = json.loads(device_json)
         sender_device_type = self.device_info.get("device_type", "unknown")
         if sender_device_type == "python":
+            logger.debug("Connected to a Python device.")
             self.receive_files()
             self.client_socket.close()
         elif sender_device_type == "java":
@@ -66,185 +71,9 @@ class FileReceiver(QThread):
             logger.debug("Unknown device type received.")
 
     def receive_files(self):
-        self.broadcasting = False  # Stop broadcasting
-
-        while True:
-            # Receive and decode encryption flag
-            encryption_flag = self.client_socket.recv(8).decode()
-            logger.debug("Received: %s", encryption_flag)
-
-            if not encryption_flag:
-                logger.debug("Dropped redundant data: %s", encryption_flag)
-                break  # Drop redundant data
-
-            if encryption_flag[-1] == 't':
-                encrypted_transfer = True
-            elif encryption_flag[-1] == 'h':
-                # Halting signal, break transfer and decrypt files
-                if self.encrypted_files:
-                    self.decrypt_signal.emit(self.encrypted_files)
-                self.encrypted_files = []
-                break
-            else:
-                encrypted_transfer = False
-
-            # Receive file name size
-            file_name_size_data = self.client_socket.recv(8)
-            file_name_size = struct.unpack('<Q', file_name_size_data)[0]
-            
-            if file_name_size == 0:
-                break  # End of transfer signal
-
-            # Receive file name
-            file_name = self._receive_data(self.client_socket, file_name_size).decode()
-
-            # Receive file size
-            file_size_data = self.client_socket.recv(8)
-            file_size = struct.unpack('<Q', file_size_data)[0]
-            logger.debug("Receiving %s, %s bytes", file_name, file_size)
-
-            received_size = 0
-
-            if file_name == 'metadata.json':
-                self.metadata = self.receive_metadata(file_size)
-                self.destination_folder = self.create_folder_structure(self.metadata)
-            else:
-                file_path = self.get_file_path(file_name)
-                if file_path.endswith('.delete'):
-                    continue
-                if self.metadata:
-                    relative_path = self.get_relative_path_from_metadata(file_name)
-                    file_path = os.path.join(self.destination_folder, relative_path)
-
-                if encrypted_transfer:
-                    self.encrypted_files.append(file_path)
-
-                # Receive file data in chunks
-                with open(file_path, "wb") as f:
-                    while received_size < file_size:
-                        chunk_size = min(4096, file_size - received_size)
-                        data = self._receive_data(self.client_socket, chunk_size)
-                        if not data:
-                            break
-                        f.write(data)
-                        received_size += len(data)
-                        self.progress_update.emit(received_size * 100 // file_size)
-
-        self.broadcasting = True  # Resume broadcasting
-
-    # def receive_files_swift(self, client_socket):
-    #     self.broadcasting = False  # Stop broadcasting
-
-    #     while True:
-    #     # Receive file name size
-    #        file_name_size_data = client_socket.recv(8)
-    #        if len(file_name_size_data) < 8:
-    #            logger.error("Received incomplete data for file name size: %s bytes", len(file_name_size_data))
-    #            break  # Handle the case where we receive less than 8 bytes
-
-    #        file_name_size = struct.unpack('<Q', file_name_size_data)[0]
-    #        if file_name_size == 0:
-    #            break  # End of transfer signal
-
-    #        file_name = client_socket.recv(file_name_size).decode()
-    #        file_size = struct.unpack('<Q', client_socket.recv(8))[0]
-
-    #        logger.debug("Receiving %s, %s bytes", file_name, file_size)
-
-    #        received_size = 0
-
-    #        if file_name == 'metadata.json':
-    #            self.metadata = self.receive_metadata(client_socket, file_size)
-    #            self.destination_folder = self.create_folder_structure(self.metadata)
-    #        else:
-    #            file_path = self.get_file_path(file_name)
-    #            if file_path.endswith('.delete'):
-    #                continue
-    #            if self.metadata:
-    #                relative_path = self.get_relative_path_from_metadata(file_name)
-    #                file_path = os.path.join(self.destination_folder, relative_path)
-
-    #            with open(file_path, "wb") as f:
-    #                while received_size < file_size:
-    #                    data = client_socket.recv(4096)
-    #                    if not data:
-    #                        break
-    #                    f.write(data)
-    #                    received_size += len(data)
-    #                    self.progress_update.emit(received_size * 100 // file_size)
-
-    #     self.broadcasting = True  # Resume broadcasting
-    
-
-    def _receive_data(self, socket, size):
-        """Helper function to receive a specific amount of data."""
-        received_data = b""
-        while len(received_data) < size:
-            chunk = socket.recv(size - len(received_data))
-            if not chunk:
-                raise ConnectionError("Connection closed before data was completely received.")
-            received_data += chunk
-        return received_data
-
-
-    def receive_metadata(self, file_size):
-        """Receive metadata from the sender."""
-        received_data = self._receive_data(self.client_socket, file_size)
-        try:
-            metadata_json = received_data.decode('utf-8')
-            return json.loads(metadata_json)
-        except UnicodeDecodeError as e:
-            logger.error("Unicode decode error: %s", e)
-            raise
-        except json.JSONDecodeError as e:
-            logger.error("JSON decode error: %s", e)
-            raise
-
-    def create_folder_structure(self, metadata):
-        """Create folder structure based on metadata."""
-        # Get the default directory from configuration
-        default_dir = get_config()["save_to_directory"]
-        
-        # Extract the base folder name from the last metadata entry
-        top_level_folder = metadata[-1].get('base_folder_name', '')
-
-        # Define the destination folder path
-        destination_folder = os.path.join(default_dir, top_level_folder)
-        
-        # Create the destination folder if it does not exist
-        os.makedirs(destination_folder, exist_ok=True)
-
-        # Process each file info in metadata (excluding the last entry)
-        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
-            # Skip any paths marked for deletion
-            if file_info['path'] == '.delete':
-                continue
-            
-            # Get the folder path from the file info
-            folder_path = os.path.dirname(file_info['path'])
-            
-            # Create the full folder path
-            full_folder_path = os.path.join(destination_folder, folder_path)
-            
-            # Create the directory if it does not exist
-            if not os.path.exists(full_folder_path):
-                os.makedirs(full_folder_path)
-
-        return destination_folder
-
-    def get_relative_path_from_metadata(self, file_name):
-        """Get the relative path of a file from the metadata."""
-        for file_info in self.metadata:
-            if os.path.basename(file_info['path']) == file_name:
-                return file_info['path']
-        return file_name
-
-    def get_file_path(self, file_name):
-        """Get the file path for saving the received file."""
-        default_dir = get_config()["save_to_directory"]
-        if not default_dir:
-            raise NotImplementedError("Unsupported OS")
-        return os.path.join(default_dir, file_name)
+        worker = ReceiveWorkerPython()
+        worker.initialize_connection()
+        worker.receive_files()
 
 
 class ReceiveApp(QWidget):
@@ -270,8 +99,6 @@ class ReceiveApp(QWidget):
         self.setLayout(layout)
 
         self.file_receiver = FileReceiver()
-        self.file_receiver.progress_update.connect(self.updateProgressBar)
-        self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.start()
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
@@ -300,14 +127,3 @@ class ReceiveApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-
-    def updateProgressBar(self, value):
-        self.progress_bar.setValue(value)
-        if value >= 100:
-            self.label.setText("File received successfully!")
-
-    def decryptor_init(self, value):
-        logger.debug("Received decrypt signal with filelist %s", value)
-        if value:
-            self.decryptor = Decryptor(value)
-            self.decryptor.show()

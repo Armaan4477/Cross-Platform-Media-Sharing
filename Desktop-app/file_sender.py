@@ -13,7 +13,10 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import encrypt_file
 from time import sleep
 
-RECEIVER_PORT = 12348
+SENDER_JSON = 53000
+RECEIVER_JSON = 54000
+SENDER_DATA = 57000
+RECEIVER_DATA = 58000
 
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
@@ -30,33 +33,13 @@ class FileSender(QThread):
 
     def initialize_connection(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.bind(('', SENDER_DATA))
         try:
-            self.client_socket.connect((self.ip_address, RECEIVER_PORT))
+            self.client_socket.connect((self.ip_address, RECEIVER_DATA))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return None
-        
-        device_data = {
-            'device_type': 'python',
-            'os': platform.system()
-        }
-        device_data_json = json.dumps(device_data)
-        self.client_socket.send(struct.pack('<Q', len(device_data_json)))
-        self.client_socket.send(device_data_json.encode())
-
-        receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
-        receiver_json = self.client_socket.recv(receiver_json_size).decode()
-        receiver_data = json.loads(receiver_json)
-        logger.debug("Receiver data: %s", receiver_data)
-
-        device_type = receiver_data.get('device_type', 'unknown')
-        if device_type == 'python':
-            logger.debug("Receiver is a python device")
-            return device_type
-        else:
-            QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-            self.client_socket.close()
-            return None
+                
 
     def run(self):
         if not self.initialize_connection():
