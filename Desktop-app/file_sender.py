@@ -31,12 +31,27 @@ class FileSender(QThread):
         self.password = password
         self.receiver_data = receiver_data
 
+    # def initialize_connection(self):
+    #     self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     try:
+    #         self.client_socket.connect((self.ip_address, RECEIVER_DATA))
+    #     except ConnectionRefusedError:
+    #         QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+    #         return False
+    #     return True
+
     def initialize_connection(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # Bind the socket to SENDER_DATA port
+            self.client_socket.bind(('', SENDER_DATA))
+            # Connect to the receiver on RECEIVER_DATA port
             self.client_socket.connect((self.ip_address, RECEIVER_DATA))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+            return False
+        except OSError as e:
+            QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
             return False
         return True
 
