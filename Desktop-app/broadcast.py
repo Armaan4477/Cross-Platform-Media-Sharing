@@ -109,6 +109,16 @@ class Broadcast(QWidget):
                 self.hide()
                 self.file_sender = SendApp(device_ip,device_name,self.receiver_data)
                 self.file_sender.show()
+            elif device_type == 'java':
+                logger.info(f"Connected with Java device {device_name}")
+                #self.client_socket.close()
+            elif device_type == 'swift':
+                logger.info(f"Connected with Swift device {device_name}")
+                #self.client_socket.close()
+            else:
+                logger.info(f"Unknown device type {device_name}")
+                #self.client_socket.close()
+                
 
     def initialize_connection(self, ip_address):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
