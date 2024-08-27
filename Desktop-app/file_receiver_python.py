@@ -139,25 +139,67 @@ class ReceiveWorkerPython(QThread):
         return received_data
 
     def receive_metadata(self, file_size):
-        """Receive and parse metadata JSON file."""
-        metadata = self._receive_data(self.client_socket, file_size).decode()
-        return json.loads(metadata)
+        """Receive metadata from the sender."""
+        received_data = self._receive_data(self.client_socket, file_size)
+        try:
+            metadata_json = received_data.decode('utf-8')
+            return json.loads(metadata_json)
+        except UnicodeDecodeError as e:
+            logger.error("Unicode decode error: %s", e)
+            raise
+        except json.JSONDecodeError as e:
+            logger.error("JSON decode error: %s", e)
+            raise
 
-    def get_file_path(self, file_name):
-        """Construct the file path from file name."""
-        return os.path.join(os.path.expanduser("~"), "Downloads", file_name)
+    # def get_file_path(self, file_name):
+    #     """Construct the file path from file name."""
+    #     return os.path.join(os.path.expanduser("~"), "Downloads", file_name)
 
     def create_folder_structure(self, metadata):
-        """Create directory structure for the incoming files."""
-        base_folder = os.path.join(os.path.expanduser("~"), "Downloads", metadata['folder_name'])
-        os.makedirs(base_folder, exist_ok=True)
-        for folder in metadata.get('folders', []):
-            os.makedirs(os.path.join(base_folder, folder), exist_ok=True)
-        return base_folder
+        """Create folder structure based on metadata."""
+        # Get the default directory from configuration
+        default_dir = get_config()["save_to_directory"]
+        
+        # Extract the base folder name from the last metadata entry
+        top_level_folder = metadata[-1].get('base_folder_name', '')
+
+        # Define the destination folder path
+        destination_folder = os.path.join(default_dir, top_level_folder)
+        
+        # Create the destination folder if it does not exist
+        os.makedirs(destination_folder, exist_ok=True)
+
+        # Process each file info in metadata (excluding the last entry)
+        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
+            # Skip any paths marked for deletion
+            if file_info['path'] == '.delete':
+                continue
+            
+            # Get the folder path from the file info
+            folder_path = os.path.dirname(file_info['path'])
+            
+            # Create the full folder path
+            full_folder_path = os.path.join(destination_folder, folder_path)
+            
+            # Create the directory if it does not exist
+            if not os.path.exists(full_folder_path):
+                os.makedirs(full_folder_path)
+
+        return destination_folder
 
     def get_relative_path_from_metadata(self, file_name):
-        """Get the relative path of the file from the metadata."""
-        return self.metadata['files'].get(file_name, file_name)
+        """Get the relative path of a file from the metadata."""
+        for file_info in self.metadata:
+            if os.path.basename(file_info['path']) == file_name:
+                return file_info['path']
+        return file_name
+
+    def get_file_path(self, file_name):
+        """Get the file path for saving the received file."""
+        default_dir = get_config()["save_to_directory"]
+        if not default_dir:
+            raise NotImplementedError("Unsupported OS")
+        return os.path.join(default_dir, file_name)
     
     def close_connection(self):
         if self.client_socket:
