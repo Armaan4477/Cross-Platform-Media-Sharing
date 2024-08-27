@@ -20,14 +20,13 @@ class FileReceiver(QThread):
     decrypt_signal = pyqtSignal(list)
     password = None
 
-    def __init__(self,device_info=None,socket=None):
+    def __init__(self,device_info=None):
         super().__init__()
         self.encrypted_files = []
         self.broadcasting = True
         self.metadata = None
         self.destination_folder = None
         self.device_info = device_info
-        self.client_socket = socket
 
     def run(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -261,12 +260,11 @@ class FileReceiver(QThread):
 class CreateUIForReceiver(QWidget):
     progress_update = pyqtSignal(int)
 
-    def __init__(self, device_info,receive_socket):
+    def __init__(self, device_info):
         super().__init__()
         self.device_info = device_info
-        self.receive_socket = receive_socket
         self.initUI()
-        self.file_receiver = FileReceiver(self.device_info,self.receive_socket)
+        self.file_receiver = FileReceiver(self.device_info)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.start()

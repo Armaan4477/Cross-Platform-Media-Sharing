@@ -43,10 +43,6 @@ class StreamSignal(QWidget):
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
 
-        # Start the device type handling in a separate thread
-        self.device_type_thread = threading.Thread(target=self.handle_device_type, daemon=True)
-        self.device_type_thread.start()
-
     def listenForBroadcast(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -65,17 +61,16 @@ class StreamSignal(QWidget):
 
                         # Use UDP to send response
                         s.sendto(response.encode(), (address[0], LISTEN_PORT))
-
-                        # # Emit signal to indicate a sender was found
-                        # self.progress_update.emit(0)
-                        # self.decryptor_init.emit([])  # Passing empty list for simplicity
+                        
+                        # Handle device type after discovering the sender
+                        self.handle_device_type()
                         break
                 except Exception as e:
                     logger.error(f"Error in listenForBroadcast: {e}")
                 sleep(1)  # Avoid busy-waiting
 
-
     def handle_device_type(self):
+        print("Handling device type")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('0.0.0.0', RECEIVER_PORT))
             s.listen(1)
@@ -102,7 +97,9 @@ class StreamSignal(QWidget):
             if sender_device_type == "python":
                 logger.info("Connected with Python device")
                 # Start the file receiver and send the socket connection
-                self.file_receiver = CreateUIForReceiver(device_info,self.receiver)
+                self.receiver.close()
+                s.close()
+                self.file_receiver = CreateUIForReceiver(device_info)
                 self.hide()
                 self.file_receiver.show()
             elif sender_device_type == "java":
