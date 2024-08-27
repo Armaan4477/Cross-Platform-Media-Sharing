@@ -4,7 +4,7 @@ import platform
 import socket
 import struct
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox
+    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox, QPushButton
 )
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QScreen
@@ -52,6 +52,10 @@ class Broadcast(QWidget):
         self.device_list = QListWidget(self)
         self.device_list.itemClicked.connect(self.connect_to_device)
         layout.addWidget(self.device_list)
+
+        self.refresh_button = QPushButton('Refresh', self)
+        self.refresh_button.clicked.connect(self.discover_devices)
+        layout.addWidget(self.refresh_button)
 
         self.setLayout(layout)
         self.discover_devices()
