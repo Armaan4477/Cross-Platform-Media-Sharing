@@ -71,6 +71,8 @@ class FileReceiver(QThread):
             # self.client_socket.close()
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
+        elif sender_device_type == "swift":
+            logger.debug("Connected to a swift device, but this feature is not implemented yet.")
         else:
             logger.debug("Unknown device type received.")
 
