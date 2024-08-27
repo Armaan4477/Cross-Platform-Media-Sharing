@@ -119,6 +119,7 @@ class ReceiveApp(QWidget):
     def show_receive_app_p(self):
         client_ip = self.file_receiver.client_ip
         """Slot to show the ReceiveAppP window on the main thread."""
+        self.hide()
         self.receive_app_p = ReceiveAppP(client_ip)
         self.receive_app_p.show()
 
