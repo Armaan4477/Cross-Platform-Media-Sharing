@@ -41,6 +41,11 @@ class FileSender(QThread):
     #     return True
 
     def initialize_connection(self):
+         # Close all previous sockets
+        try:
+            self.client_socket.close()
+        except AttributeError:
+            pass
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # Bind the socket to SENDER_DATA port

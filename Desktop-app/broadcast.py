@@ -10,6 +10,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
+import subprocess
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
@@ -19,26 +20,43 @@ RECEIVER_DATA = 58000
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
 
+    def __init__(self):
+        super().__init__()
+        self.socket = None
+
     def run(self):
         receivers = []
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('', LISTEN_PORT))
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(('', LISTEN_PORT))
 
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+        self.socket.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
 
-            s.settimeout(2)
-            try:
-                while True:
-                    message, address = s.recvfrom(1024)
-                    message = message.decode()
-                    if message.startswith('RECEIVER:'):
-                        device_name = message.split(':')[1]
-                        receivers.append({'ip': address[0], 'name': device_name})
-                        self.device_detected.emit({'ip': address[0], 'name': device_name})
-            except socket.timeout:
-                pass
+        self.socket.settimeout(2)
+        try:
+            while True:
+                message, address = self.socket.recvfrom(1024)
+                message = message.decode()
+                if message.startswith('RECEIVER:'):
+                    device_name = message.split(':')[1]
+                    receivers.append({'ip': address[0], 'name': device_name})
+                    self.device_detected.emit({'ip': address[0], 'name': device_name})
+        except socket.timeout:
+            pass
+        finally:
+            self.close_socket()  # Ensure the socket is closed when done
+
+    def close_socket(self):
+        if self.socket:
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
+            self.socket.close()
+            self.socket = None
+
+    def stop(self):
+        self.close_socket()  # Ensure the socket is closed when stopping the thread
+        self.quit()
+        self.wait()
 
 class Broadcast(QWidget):
     def __init__(self):
@@ -59,6 +77,9 @@ class Broadcast(QWidget):
 
         self.setLayout(layout)
         self.discover_devices()
+
+        self.broadcast_worker = None
+        self.client_socket = None
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
@@ -109,20 +130,10 @@ class Broadcast(QWidget):
 
             if device_type == 'python':
                 logger.info(f"Connected with Python device {device_name}")
-                self.client_socket.close()
+                self.cleanup_sockets()  # Clean up before proceeding
                 self.hide()
-                self.file_sender = SendApp(device_ip,device_name,self.receiver_data)
+                self.file_sender = SendApp(device_ip, device_name, self.receiver_data)
                 self.file_sender.show()
-            elif device_type == 'java':
-                logger.info(f"Connected with Java device {device_name}")
-                #self.client_socket.close()
-            elif device_type == 'swift':
-                logger.info(f"Connected with Swift device {device_name}")
-                #self.client_socket.close()
-            else:
-                logger.info(f"Unknown device type {device_name}")
-                #self.client_socket.close()
-                
 
     def initialize_connection(self, ip_address):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -154,8 +165,15 @@ class Broadcast(QWidget):
             return device_type
         else:
             QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-            self.client_socket.close()
+            self.cleanup_sockets()  # Clean up if the device is not compatible
             return None
+
+    def cleanup_sockets(self):
+        if self.client_socket:
+            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
+            self.client_socket.close()
+        if self.broadcast_worker and self.broadcast_worker.isRunning():
+            self.broadcast_worker.stop()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
