@@ -31,15 +31,6 @@ class FileSender(QThread):
         self.password = password
         self.receiver_data = receiver_data
 
-    # def initialize_connection(self):
-    #     self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     try:
-    #         self.client_socket.connect((self.ip_address, RECEIVER_DATA))
-    #     except ConnectionRefusedError:
-    #         QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-    #         return False
-    #     return True
-
     def initialize_connection(self):
          # Close all previous sockets
         try:

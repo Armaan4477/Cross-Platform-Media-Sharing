@@ -14,8 +14,6 @@ import subprocess
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
-SENDER_DATA = 57000
-RECEIVER_DATA = 58000
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)

@@ -149,10 +149,6 @@ class ReceiveWorkerPython(QThread):
             logger.error("JSON decode error: %s", e)
             raise
 
-    # def get_file_path(self, file_name):
-    #     """Construct the file path from file name."""
-    #     return os.path.join(os.path.expanduser("~"), "Downloads", file_name)
-
     def create_folder_structure(self, metadata):
         """Create folder structure based on metadata."""
         # Get the default directory from configuration

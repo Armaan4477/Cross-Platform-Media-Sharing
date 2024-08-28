@@ -37,27 +37,6 @@ class MainApp(QWidget):
         logger.info("Started Main App")
 
     def center_window(self):
-
-    #    if platform.system() == 'Windows':
-               
-    #    elif platform.system() == 'Linux':
-                
-    #    elif platform.system() == 'Darwin':
-                
-
-        # screen = QApplication.primaryScreen()
-        # screen_geometry = screen.availableGeometry()
-        # screen_width = screen_geometry.width()
-        # screen_height = screen_geometry.height()
-
-        # window_width = 800
-        # window_height = 600
-
-        # x = (screen_width - window_width) / 2
-        # y = (screen_height - window_height) / 2
-
-        # self.setGeometry(int(x), int(y), window_width, window_height)
-
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 800, 600
         x = (screen.width() - window_width) // 2
@@ -76,9 +55,6 @@ class MainApp(QWidget):
         # Call the broadcast screen
         self.broadcast_app = Broadcast()
         self.broadcast_app.show()
-        # Call broadcast receiver 
-        # self.send_app = SendApp()
-        # self.send_app.show()
 
     def receiveFile(self):
         logger.info("Started Receive File App")
