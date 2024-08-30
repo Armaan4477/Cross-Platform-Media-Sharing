@@ -13,8 +13,6 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import encrypt_file
 from time import sleep
 
-SENDER_JSON = 53000
-RECEIVER_JSON = 54000
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
 
@@ -34,15 +32,15 @@ class FileSender(QThread):
     def initialize_connection(self):
          # Close all previous sockets
         try:
-            self.client_socket.close()
+            self.client_skt.close()
         except AttributeError:
             pass
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # Bind the socket to SENDER_DATA port
-            self.client_socket.bind(('', SENDER_DATA))
+            self.client_skt.bind(('', SENDER_DATA))
             # Connect to the receiver on RECEIVER_DATA port
-            self.client_socket.connect((self.ip_address, RECEIVER_DATA))
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return False
@@ -62,11 +60,11 @@ class FileSender(QThread):
                 self.send_file(file_path)
         
         logger.debug("Sent halt signal")
-        self.client_socket.send('encyp: h'.encode())
+        self.client_skt.send('encyp: h'.encode())
         sleep(0.5)
-        self.client_socket.send('encyp: h'.encode())
+        self.client_skt.send('encyp: h'.encode())
         sleep(0.5)
-        self.client_socket.close()
+        self.client_skt.close()
 
     def send_folder(self, folder_path):
         print("Sending folder")
@@ -112,17 +110,17 @@ class FileSender(QThread):
         logger.debug("Sending %s, %s", file_name, file_size)
 
         encryption_flag = 'encyp: t' if self.config['encryption'] else 'encyp: f'
-        self.client_socket.send(encryption_flag.encode())
+        self.client_skt.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
         
-        self.client_socket.send(struct.pack('<Q', file_name_size))
-        self.client_socket.send(file_name.encode('utf-8'))
-        self.client_socket.send(struct.pack('<Q', file_size))
+        self.client_skt.send(struct.pack('<Q', file_name_size))
+        self.client_skt.send(file_name.encode('utf-8'))
+        self.client_skt.send(struct.pack('<Q', file_size))
 
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
-                self.client_socket.sendall(data)
+                self.client_skt.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
 

@@ -11,6 +11,7 @@ from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
 import subprocess
+from time import sleep
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
@@ -129,6 +130,7 @@ class Broadcast(QWidget):
             if device_type == 'python':
                 logger.info(f"Connected with Python device {device_name}")
                 self.cleanup_sockets()  # Clean up before proceeding
+                sleep(1)  # Wait for the receiver to close the socket
                 self.hide()
                 self.file_sender = SendApp(device_ip, device_name, self.receiver_data)
                 self.file_sender.show()

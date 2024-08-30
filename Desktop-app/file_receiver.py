@@ -29,6 +29,7 @@ class FileReceiver(QThread):
         self.client_ip = None
         self.server_socket = None
         self.client_socket = None
+        self.receiver_worker = None
 
     def run(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,11 +69,17 @@ class FileReceiver(QThread):
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
             self.show_receive_app_p_signal.emit()
-            # self.client_socket.close()
+            sleep(1)  # Wait for the signal to be processed
+            self.cleanup_sockets() # Clean up before proceeding
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
         else:
             logger.debug("Unknown device type received.")
+    
+    def cleanup_sockets(self):
+        if self.client_socket:
+            self.client_socket.close()
+
 
 
 class ReceiveApp(QWidget):

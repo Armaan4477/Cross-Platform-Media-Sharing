@@ -18,8 +18,8 @@ class ReceiveWorkerPython(QThread):
 
     def __init__(self, client_ip):
         super().__init__()
-        self.client_socket = None
-        self.server_socket = None
+        self.client_skt = None
+        self.server_skt = None
         self.encrypted_files = []
         self.broadcasting = True
         self.metadata = None
@@ -29,14 +29,14 @@ class ReceiveWorkerPython(QThread):
 
     def initialize_connection(self):
         # Close all previous server_sockets
-        if self.server_socket:
-            self.server_socket.close()
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if self.server_skt:
+            self.server_skt.close()
+        self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # Bind the server socket to a local port
-            self.server_socket.bind(('', RECEIVER_DATA))
+            self.server_skt.bind(('', RECEIVER_DATA))
             # Start listening for incoming connections
-            self.server_socket.listen(1)
+            self.server_skt.listen(1)
             print("Waiting for a connection...")
         except Exception as e:
             QMessageBox.critical(None, "Server Error", f"Failed to initialize the server: {str(e)}")
@@ -45,7 +45,7 @@ class ReceiveWorkerPython(QThread):
     def accept_connection(self):
         try:
             # Accept a connection from a client
-            self.client_socket, self.client_address = self.server_socket.accept()
+            self.client_skt, self.client_address = self.server_skt.accept()
             print(f"Connected to {self.client_address}")
         except Exception as e:
             QMessageBox.critical(None, "Connection Error", f"Failed to accept connection: {str(e)}")
@@ -54,7 +54,7 @@ class ReceiveWorkerPython(QThread):
     def run(self):
         self.initialize_connection()
         self.accept_connection()
-        if self.client_socket:
+        if self.client_skt:
             self.receive_files()
         else:
             logger.error("Failed to establish a connection.")
@@ -64,7 +64,7 @@ class ReceiveWorkerPython(QThread):
 
         while True:
             # Receive and decode encryption flag
-            encryption_flag = self.client_socket.recv(8).decode()
+            encryption_flag = self.client_skt.recv(8).decode()
             logger.debug("Received: %s", encryption_flag)
 
             if not encryption_flag:
@@ -83,17 +83,17 @@ class ReceiveWorkerPython(QThread):
                 encrypted_transfer = False
 
             # Receive file name size
-            file_name_size_data = self.client_socket.recv(8)
+            file_name_size_data = self.client_skt.recv(8)
             file_name_size = struct.unpack('<Q', file_name_size_data)[0]
             
             if file_name_size == 0:
                 break  # End of transfer signal
 
             # Receive file name
-            file_name = self._receive_data(self.client_socket, file_name_size).decode()
+            file_name = self._receive_data(self.client_skt, file_name_size).decode()
 
             # Receive file size
-            file_size_data = self.client_socket.recv(8)
+            file_size_data = self.client_skt.recv(8)
             file_size = struct.unpack('<Q', file_size_data)[0]
             logger.debug("Receiving %s, %s bytes", file_name, file_size)
 
@@ -117,7 +117,7 @@ class ReceiveWorkerPython(QThread):
                 with open(file_path, "wb") as f:
                     while received_size < file_size:
                         chunk_size = min(4096, file_size - received_size)
-                        data = self._receive_data(self.client_socket, chunk_size)
+                        data = self._receive_data(self.client_skt, chunk_size)
                         if not data:
                             break
                         f.write(data)
@@ -138,7 +138,7 @@ class ReceiveWorkerPython(QThread):
 
     def receive_metadata(self, file_size):
         """Receive metadata from the sender."""
-        received_data = self._receive_data(self.client_socket, file_size)
+        received_data = self._receive_data(self.client_skt, file_size)
         try:
             metadata_json = received_data.decode('utf-8')
             return json.loads(metadata_json)
@@ -196,10 +196,10 @@ class ReceiveWorkerPython(QThread):
         return os.path.join(default_dir, file_name)
     
     def close_connection(self):
-        if self.client_socket:
-            self.client_socket.close()
-        if self.server_socket:
-            self.server_socket.close()
+        if self.client_skt:
+            self.client_skt.close()
+        if self.server_skt:
+            self.server_skt.close()
 
 class ReceiveAppP(QWidget):
     progress_update = pyqtSignal(int)
