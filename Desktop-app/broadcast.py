@@ -18,10 +18,14 @@ RECEIVER_JSON = 54000
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
+    device_connected = pyqtSignal(str, str, dict)  # Signal to emit when a device is connected
 
     def __init__(self):
         super().__init__()
         self.socket = None
+        self.broadcast_worker = None
+        self.client_socket = None
+        self.receiver_data = None
 
     def run(self):
         receivers = []
@@ -57,45 +61,6 @@ class BroadcastWorker(QThread):
         self.quit()
         self.wait()
 
-class Broadcast(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle('Device Discovery')
-        self.setGeometry(100, 100, 400, 300)
-        self.center_window()
-
-        layout = QVBoxLayout()
-
-        self.device_list = QListWidget(self)
-        self.device_list.itemClicked.connect(self.connect_to_device)
-        layout.addWidget(self.device_list)
-
-        self.refresh_button = QPushButton('Refresh', self)
-        self.refresh_button.clicked.connect(self.discover_devices)
-        layout.addWidget(self.refresh_button)
-
-        self.setLayout(layout)
-        self.discover_devices()
-
-        self.broadcast_worker = None
-        self.client_socket = None
-
-    def center_window(self):
-        screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 400, 300
-        x = (screen.width() - window_width) // 2
-        y = (screen.height() - window_height) // 2
-        self.setGeometry(x, y, window_width, window_height)
-
-    def discover_devices(self):
-        self.device_list.clear()
-        receivers = self.discover_receivers()
-        for receiver in receivers:
-            item = QListWidgetItem(receiver['name'])
-            item.setData(256, receiver['name'])  # Store device name
-            item.setData(257, receiver['ip'])  # Store device IP
-            self.device_list.addItem(item)
-
     def discover_receivers(self):
         receivers = []
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -121,7 +86,7 @@ class Broadcast(QWidget):
         device_name = item.data(256)
         device_ip = item.data(257)
 
-        confirm = QMessageBox.question(self, 'Confirm Connection', f"Connect to {device_name}?", 
+        confirm = QMessageBox.question(None, 'Confirm Connection', f"Connect to {device_name}?", 
                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
             logger.info(f"Connecting to {device_name} at {device_ip}")
@@ -131,9 +96,8 @@ class Broadcast(QWidget):
                 logger.info(f"Connected with Python device {device_name}")
                 self.cleanup_sockets()  # Clean up before proceeding
                 sleep(1)  # Wait for the receiver to close the socket
-                self.hide()
-                self.file_sender = SendApp(device_ip, device_name, self.receiver_data)
-                self.file_sender.show()
+                # Emit signal with device information when a connection is established
+                self.device_connected.emit(device_ip, device_name, self.receiver_data)
 
     def initialize_connection(self, ip_address):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -168,12 +132,74 @@ class Broadcast(QWidget):
             self.cleanup_sockets()  # Clean up if the device is not compatible
             return None
 
+
     def cleanup_sockets(self):
         if self.client_socket:
             self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
             self.client_socket.close()
-        if self.broadcast_worker and self.broadcast_worker.isRunning():
-            self.broadcast_worker.stop()
+        if self.isRunning():
+            self.stop()
+
+class Broadcast(QWidget):
+    device_connected = pyqtSignal(str, str, dict)  # Signal to indicate device connection
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Device Discovery')
+        self.setGeometry(100, 100, 400, 300)
+        self.center_window()
+
+        layout = QVBoxLayout()
+
+        self.device_list = QListWidget(self)
+        self.device_list.itemClicked.connect(self.connect_to_device)
+        layout.addWidget(self.device_list)
+
+        self.refresh_button = QPushButton('Refresh', self)
+        self.refresh_button.clicked.connect(self.discover_devices)
+        layout.addWidget(self.refresh_button)
+
+        self.setLayout(layout)
+
+        # Initialize BroadcastWorker instance
+        self.broadcast_worker = BroadcastWorker()
+        self.broadcast_worker.device_detected.connect(self.add_device_to_list)
+        self.broadcast_worker.device_connected.connect(self.show_send_app)  # Connect the worker's signal to slot
+        self.discover_devices()
+
+        self.client_socket = None
+
+    def center_window(self):
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        window_width, window_height = 400, 300
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
+
+    def discover_devices(self):
+        self.device_list.clear()
+        receivers = self.broadcast_worker.discover_receivers()  # Correctly call the discover_receivers method from BroadcastWorker instance
+        for receiver in receivers:
+            item = QListWidgetItem(receiver['name'])
+            item.setData(256, receiver['name'])  # Store device name
+            item.setData(257, receiver['ip'])  # Store device IP
+            self.device_list.addItem(item)
+
+    def connect_to_device(self, item):
+        # Ensure you connect through the correct method
+        self.broadcast_worker.connect_to_device(item)
+
+    def add_device_to_list(self, device_info):
+        # Add the detected device to the list
+        item = QListWidgetItem(device_info['name'])
+        item.setData(256, device_info['name'])  # Store device name
+        item.setData(257, device_info['ip'])  # Store device IP
+        self.device_list.addItem(item)
+
+    def show_send_app(self, device_ip, device_name, receiver_data):
+        self.hide()
+        self.send_app = SendApp(device_ip, device_name, receiver_data)  # Pass parameters to SendApp
+        self.send_app.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
