@@ -65,6 +65,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         btnConnect.setOnClickListener(v -> {
             if (selectedDeviceIP != null) {
                 System.out.println("Selected device IP: " + selectedDeviceIP);
+
                 exchangeJsonAndStartSendFileActivity();
             }
         });

@@ -62,6 +62,7 @@ class BroadcastWorker(QThread):
         self.wait()
 
     def discover_receivers(self):
+        logger.info("Discovering receivers")
         receivers = []
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -100,6 +101,7 @@ class BroadcastWorker(QThread):
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
 
     def initialize_connection(self, ip_address):
+        logger.debug("Initializing connection")
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.bind(('', SENDER_JSON))
