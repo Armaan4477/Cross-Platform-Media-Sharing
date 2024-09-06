@@ -22,13 +22,12 @@ class FileSender(QThread):
     config = get_config()
     password = None
 
-    def __init__(self, ip_address, file_paths, password=None, receiver_data=None, client_socket=None):
+    def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
         super().__init__()
         self.ip_address = ip_address
         self.file_paths = file_paths
         self.password = password
         self.receiver_data = receiver_data
-        self.client_socket = client_socket
 
     def initialize_connection(self):
          # Close all previous sockets
@@ -51,9 +50,9 @@ class FileSender(QThread):
         return True
 
     def run(self):
-        # if not self.initialize_connection():
-        #     return
-        self.client_socket.send('START'.encode())
+        if not self.initialize_connection():
+            return
+
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
                 self.send_folder(file_path)
@@ -160,11 +159,10 @@ class Receiver(QListWidgetItem):
 class SendApp(QWidget):
     config = get_config()
 
-    def __init__(self,ip_address,device_name,receiver_data,client_socket):
+    def __init__(self,ip_address,device_name,receiver_data):
         self.ip_address = ip_address
         self.device_name = device_name
         self.receiver_data = receiver_data
-        self.client_socket = client_socket
         super().__init__()
         self.initUI()
 
@@ -260,7 +258,7 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data,self.client_socket)
+        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()

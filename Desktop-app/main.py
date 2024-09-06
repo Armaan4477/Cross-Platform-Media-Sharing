@@ -1,9 +1,8 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QApplication
 from PyQt6.QtGui import QScreen
-# from file_receiver import ReceiveApp
+from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
-from stream import StreamSignal
 from preferences import PreferencesApp
 import sys
 import os
@@ -60,9 +59,8 @@ class MainApp(QWidget):
     def receiveFile(self):
         logger.info("Started Receive File App")
         self.hide()
-        self.stream_app = StreamSignal()
-        # self.receive_app = ReceiveApp()
-        self.stream_app.show()
+        self.receive_app = ReceiveApp()
+        self.receive_app.show()
 
     def preferences_handler(self):
         logger.info("Started Preferences handler menu")
