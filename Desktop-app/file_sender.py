@@ -13,7 +13,8 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import encrypt_file
 from time import sleep
 
-RECEIVER_PORT = 12348
+SENDER_DATA = 57000
+RECEIVER_DATA = 58000
 
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
@@ -29,35 +30,25 @@ class FileSender(QThread):
         self.receiver_data = receiver_data
         self.client_socket = client_socket
 
-    # def initialize_connection(self):
-    #     self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     try:
-    #         self.client_socket.connect((self.ip_address, RECEIVER_PORT))
-    #     except ConnectionRefusedError:
-    #         QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-    #         return None
-        
-    #     device_data = {
-    #         'device_type': 'python',
-    #         'os': platform.system()
-    #     }
-    #     device_data_json = json.dumps(device_data)
-    #     self.client_socket.send(struct.pack('<Q', len(device_data_json)))
-    #     self.client_socket.send(device_data_json.encode())
-
-    #     receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
-    #     receiver_json = self.client_socket.recv(receiver_json_size).decode()
-    #     receiver_data = json.loads(receiver_json)
-    #     logger.debug("Receiver data: %s", receiver_data)
-
-    #     device_type = receiver_data.get('device_type', 'unknown')
-    #     if device_type == 'python':
-    #         logger.debug("Receiver is a python device")
-    #         return device_type
-    #     else:
-    #         QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-    #         self.client_socket.close()
-    #         return None
+    def initialize_connection(self):
+         # Close all previous sockets
+        try:
+            self.client_skt.close()
+        except AttributeError:
+            pass
+        self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            # Bind the socket to SENDER_DATA port
+            self.client_skt.bind(('', SENDER_DATA))
+            # Connect to the receiver on RECEIVER_DATA port
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
+        except ConnectionRefusedError:
+            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+            return False
+        except OSError as e:
+            QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
+            return False
+        return True
 
     def run(self):
         # if not self.initialize_connection():
@@ -70,11 +61,11 @@ class FileSender(QThread):
                 self.send_file(file_path)
         
         logger.debug("Sent halt signal")
-        self.client_socket.send('encyp: h'.encode())
+        self.client_skt.send('encyp: h'.encode())
         sleep(0.5)
-        self.client_socket.send('encyp: h'.encode())
+        self.client_skt.send('encyp: h'.encode())
         sleep(0.5)
-        self.client_socket.close()
+        self.client_skt.close()
 
     def send_folder(self, folder_path):
         print("Sending folder")
@@ -120,17 +111,17 @@ class FileSender(QThread):
         logger.debug("Sending %s, %s", file_name, file_size)
 
         encryption_flag = 'encyp: t' if self.config['encryption'] else 'encyp: f'
-        self.client_socket.send(encryption_flag.encode())
+        self.client_skt.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
         
-        self.client_socket.send(struct.pack('<Q', file_name_size))
-        self.client_socket.send(file_name.encode('utf-8'))
-        self.client_socket.send(struct.pack('<Q', file_size))
+        self.client_skt.send(struct.pack('<Q', file_name_size))
+        self.client_skt.send(file_name.encode('utf-8'))
+        self.client_skt.send(struct.pack('<Q', file_size))
 
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
                 data = f.read(4096)
-                self.client_socket.sendall(data)
+                self.client_skt.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
 
@@ -202,13 +193,6 @@ class SendApp(QWidget):
 
         layout.addLayout(file_selection_layout)
 
-        # self.discover_button = QPushButton('Discover Devices', self)
-        # self.discover_button.clicked.connect(self.discoverDevices)
-        # layout.addWidget(self.discover_button)
-
-        # self.device_list = QListWidget(self)
-        # layout.addWidget(self.device_list)
-
         if self.config['encryption']:
             self.password_label = QLabel('Encryption Password:', self)
             layout.addWidget(self.password_label)
@@ -255,39 +239,8 @@ class SendApp(QWidget):
             print(self.file_paths)
             self.checkReadyToSend()
 
-    # def discoverDevices(self):
-    #     self.device_list.clear()
-    #     receivers = self.discover_receivers()
-    #     for receiver in receivers:
-    #         item = Receiver(receiver['name'], receiver['ip'])
-    #         self.device_list.addItem(item)
-    #     self.checkReadyToSend()
-
-    # def discover_receivers(self):
-    #     receivers = []
-    #     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-    #         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    #         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #         s.bind(('', LISTEN_PORT))
-
-    #         s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-
-    #         s.settimeout(2)
-    #         try:
-    #             while True:
-    #                 message, address = s.recvfrom(1024)
-    #                 message = message.decode()
-    #                 if message.startswith('RECEIVER:'):
-    #                     device_name = message.split(':')[1]
-    #                     receivers.append({'ip': address[0], 'name': device_name})
-    #         except socket.timeout:
-    #             pass
-    #     #Check device type
-    #     #if 
-    #     return receivers
-
     def checkReadyToSend(self):
-        if self.file_paths :
+        if self.file_paths:
             self.send_button.setEnabled(True)
 
     def sendSelectedFiles(self):
