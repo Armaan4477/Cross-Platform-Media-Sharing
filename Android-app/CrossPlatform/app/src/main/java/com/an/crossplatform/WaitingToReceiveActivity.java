@@ -7,14 +7,13 @@ import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -22,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
@@ -68,10 +68,13 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, LISTEN_PORT);
                         socket.send(sendPacket);
                         Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
-
-                        // Handle TCP communication without using a separate thread
-                        // Stop listening for discover messages
-                        establishTcpConnection(senderAddress);
+                    // Call the establishTcpConnection method repeatedly for 1 minute
+                        long startTime = System.currentTimeMillis();
+                        while (System.currentTimeMillis() - startTime < 60000) {
+                            // Pause the thread until tcp connection is established
+                            Thread.sleep(1000);
+                            establishTcpConnection(receivePacket.getAddress());
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -86,28 +89,34 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         BufferedInputStream inputStream = null;
 
         try {
-            // Create a new Socket to connect to the receiver
-            socket = new Socket(receiverAddress, SENDER_PORT_JSON);
+            // Create a new Socket to connect to the receiver with IPv4 address
+            socket = new Socket();
+            socket.bind(new InetSocketAddress(RECEIVER_PORT_JSON));
+            socket.connect(new InetSocketAddress(receiverAddress, SENDER_PORT_JSON), 10000);
 
             // Prepare JSON data to send (Android device info)
             JSONObject deviceInfo = new JSONObject();
             deviceInfo.put("device_type", DEVICE_TYPE);
             deviceInfo.put("os", "Android");
-            byte[] sendData = deviceInfo.toString().getBytes(StandardCharsets.UTF_8);
+            String deviceInfoStr = deviceInfo.toString();
+            byte[] sendData = deviceInfoStr.getBytes(StandardCharsets.UTF_8);
+            Log.d("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
 
-            // Send the JSON data size first (as a long)
-            OutputStream rawOutputStream = socket.getOutputStream();
-            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(rawOutputStream);
-            bufferedOutputStream.write(ByteBuffer.allocate(Long.BYTES).putLong(sendData.length).array());
-            bufferedOutputStream.flush();
+            DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
+            DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
 
-            // Send the actual JSON data
+            // Convert the length of the JSON data to a unsigned long (8 bytes)
+            ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES);
+            sizeBuffer.putLong(sendData.length);
+            Log.d("WaitingToReceive", "Sending JSON data size: " + sizeBuffer.getLong(0));
+            // Send sizeBuffer as itself
+            bufferedOutputStream.writeLong(sizeBuffer.getLong(0));
+
+            // Send the actual JSON data encoded in UTF-8
             bufferedOutputStream.write(sendData);
             bufferedOutputStream.flush();
 
             // Read the JSON size first (as a long)
-            InputStream rawInputStream = socket.getInputStream();
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(rawInputStream);
             byte[] recvSizeBuf = new byte[Long.BYTES];
             bufferedInputStream.read(recvSizeBuf);
             ByteBuffer sizeBufferReceived = ByteBuffer.wrap(recvSizeBuf);
@@ -115,7 +124,14 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
             // Read the actual JSON data
             byte[] recvBuf = new byte[(int) jsonSize];
-            bufferedInputStream.read(recvBuf);
+            int totalBytesRead = 0;
+            while (totalBytesRead < recvBuf.length) {
+                int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
+                if (bytesRead == -1) {
+                    throw new IOException("End of stream reached before reading complete data");
+                }
+                totalBytesRead += bytesRead;
+            }
 
             // Convert the received bytes into a JSON string
             String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
@@ -127,8 +143,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             intent.putExtra("receivedJson", receivedJson.toString());
             startActivity(intent);
 
-        } catch (Exception e) {
-            Log.e("WaitingToReceive", "Error during TCP communication", e);
+        } catch (Exception ignored) {
         } finally {
             // Close resources
             try {

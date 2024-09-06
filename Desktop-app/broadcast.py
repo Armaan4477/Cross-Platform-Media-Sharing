@@ -105,7 +105,9 @@ class BroadcastWorker(QThread):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client_socket.bind(('', SENDER_JSON))
+            logger.debug("Binded to port %d", SENDER_JSON)
             self.client_socket.connect((ip_address, RECEIVER_JSON))
+            logger.debug("Connected to %s", ip_address)
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return None
@@ -121,6 +123,7 @@ class BroadcastWorker(QThread):
 
         # Receive the JSON file from the receiver
         receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
+        logger.debug("Receiver JSON size: %d", receiver_json_size)
         receiver_json = self.client_socket.recv(receiver_json_size).decode()
         self.receiver_data = json.loads(receiver_json)
         logger.debug("Receiver data: %s", self.receiver_data)
