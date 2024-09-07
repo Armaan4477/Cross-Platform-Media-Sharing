@@ -69,31 +69,20 @@ class FileSender(QThread):
     def send_folder(self, folder_path):
         print("Sending folder")
         
-        # Collect metadata for all files in a top-down manner
+        # Collect metadata for all files
         metadata = []
-        base_folder_name = os.path.basename(folder_path)
-        
-        # Process all files in the base folder first
-        for root, dirs, files in os.walk(folder_path, topdown=True):
-            # Sort files alphabetically to ensure consistent order
-            files.sort()
-            dirs.sort()  # Process directories in sorted order
-            
+        for root, dirs, files in os.walk(folder_path):
             for file in files:
                 file_path = os.path.join(root, file)
-                # Create a relative path that includes subdirectories, ensuring unique paths
                 relative_path = os.path.relpath(file_path, folder_path)
-                
-                # Add file metadata
                 file_size = os.path.getsize(file_path)
                 metadata.append({
                     'path': relative_path,
-                    'size': file_size,
-                    #'parent_folder': os.path.basename(root),
+                    'size': file_size
                 })
         
         # Add metadata for folder structure
-        metadata.append({'base_folder_name': base_folder_name, 'path': '.delete', 'size': 0})
+        metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
         metadata_json = json.dumps(metadata)
         metadata_file_path = os.path.join(folder_path, 'metadata.json')
 
@@ -102,10 +91,9 @@ class FileSender(QThread):
             f.write(metadata_json)
 
         # Send metadata file
-        logger.debug("Sending metadata file %s", metadata_json)
         self.send_file(metadata_file_path)
 
-        # Send all files in the same order as metadata collection
+        # Send all files
         for file_info in metadata:
             file_path = os.path.join(folder_path, file_info['path'])
             if not file_path.endswith('.delete'):

@@ -109,8 +109,6 @@ class ReceiveWorkerPython(QThread):
                 if self.metadata:
                     relative_path = self.get_relative_path_from_metadata(file_name)
                     file_path = os.path.join(self.destination_folder, relative_path)
-                    # Remove the path to avoid overwriting
-                    self.metadata = [file_info for file_info in self.metadata if file_info['path'] != relative_path]
 
                 if encrypted_transfer:
                     self.encrypted_files.append(file_path)
@@ -187,7 +185,6 @@ class ReceiveWorkerPython(QThread):
         """Get the relative path of a file from the metadata."""
         for file_info in self.metadata:
             if os.path.basename(file_info['path']) == file_name:
-                logger.debug("Found file path: %s", file_info['path'])
                 return file_info['path']
         return file_name
 
