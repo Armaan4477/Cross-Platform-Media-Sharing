@@ -13,11 +13,15 @@ import org.json.JSONObject;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +39,13 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private AtomicBoolean isDiscovering = new AtomicBoolean(false);
     private String selectedDeviceIP;
     private String selectedDeviceName;
+
+    private static final int UDP_PORT = 12345; // Discovery port on Android
+    private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on Python app
+    private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
+    private String DEVICE_NAME;
+    private String DEVICE_TYPE = "java"; // Device type for Android devices
+    private int LISTEN_PORT = 12346;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +76,10 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         btnConnect.setOnClickListener(v -> {
             if (selectedDeviceIP != null) {
                 System.out.println("Selected device IP: " + selectedDeviceIP);
-
-                exchangeJsonAndStartSendFileActivity();
+                long startTime = System.currentTimeMillis();
+//                while (System.currentTimeMillis() - startTime < 15000) {
+                    exchangeJsonAndStartSendFileActivity();
+//                }
             }
         });
     }
@@ -167,46 +180,82 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private void exchangeJsonAndStartSendFileActivity() {
         new Thread(() -> {
+            Socket socket = null;
+            DataOutputStream dos = null;
+            DataInputStream dis = null;
+
             try {
-                // Establish a socket connection to the selected device IP on the RESPONSE_PORT
-                Socket socket = new Socket(selectedDeviceIP, RESPONSE_PORT);
+                // Establish a socket connection to the selected device IP on the RECEIVER_PORT_JSON
+                socket = new Socket(selectedDeviceIP, RECEIVER_PORT_JSON);
 
-                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                DataInputStream dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                dis = new DataInputStream(socket.getInputStream());
 
-                // Create a JSON object containing the device information
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("device_type", "java"); // Or "android" as per your requirement
-                jsonObject.put("os", "Android");
+                // Prepare JSON data to send (Android device info)
+                JSONObject deviceInfo = new JSONObject();
+                deviceInfo.put("device_type", DEVICE_TYPE);
+                deviceInfo.put("os", "Android");
+                String deviceInfoStr = deviceInfo.toString();
+                byte[] sendData = deviceInfoStr.getBytes(StandardCharsets.UTF_8);
+                Log.d("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
 
-                // Convert the JSON object to a UTF-8 encoded byte array
-                String jsonString = jsonObject.toString();
-                byte[] jsonBytes = jsonString.getBytes(StandardCharsets.UTF_8);
+                DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
+                DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
 
-                // Send the length of the JSON byte array followed by the JSON data itself
-                dos.writeInt(jsonBytes.length); // Writing the length of the byte array
-                dos.write(jsonBytes); // Writing the actual JSON byte array
-                dos.flush();
+                // Convert the JSON size to little-endian bytes and send it first
+                ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                sizeBuffer.putLong(sendData.length);
+                bufferedOutputStream.write(sizeBuffer.array());
+                bufferedOutputStream.flush();
 
-                // Receive the JSON data from the receiver
-                int jsonLength = dis.readInt();
-                byte[] receivedJsonBytes = new byte[jsonLength];
-                dis.readFully(receivedJsonBytes);
-                String receivedJsonString = new String(receivedJsonBytes, StandardCharsets.UTF_8);
-                Log.d("DiscoverDevices", "Received JSON data: " + receivedJsonString);
-                Log.d("DiscoverDevices", "Sent JSON data: " + jsonString);
+                // Send the actual JSON data encoded in UTF-8
+                bufferedOutputStream.write(sendData);
+                bufferedOutputStream.flush();
 
-                // Close the socket after sending the data
-                socket.close();
+                // Read the JSON size first (as a long, little-endian)
+                byte[] recvSizeBuf = new byte[Long.BYTES];
+                bufferedInputStream.read(recvSizeBuf);
+                ByteBuffer sizeBufferReceived = ByteBuffer.wrap(recvSizeBuf).order(ByteOrder.LITTLE_ENDIAN);
+                long jsonSize = sizeBufferReceived.getLong();
 
-                // Start SendFileActivity and pass the encoded JSON string
-                Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
-                intent.putExtra("receiverJson", jsonString); // You can also pass the original JSON string
-                startActivity(intent);
-                finish();
+                // Read the actual JSON data
+                byte[] recvBuf = new byte[(int) jsonSize];
+                int totalBytesRead = 0;
+                while (totalBytesRead < recvBuf.length) {
+                    int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
+                    if (bytesRead == -1) {
+                        throw new IOException("End of stream reached before reading complete data");
+                    }
+                    totalBytesRead += bytesRead;
+                }
+
+                // Convert the received bytes into a JSON string
+                String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
+                JSONObject receivedJson = new JSONObject(jsonStr);
+                Log.d("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
+
+                if (receivedJson.getString("device_type").equals("python")) {
+                    Log.d("WaitingToReceive", "Received JSON data from Python app");
+                }
+                else if (receivedJson.getString("device_type").equals("java")) {
+                    Log.d("WaitingToReceive", "Received JSON data from Java app");
+                    // Proceed to the next activity (ReceiveFileActivity)
+                    Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
+                    intent.putExtra("receivedJson", receivedJson.toString());
+                    startActivity(intent);
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                // Close resources in case of an exception
+                try {
+                    if (dos != null) dos.close();
+                    if (dis != null) dis.close();
+                    if (socket != null) socket.close();
+                } catch (Exception ignored) {
+                    // Ignored exceptions while closing resources
+                }
             }
         }).start();
     }

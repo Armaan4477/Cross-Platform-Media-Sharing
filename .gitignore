@@ -4,3 +4,4 @@
 .config.json
 *.xcuserstate
 /cross
+Android-app/CrossPlatform/.idea/misc.xml
