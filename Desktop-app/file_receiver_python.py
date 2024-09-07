@@ -59,72 +59,105 @@ class ReceiveWorkerPython(QThread):
         else:
             logger.error("Failed to establish a connection.")
 
+
     def receive_files(self):
         self.broadcasting = False  # Stop broadcasting
+        logger.debug("File reception started.")
 
         while True:
-            # Receive and decode encryption flag
-            encryption_flag = self.client_skt.recv(8).decode()
-            logger.debug("Received: %s", encryption_flag)
+            try:
+                # Receive and decode encryption flag
+                encryption_flag = self.client_skt.recv(8).decode()
+                logger.debug("Received encryption flag: %s", encryption_flag)
 
-            if not encryption_flag:
-                logger.debug("Dropped redundant data: %s", encryption_flag)
-                break  # Drop redundant data
+                if not encryption_flag:
+                    logger.debug("Dropped redundant data: %s", encryption_flag)
+                    break
 
-            if encryption_flag[-1] == 't':
-                encrypted_transfer = True
-            elif encryption_flag[-1] == 'h':
-                # Halting signal, break transfer and decrypt files
-                if self.encrypted_files:
-                    self.decrypt_signal.emit(self.encrypted_files)
-                self.encrypted_files = []
+                if encryption_flag[-1] == 't':
+                    encrypted_transfer = True
+                elif encryption_flag[-1] == 'h':
+                    # Halting signal, break transfer and decrypt files
+                    if self.encrypted_files:
+                        self.decrypt_signal.emit(self.encrypted_files)
+                    self.encrypted_files = []
+                    logger.debug("Received halt signal. Stopping file reception.")
+                    break
+                else:
+                    encrypted_transfer = False
+
+                # Receive file name size
+                file_name_size_data = self.client_skt.recv(8)
+                file_name_size = struct.unpack('<Q', file_name_size_data)[0]
+                logger.debug("File name size received: %d", file_name_size)
+                
+                if file_name_size == 0:
+                    logger.debug("End of transfer signal received.")
+                    break  # End of transfer signal
+
+                # Receive file name and normalize the path
+                file_name = self._receive_data(self.client_skt, file_name_size).decode()
+
+                # Convert Windows-style backslashes to Unix-style forward slashes
+                file_name = file_name.replace('\\', '/')
+                logger.debug("Normalized file name: %s", file_name)
+
+                # Receive file size
+                file_size_data = self.client_skt.recv(8)
+                file_size = struct.unpack('<Q', file_size_data)[0]
+                logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
+
+                received_size = 0
+
+                # Check if it's metadata
+                if file_name == 'metadata.json':
+                    logger.debug("Receiving metadata file.")
+                    self.metadata = self.receive_metadata(file_size)
+                    self.destination_folder = self.create_folder_structure(self.metadata)
+                    logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
+                else:
+                    # Determine the correct path using metadata
+                    if self.metadata:
+                        relative_path = self.get_relative_path_from_metadata(file_name)
+                        file_path = os.path.join(self.destination_folder, relative_path)
+                        logger.debug("Constructed file path from metadata: %s", file_path)
+                    else:
+                        # Fallback if metadata is not available
+                        file_path = self.get_file_path(file_name)
+                        logger.debug("Constructed file path without metadata: %s", file_path)
+
+                    # Normalize the final file path
+                    file_path = os.path.normpath(file_path)
+
+                    # Ensure that the directory exists for the file
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+
+                    # Check for encrypted transfer
+                    if encrypted_transfer:
+                        self.encrypted_files.append(file_path)
+                        logger.debug("File marked for decryption: %s", file_path)
+
+                    # Receive file data in chunks
+                    with open(file_path, "wb") as f:
+                        while received_size < file_size:
+                            chunk_size = min(4096, file_size - received_size)
+                            data = self._receive_data(self.client_skt, chunk_size)
+                            if not data:
+                                logger.error("Failed to receive data. Connection may have been closed.")
+                                break
+                            f.write(data)
+                            received_size += len(data)
+                            logger.debug("Received %d/%d bytes for file %s", received_size, file_size, file_name)
+                            self.progress_update.emit(received_size * 100 // file_size)
+
+            except Exception as e:
+                logger.error("Error during file reception: %s", str(e))
                 break
-            else:
-                encrypted_transfer = False
-
-            # Receive file name size
-            file_name_size_data = self.client_skt.recv(8)
-            file_name_size = struct.unpack('<Q', file_name_size_data)[0]
-            
-            if file_name_size == 0:
-                break  # End of transfer signal
-
-            # Receive file name
-            file_name = self._receive_data(self.client_skt, file_name_size).decode()
-
-            # Receive file size
-            file_size_data = self.client_skt.recv(8)
-            file_size = struct.unpack('<Q', file_size_data)[0]
-            logger.debug("Receiving %s, %s bytes", file_name, file_size)
-
-            received_size = 0
-
-            if file_name == 'metadata.json':
-                self.metadata = self.receive_metadata(file_size)
-                self.destination_folder = self.create_folder_structure(self.metadata)
-            else:
-                file_path = self.get_file_path(file_name)
-                if file_path.endswith('.delete'):
-                    continue
-                if self.metadata:
-                    relative_path = self.get_relative_path_from_metadata(file_name)
-                    file_path = os.path.join(self.destination_folder, relative_path)
-
-                if encrypted_transfer:
-                    self.encrypted_files.append(file_path)
-
-                # Receive file data in chunks
-                with open(file_path, "wb") as f:
-                    while received_size < file_size:
-                        chunk_size = min(4096, file_size - received_size)
-                        data = self._receive_data(self.client_skt, chunk_size)
-                        if not data:
-                            break
-                        f.write(data)
-                        received_size += len(data)
-                        self.progress_update.emit(received_size * 100 // file_size)
 
         self.broadcasting = True  # Resume broadcasting
+        logger.debug("File reception completed.")
+
 
     def _receive_data(self, socket, size):
         """Helper function to receive a specific amount of data."""
@@ -154,14 +187,22 @@ class ReceiveWorkerPython(QThread):
         # Get the default directory from configuration
         default_dir = get_config()["save_to_directory"]
         
+        if not default_dir:
+            raise ValueError("No save_to_directory configured")
+        
         # Extract the base folder name from the last metadata entry
         top_level_folder = metadata[-1].get('base_folder_name', '')
+        if not top_level_folder:
+            raise ValueError("Base folder name not found in metadata")
 
         # Define the destination folder path
         destination_folder = os.path.join(default_dir, top_level_folder)
-        
+        logger.debug("Destination folder: %s", destination_folder)
+
         # Create the destination folder if it does not exist
-        os.makedirs(destination_folder, exist_ok=True)
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+            logger.debug("Created base folder: %s", destination_folder)
 
         # Process each file info in metadata (excluding the last entry)
         for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
@@ -171,15 +212,20 @@ class ReceiveWorkerPython(QThread):
             
             # Get the folder path from the file info
             folder_path = os.path.dirname(file_info['path'])
-            
-            # Create the full folder path
-            full_folder_path = os.path.join(destination_folder, folder_path)
-            
-            # Create the directory if it does not exist
-            if not os.path.exists(full_folder_path):
-                os.makedirs(full_folder_path)
+            if folder_path:
+                # Create the full folder path
+                full_folder_path = os.path.join(destination_folder, folder_path)
+                
+                # Create the directory if it does not exist
+                if not os.path.exists(full_folder_path):
+                    os.makedirs(full_folder_path)
+                    logger.debug("Created folder: %s", full_folder_path)
+                else:
+                    logger.debug("Folder already exists: %s", full_folder_path)
 
         return destination_folder
+
+
 
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of a file from the metadata."""

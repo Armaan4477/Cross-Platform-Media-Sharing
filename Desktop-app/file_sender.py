@@ -30,7 +30,7 @@ class FileSender(QThread):
         self.receiver_data = receiver_data
 
     def initialize_connection(self):
-         # Close all previous sockets
+        # Close all previous sockets
         try:
             self.client_skt.close()
         except AttributeError:
@@ -68,8 +68,8 @@ class FileSender(QThread):
 
     def send_folder(self, folder_path):
         print("Sending folder")
-        
-        # Collect metadata for all files
+
+        # Collect metadata for all files and folders
         metadata = []
         for root, dirs, files in os.walk(folder_path):
             for file in files:
@@ -80,7 +80,14 @@ class FileSender(QThread):
                     'path': relative_path,
                     'size': file_size
                 })
-        
+            for dir in dirs:
+                dir_path = os.path.join(root, dir)
+                relative_path = os.path.relpath(dir_path, folder_path)
+                metadata.append({
+                    'path': relative_path + '/',
+                    'size': 0  # Size is 0 for directories
+                })
+
         # Add metadata for folder structure
         metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
         metadata_json = json.dumps(metadata)
@@ -95,26 +102,34 @@ class FileSender(QThread):
 
         # Send all files
         for file_info in metadata:
-            file_path = os.path.join(folder_path, file_info['path'])
-            if not file_path.endswith('.delete'):
-                self.send_file(file_path)
+            relative_file_path = file_info['path']
+            file_path = os.path.join(folder_path, relative_file_path)
+            if not relative_file_path.endswith('.delete'):
+                if file_info['size'] > 0:
+                    self.send_file(file_path, relative_file_path=relative_file_path)
+                else:
+                    # Handle directory creation (if needed, in receiver)
+                    pass
 
         # Clean up metadata file
         os.remove(metadata_file_path)
 
-    def send_file(self, file_path):
+
+    def send_file(self, file_path, relative_file_path=None):
         sent_size = 0
         file_size = os.path.getsize(file_path)
-        file_name = os.path.basename(file_path)
-        file_name_size = len(file_name.encode())
-        logger.debug("Sending %s, %s", file_name, file_size)
+        if relative_file_path is None:
+            relative_file_path = os.path.basename(file_path)  # Default to the base name if relative path isn't provided
+        file_name_size = len(relative_file_path.encode())
+        logger.debug("Sending %s, %s", relative_file_path, file_size)
 
         encryption_flag = 'encyp: t' if self.config['encryption'] else 'encyp: f'
         self.client_skt.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
-        
+
+        # Send the relative file path size and the path
         self.client_skt.send(struct.pack('<Q', file_name_size))
-        self.client_skt.send(file_name.encode('utf-8'))
+        self.client_skt.send(relative_file_path.encode('utf-8'))
         self.client_skt.send(struct.pack('<Q', file_size))
 
         with open(file_path, 'rb') as f:
@@ -128,6 +143,7 @@ class FileSender(QThread):
             os.remove(file_path)
 
         return True
+
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
