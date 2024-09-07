@@ -108,6 +108,7 @@ class ReceiveWorkerPython(QThread):
                     continue
                 if self.metadata:
                     relative_path = self.get_relative_path_from_metadata(file_name)
+                    relative_path = relative_path.replace('/', os.sep)
                     file_path = os.path.join(self.destination_folder, relative_path)
                     # Remove the path to avoid overwriting
                     self.metadata = [file_info for file_info in self.metadata if file_info['path'] != relative_path]
