@@ -88,10 +88,26 @@ class PreferencesApp(QWidget):
         self.save_to_path_input.setText(get_default_path())
 
     def goToMainMenu(self):
-        self.hide()
-        from main import MainApp
-        self.main_app = MainApp()
-        self.main_app.show()
+
+        reply = QMessageBox.question(
+            self,
+        "Save Changes",
+        "Do you want to save changes before returning to the main menu?",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
+        QMessageBox.StandardButton.Cancel
+    )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.submitPreferences()  # Save preferences 
+            self.go_to_main_menu()    # Go to main menu
+
+        elif reply == QMessageBox.StandardButton.No:
+            self.go_to_main_menu()    # Go to main menu
+            
+    def go_to_main_menu(self):
+            self.hide()
+            from main import MainApp
+            self.main_app = MainApp()
+            self.main_app.show()
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
