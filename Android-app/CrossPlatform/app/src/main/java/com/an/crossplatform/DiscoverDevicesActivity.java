@@ -186,7 +186,16 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
             try {
                 // Establish a socket connection to the selected device IP on the RECEIVER_PORT_JSON
-                socket = new Socket(selectedDeviceIP, RECEIVER_PORT_JSON);
+                socket = new Socket();
+
+                // Bind to the SENDER_PORT_JSON (similar to Python code: self.client_socket.bind(('', SENDER_JSON)))
+//                socket.bind(new InetSocketAddress(SENDER_PORT_JSON));  // Binding the sender to the port
+
+                Log.d("DiscoverDevices", "Binded to port: " + SENDER_PORT_JSON);
+
+                // Connect to the receiver's IP and RECEIVER_PORT_JSON (similar to Python: self.client_socket.connect((ip_address, RECEIVER_JSON)))
+                socket.connect(new InetSocketAddress(selectedDeviceIP, RECEIVER_PORT_JSON), 10000);
+                Log.d("DiscoverDevices", "Connected to " + selectedDeviceIP + " on port " + RECEIVER_PORT_JSON);
 
                 dos = new DataOutputStream(socket.getOutputStream());
                 dis = new DataInputStream(socket.getInputStream());
@@ -236,8 +245,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
                 if (receivedJson.getString("device_type").equals("python")) {
                     Log.d("WaitingToReceive", "Received JSON data from Python app");
-                }
-                else if (receivedJson.getString("device_type").equals("java")) {
+                } else if (receivedJson.getString("device_type").equals("java")) {
                     Log.d("WaitingToReceive", "Received JSON data from Java app");
                     // Proceed to the next activity (ReceiveFileActivity)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
@@ -259,6 +267,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             }
         }).start();
     }
+
 
 
     @Override
