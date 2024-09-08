@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
 from PyQt6.QtCore import Qt
+
+from PyQt6.QtCore import Qt
 import sys
 import json
 import os
@@ -111,7 +113,9 @@ class PreferencesApp(QWidget):
         }
 
         write_config(preferences)
-        QMessageBox.information(self, "Success", "Preferences saved successfully!")
+        reply = QMessageBox.information(self, "Success", "Preferences saved successfully!", QMessageBox.Ok)
+        if  reply == QMessageBox.Ok:
+         self.goToMainMenu()  # Go to main menu after confirmation
 
     def loadPreferences(self):
         config = get_config()
