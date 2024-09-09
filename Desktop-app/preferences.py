@@ -113,8 +113,8 @@ class PreferencesApp(QWidget):
         }
 
         write_config(preferences)
-        reply = QMessageBox.information(self, "Success", "Preferences saved successfully!", QMessageBox.Ok)
-        if  reply == QMessageBox.Ok:
+        reply = QMessageBox.information(self, "Success", "Preferences saved successfully!", QMessageBox.StandardButton.Ok)
+        if  reply == QMessageBox.StandardButton.Ok:
          self.goToMainMenu()  # Go to main menu after confirmation
 
     def loadPreferences(self):
