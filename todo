@@ -1,30 +1,35 @@
 In Progress:
 
 Nishal:
-In the Preferences window after submitting the changes and getting the confirmation dialog, take the user back to the main screen after ok is clicked on the dialog.
-
-Urmi:
-In the Preferences window after submitting the changes and getting the confirmation dialog, take the user back to the main screen after ok is clicked on the dialog
-
-
-
-
-Next Task:
-
-Nishal:
 After sending and receiving is complete
 Loop back around karo as in sender ko option do if he wants to send more files/folders
 If yes wapas back to select file window
 If no then back to main window
 (FYI Receiver ka logic bhe modify karna padega sath mai Varna pura fail hoga)
 
+Urmi:
+After clicking the main menu button in the Preference window, check if there are unsaved changes, 
+if there are unsaved changes then show the user the menu to save the changes or discard the changes
+if there are no unsaved changes then do not show that menu.
+(Currently vo menu chal raha hai barabar khali har time dhikata hai, usme check kar agar unsaved changes hai fir hi dhika user ko)
+
+
+
+Next Task:
+
+Nishal:
+1) Drag and drop file support in send section of the python app
+
+2) Add credits dialog which links to project repo link and github/ Linkedin accounts (Armaan, Samay, Yash, Nishal and Urmi ka naam in Alphabetical order(Vedashree ka naam jayega jab vo kaam karegi kuch coding related to the actual project))
+
+3) When the receiver window shows file received successfully, show the user a button which will take them to the receiving directory.    (ps. you can easily get the receiving directry from the get_config that is imported)
+
 
 Urmi:
-1) Preferences window which opens after clicking the Preferences button needs to be centered to the screen
-
-2) Find a logo/Icon for our Project and send it on the group (image should be in png, without a background and high quality.)
+1) Find a logo/Icon for our Project and send it on the group (image should be in png, without a background and high quality.)
    (upload the full quality images in the shared drive, make a new folder there and then tell us on the group so we will check it out)
 
-3) If during file/folder receiving there is a file/folder already present with the same name add (1),(2) and so on for the copies that are present. 
+2) If during file/folder receiving there is a file/folder already present with the same name add (1),(2) and so on for the copies that are present. 
 
-4) When the receiver window shows file received successfully, show the user a button which will take them to the receiving directory.    (ps. you can easily get the receiving directry from the get_config that is imported)
+3) When sending a folder show the number of total files, number of files completed and number of files remaining.
+(ps. Total files metadata.json mai already ja raha hai incase needed hai)
