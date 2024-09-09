@@ -50,6 +50,7 @@ class FileSender(QThread):
         return True
 
     def run(self):
+        self.metadata_created = False
         if not self.initialize_connection():
             return
 
@@ -57,8 +58,16 @@ class FileSender(QThread):
             if os.path.isdir(file_path):
                 self.send_folder(file_path)
             else:
+                if not self.metadata_created:
+                    metadata_file_path = self.create_metadata(file_paths=self.file_paths)
+                    metadata = json.loads(open(metadata_file_path).read())
+                    self.send_file(metadata_file_path)
                 self.send_file(file_path)
         
+        # Delete metadata file
+        if self.metadata_created:
+            os.remove(metadata_file_path)
+            
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         sleep(0.5)
@@ -66,39 +75,55 @@ class FileSender(QThread):
         sleep(0.5)
         self.client_skt.close()
 
-    def send_folder(self, folder_path):
-        print("Sending folder")
-
-        # Collect metadata for all files and folders
-        metadata = []
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                relative_path = os.path.relpath(file_path, folder_path)
+    def create_metadata(self, folder_path=None,file_paths=None):
+        if folder_path:
+            metadata = []
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(file_path, folder_path)
+                    file_size = os.path.getsize(file_path)
+                    metadata.append({
+                        'path': relative_path,
+                        'size': file_size
+                    })
+                for dir in dirs:
+                    dir_path = os.path.join(root, dir)
+                    relative_path = os.path.relpath(dir_path, folder_path)
+                    metadata.append({
+                        'path': relative_path + '/',
+                        'size': 0  # Size is 0 for directories
+                    })
+            metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
+            metadata_json = json.dumps(metadata)
+            metadata_file_path = os.path.join(folder_path, 'metadata.json')
+            with open(metadata_file_path, 'w') as f:
+                f.write(metadata_json)
+            self.metadata_created = True
+            return metadata_file_path
+        elif file_paths:
+            metadata = []
+            for file_path in file_paths:
                 file_size = os.path.getsize(file_path)
                 metadata.append({
-                    'path': relative_path,
+                    'path': os.path.basename(file_path),
                     'size': file_size
                 })
-            for dir in dirs:
-                dir_path = os.path.join(root, dir)
-                relative_path = os.path.relpath(dir_path, folder_path)
-                metadata.append({
-                    'path': relative_path + '/',
-                    'size': 0  # Size is 0 for directories
-                })
-
-        # Add metadata for folder structure
-        metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
-        metadata_json = json.dumps(metadata)
-        metadata_file_path = os.path.join(folder_path, 'metadata.json')
-
-        # Write metadata to file
-        with open(metadata_file_path, 'w') as f:
-            f.write(metadata_json)
-
-        # Send metadata file
-        self.send_file(metadata_file_path)
+            metadata_json = json.dumps(metadata)
+            metadata_file_path = os.path.join(os.path.dirname(file_paths[0]), 'metadata.json')
+            with open(metadata_file_path, 'w') as f:
+                f.write(metadata_json)
+            self.metadata_created = True
+            return metadata_file_path
+            
+    def send_folder(self, folder_path):
+        print("Sending folder")
+        
+        if not self.metadata_created:
+            metadata_file_path = self.create_metadata(folder_path=folder_path)
+            metadata = json.loads(open(metadata_file_path).read())
+            # Send metadata file
+            self.send_file(metadata_file_path)
 
         # Send all files
         for file_info in metadata:
@@ -116,6 +141,9 @@ class FileSender(QThread):
 
 
     def send_file(self, file_path, relative_file_path=None):
+        logger.debug("Sending file: %s", file_path)
+        # if self.metadata_created:
+        #     self.createmetadata(file_path=file_path)
         sent_size = 0
         file_size = os.path.getsize(file_path)
         if relative_file_path is None:
@@ -143,7 +171,6 @@ class FileSender(QThread):
             os.remove(file_path)
 
         return True
-
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
