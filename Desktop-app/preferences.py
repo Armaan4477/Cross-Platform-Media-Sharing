@@ -128,6 +128,7 @@ class PreferencesApp(QWidget):
 
         write_config(preferences)
         QMessageBox.information(self, "Success", "Preferences saved successfully!")
+        self.go_to_main_menu()
 
     def loadPreferences(self):
         config = get_config()
