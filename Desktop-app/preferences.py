@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
+from PyQt6.QtGui import QScreen
 from PyQt6.QtCore import Qt
 import sys
 import json
@@ -16,6 +17,7 @@ class PreferencesApp(QWidget):
     def initUI(self):
         self.setWindowTitle('Preferences')
         self.setGeometry(100, 100, 400, 300)
+        self.center_window()
 
         layout = QVBoxLayout()
 
@@ -129,6 +131,14 @@ class PreferencesApp(QWidget):
         write_config(preferences)
         QMessageBox.information(self, "Success", "Preferences saved successfully!")
         self.go_to_main_menu()
+
+    def center_window(self):
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        window_width, window_height = 400, 300
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
+
 
     def loadPreferences(self):
         config = get_config()
