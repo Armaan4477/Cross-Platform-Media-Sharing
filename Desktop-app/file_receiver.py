@@ -66,25 +66,35 @@ class FileReceiver(QThread):
         device_json = self.client_socket.recv(device_json_size).decode()
         self.device_info = json.loads(device_json)
         sender_device_type = self.device_info.get("device_type", "unknown")
+
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
             self.show_receive_app_p_signal.emit()
             sleep(1)  # Wait for the signal to be processed
+            
+            try:
+               # Receive response from sender
+              response = self.client_socket.recv(1024).decode()  # Adjust buffer size as needed
+              if response == "response: yes":
+                logger.debug("User wants to send more files/folders.")
+                # Handle waiting for more files/folders (additional logic here)
+              elif response == "response: no":
+                logger.debug("User does not want to send more files/folders.")
+                self.cleanup_sockets()  # Clean up sockets and close connections
+              elif response == "response: unexpected":
+                logger.warning("Unexpected response received.")
+                self.cleanup_sockets()  # Clean up sockets and close connections
+              else:
+                logger.warning("Unknown response received.")
+                self.cleanup_sockets()  # Clean up sockets and close connections
 
-            # Receive response from sender
-            response = self.client_socket.recv(1024).decode()  # Adjust buffer size as needed
-            if response == "response: yes":
-               logger.debug("User wants to send more files/folders.")
-               # Handle waiting for more files/folders (additional logic here)
-            elif response == "response: no":
-               logger.debug("User does not want to send more files/folders.")
-               self.cleanup_sockets()  # Clean up sockets and close connections
-            elif response == "response: unexpected":
-               logger.warning("Unexpected response received.")
-               self.cleanup_sockets()  # Clean up sockets and close connections
-            else:
-               logger.warning("Unknown response received.")
-               self.cleanup_sockets()  # Clean up sockets and close connections
+            except ConnectionResetError as e:
+                logger.error(f"Connection was reset: {e}")
+                self.cleanup_sockets()  # Clean up sockets and close connections
+                
+            except Exception as e:
+                logger.error(f"Unexpected error while receiving response: {e}")
+                self.cleanup_sockets()  # Clean up sockets and close connections
 
         elif sender_device_type == "java":
            logger.debug("Connected to a Java device, but this feature is not implemented yet.")
