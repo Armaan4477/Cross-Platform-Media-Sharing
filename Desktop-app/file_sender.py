@@ -51,6 +51,7 @@ class FileSender(QThread):
 
     def run(self):
         self.metadata_created = False
+        metadata_file_path = None
         if not self.initialize_connection():
             return
 
@@ -60,12 +61,11 @@ class FileSender(QThread):
             else:
                 if not self.metadata_created:
                     metadata_file_path = self.create_metadata(file_paths=self.file_paths)
-                    metadata = json.loads(open(metadata_file_path).read())
                     self.send_file(metadata_file_path)
                 self.send_file(file_path)
         
         # Delete metadata file
-        if self.metadata_created:
+        if self.metadata_created and metadata_file_path:
             os.remove(metadata_file_path)
             
         logger.debug("Sent halt signal")
