@@ -68,14 +68,16 @@ class FileSender(QThread):
         user_response = message_box.exec()  
 
         if user_response ==  QMessageBox.StandardButton.Yes:
+            # Send "yes" response to receiver
+            self.client_skt.send('response: yes'.encode())
             #if yes take user back to send file/folder window 
             self.send_button.setEnabled(True)    # Allowing send button access again
             self.file_paths.clear()  #Clear any previous selected files
             self.file_path_display.clear() #Clear the display
-            # Send "yes" response to receiver
-            self.client_skt.send('response: yes'.encode())
 
         elif user_response == QMessageBox.StandardButton.No :
+             # Send "no" response to receiver
+            self.client_skt.send('response: no'.encode())
             logger.debug("Sent halt signal")
             self.client_skt.send('encyp: h'.encode())
             sleep(0.5)
@@ -83,10 +85,11 @@ class FileSender(QThread):
             sleep(0.5)
             self.client_skt.close()
             self.goToMainMenu() #Call the method to return to main menu
-             # Send "no" response to receiver
-            self.client_skt.send('response: no'.encode())
+
 
         else:
+            # Send "unexpected" response to receiver
+            self.client_skt.send('response: unexpected'.encode()) 
             # Handle unexpected case (if any)
             logger.warning("Unexpected response from QMessageBox.")
             self.client_skt.close()
