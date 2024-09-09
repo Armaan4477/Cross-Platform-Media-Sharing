@@ -94,8 +94,6 @@ class FileSender(QThread):
             self.client_skt.send('response: unexpected'.encode())
             self.client_skt.close()
             self.goToMainMenu()
-            # Send "unexpected" response to receiver
-            self.client_skt.send('response: unexpected'.encode()) 
 
 
     def goToMainMenu(self):
