@@ -58,13 +58,50 @@ class FileSender(QThread):
                 self.send_folder(file_path)
             else:
                 self.send_file(file_path)
-        
-        logger.debug("Sent halt signal")
-        self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
-        self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
-        self.client_skt.close()
+
+            # Ask the user if they want to send more files or close the connection
+        message_box = QMessageBox()
+        message_box.setIcon(QMessageBox.Icon.Question)
+        message_box.setWindowTitle('Send More Files')
+        message_box.setText('Do you want to send more files?')
+        message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        user_response = message_box.exec()  
+
+        if user_response ==  QMessageBox.StandardButton.Yes:
+            #if yes take user back to send file/folder window 
+            self.send_button.setEnabled(True)    # Allowing send button access again
+            self.file_paths.clear()  #Clear any previous selected files
+            self.file_path_display.clear() #Clear the display
+            # Send "yes" response to receiver
+            self.client_skt.send('response: yes'.encode())
+
+        elif user_response == QMessageBox.StandardButton.No :
+            logger.debug("Sent halt signal")
+            self.client_skt.send('encyp: h'.encode())
+            sleep(0.5)
+            self.client_skt.send('encyp: h'.encode())
+            sleep(0.5)
+            self.client_skt.close()
+            self.goToMainMenu() #Call the method to return to main menu
+             # Send "no" response to receiver
+            self.client_skt.send('response: no'.encode())
+
+        else:
+            # Handle unexpected case (if any)
+            logger.warning("Unexpected response from QMessageBox.")
+            self.client_skt.close()
+            self.goToMainMenu()
+            # Send "unexpected" response to receiver
+            self.client_skt.send('response: unexpected'.encode()) 
+
+
+    def goToMainMenu(self):
+        # You might need to import the MainApp class
+        from main import MainApp
+        # Assuming QApplication instance is accessible, otherwise you'll need to manage that
+        QApplication.instance().quit()  # Exit the current app
+        self.main_app = MainApp()  # Create a new instance of the main menu
+        self.main_app.show()  # Show the main menu window        
 
     def send_folder(self, folder_path):
         print("Sending folder")
