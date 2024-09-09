@@ -56,7 +56,7 @@ if not os.path.exists(config_file):
     default_config = {
         "device_name": platform.node(),
         "save_to_directory": file_path,
-        "max_filesize": 1,
+        "max_filesize": 1000,
         "encryption": False
     }
 

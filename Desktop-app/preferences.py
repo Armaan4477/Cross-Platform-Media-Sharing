@@ -47,14 +47,6 @@ class PreferencesApp(QWidget):
         path_layout.addWidget(self.save_to_path_reset_button)
         layout.addLayout(path_layout)
 
-        # Max Filesize
-        self.max_filesize_label = QLabel('Max Filesize (GB):', self)
-        layout.addWidget(self.max_filesize_label)
-
-        self.max_filesize_input = QSpinBox(self)
-        self.max_filesize_input.setRange(1, 1000)  # Example range, adjust as needed
-        layout.addWidget(self.max_filesize_input)
-
         # Encryption Toggle
         self.encryption_toggle = QCheckBox('Encryption', self)
         layout.addWidget(self.encryption_toggle)
@@ -96,7 +88,6 @@ class PreferencesApp(QWidget):
     def submitPreferences(self):
         device_name = self.device_name_input.text()
         save_to_path = self.save_to_path_input.text()
-        max_filesize = self.max_filesize_input.value()
         encryption = self.encryption_toggle.isChecked()
 
         if not device_name:
@@ -106,7 +97,6 @@ class PreferencesApp(QWidget):
         preferences = {
             "device_name": device_name,
             "save_to_directory": save_to_path,
-            "max_filesize": max_filesize,
             "encryption": encryption
         }
 
@@ -117,5 +107,4 @@ class PreferencesApp(QWidget):
         config = get_config()
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
-        self.max_filesize_input.setValue(config["max_filesize"])
         self.encryption_toggle.setChecked(config["encryption"])
