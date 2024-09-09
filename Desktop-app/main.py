@@ -34,7 +34,7 @@ class MainApp(QWidget):
         layout.addWidget(self.preferences_button)
 
         self.setLayout(layout)
-        logger.info("Started Main App")
+        logger.info("Started Main App") 
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
