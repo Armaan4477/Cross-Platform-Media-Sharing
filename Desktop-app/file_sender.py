@@ -223,6 +223,8 @@ class SendApp(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.config = get_config()
+        logger.debug("Encryption : %s", self.config['encryption'])
         self.setWindowTitle('Send File')
         self.setGeometry(100, 100, 400, 300)
         self.center_window()
