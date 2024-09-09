@@ -76,22 +76,22 @@ class FileSender(QThread):
             self.file_path_display.clear() #Clear the display
 
         elif user_response == QMessageBox.StandardButton.No :
-             # Send "no" response to receiver
-            self.client_skt.send('response: no'.encode())
             logger.debug("Sent halt signal")
             self.client_skt.send('encyp: h'.encode())
             sleep(0.5)
             self.client_skt.send('encyp: h'.encode())
             sleep(0.5)
+             # Send "no" response to receiver
+            self.client_skt.send('response: no'.encode())
             self.client_skt.close()
             self.goToMainMenu() #Call the method to return to main menu
 
 
         else:
-            # Send "unexpected" response to receiver
-            self.client_skt.send('response: unexpected'.encode()) 
             # Handle unexpected case (if any)
             logger.warning("Unexpected response from QMessageBox.")
+             # Send "Unexpected Error" response to receiver
+            self.client_skt.send('response: unexpected'.encode())
             self.client_skt.close()
             self.goToMainMenu()
             # Send "unexpected" response to receiver
