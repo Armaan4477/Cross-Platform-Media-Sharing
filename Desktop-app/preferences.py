@@ -12,6 +12,7 @@ from constant import get_config, write_config, get_default_path
 class PreferencesApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.original_preferences = {}
         self.initUI()
 
     def initUI(self):
@@ -81,27 +82,40 @@ class PreferencesApp(QWidget):
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
+    
+    def changes_made(self):
+        """Check if any changes were made compared to the loaded preferences."""
+        current_preferences = {
+            "device_name": self.device_name_input.text(),
+            "save_to_directory": self.save_to_path_input.text(),
+            "encryption": self.encryption_toggle.isChecked(),
+        }
+        return current_preferences != self.original_preferences
+
     def goToMainMenu(self):
+        if self.changes_made():
+            reply = QMessageBox.question(
+                self,
+            "Save Changes",
+            "Do you want to save changes before returning to the main menu?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel
+        )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.submitPreferences()  # Save preferences 
+                self.go_to_main_menu()    # Go to main menu
 
-        reply = QMessageBox.question(
-            self,
-        "Save Changes",
-        "Do you want to save changes before returning to the main menu?",
-        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
-        QMessageBox.StandardButton.Cancel
-    )
-        if reply == QMessageBox.StandardButton.Yes:
-            self.submitPreferences()  # Save preferences 
-            self.go_to_main_menu()    # Go to main menu
+            elif reply == QMessageBox.StandardButton.No:
+                self.go_to_main_menu()    # Go to main menu
+        else:       
+            self.go_to_main_menu()  # No changes, go directly to main menu
 
-        elif reply == QMessageBox.StandardButton.No:
-            self.go_to_main_menu()    # Go to main menu
-            
+
     def go_to_main_menu(self):
-            self.hide()
-            from main import MainApp
-            self.main_app = MainApp()
-            self.main_app.show()
+        self.hide()
+        from main import MainApp
+        self.main_app = MainApp()
+        self.main_app.show()
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -135,3 +149,6 @@ class PreferencesApp(QWidget):
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.encryption_toggle.setChecked(config["encryption"])
+
+        # Store original values to track changes
+        self.original_preferences = config.copy()

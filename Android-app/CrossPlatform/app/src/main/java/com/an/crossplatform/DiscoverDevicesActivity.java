@@ -8,9 +8,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-
 import org.json.JSONObject;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -25,7 +23,11 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import android.content.Context;
+import android.net.wifi.WifiManager;
+import android.text.format.Formatter;
 
+/** @noinspection CallToPrintStackTrace*/
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private static final int DISCOVER_PORT = 12345; // Port for sending DISCOVER messages
@@ -57,6 +59,10 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         listDevices = findViewById(R.id.list_devices);
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, devices);
         listDevices.setAdapter(adapter);
+
+        // Call getBroadcastIp when the activity starts
+        String broadcastIp = getBroadcastIp(this);
+        Log.d("DiscoverDevices", "BroadcastIP: " + broadcastIp);
 
         btnDiscover.setOnClickListener(v -> {
             resetSockets();
@@ -102,8 +108,9 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 discoverSocket = new DatagramSocket();
                 discoverSocket.setBroadcast(true);
 
+                String broadcastIp = getBroadcastIp(this);
                 byte[] sendData = "DISCOVER".getBytes();
-                InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
+                InetAddress broadcastAddress = InetAddress.getByName(broadcastIp);
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
                 Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
 
@@ -122,6 +129,24 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+    public static String getBroadcastIp(Context context) {
+        // Get the WifiManager service
+        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        // Get the local IP address
+        int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
+
+        // Convert to a human-readable string format
+        String localIp = Formatter.formatIpAddress(ipAddress);
+
+        // Replace the last part with "255"
+        String[] ipParts = localIp.split("\\.");
+        ipParts[3] = "255";
+        String broadcastIp = String.join(".", ipParts);
+
+        return broadcastIp;
+    }
+
 
     private void startReceiverThread() {
         new Thread(() -> {
