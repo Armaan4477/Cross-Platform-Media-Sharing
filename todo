@@ -8,10 +8,8 @@ If no then back to main window
 (FYI Receiver ka logic bhe modify karna padega sath mai Varna pura fail hoga)
 
 Urmi:
-After clicking the main menu button in the Preference window, check if there are unsaved changes, 
-if there are unsaved changes then show the user the menu to save the changes or discard the changes
-if there are no unsaved changes then do not show that menu.
-(Currently vo menu chal raha hai barabar khali har time dhikata hai, usme check kar agar unsaved changes hai fir hi dhika user ko)
+Find a logo/Icon for our Project and send it on the group (image should be in png, without a background and high quality.)
+(upload the full quality images in the shared drive, make a new folder there and then tell us on the group so we will check it out)
 
 
 
@@ -26,10 +24,7 @@ Nishal:
 
 
 Urmi:
-1) Find a logo/Icon for our Project and send it on the group (image should be in png, without a background and high quality.)
-   (upload the full quality images in the shared drive, make a new folder there and then tell us on the group so we will check it out)
+1) If during file/folder receiving there is a file/folder already present with the same name add (1),(2) and so on for the copies that are present. 
 
-2) If during file/folder receiving there is a file/folder already present with the same name add (1),(2) and so on for the copies that are present. 
-
-3) When sending a folder show the number of total files, number of files completed and number of files remaining.
+2) When sending a folder show the number of total files, number of files completed and number of files remaining.
 (ps. Total files metadata.json mai already ja raha hai incase needed hai)
