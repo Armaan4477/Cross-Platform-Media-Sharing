@@ -62,6 +62,6 @@ if not os.path.exists(config_file):
 
     write_config(default_config, config_file)
 
-BROADCAST_ADDRESS = '239.255.255.250'
-BROADCAST_PORT = 1900
-LISTEN_PORT = 1900
+BROADCAST_ADDRESS = '255.255.255.255'
+BROADCAST_PORT = 12345
+LISTEN_PORT = 12346
