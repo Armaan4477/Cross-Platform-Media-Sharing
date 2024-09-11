@@ -111,8 +111,9 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 discoverSocket = new DatagramSocket();
                 discoverSocket.setBroadcast(true);
 
+                String broadcastIp = getBroadcastIp(this);
                 byte[] sendData = "DISCOVER".getBytes();
-                InetAddress broadcastAddress = InetAddress.getByName("broadcastIp");
+                InetAddress broadcastAddress = InetAddress.getByName(broadcastIp);
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
                 Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
 
