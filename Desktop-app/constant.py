@@ -68,7 +68,6 @@ def get_broadcast():
     try:
         # Create a socket to connect to a remote server
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        
         # Attempt to connect to an external server (this will not send data)
         s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
@@ -77,22 +76,17 @@ def get_broadcast():
         local_ip = "Unable to get IP"
     finally:
         s.close()
-
     if local_ip == "Unable to get IP":
         return local_ip
 
     # Split the IP address into parts
     ip_parts = local_ip.split('.')
-
     # Replace the last part with '255' to create the broadcast address
     ip_parts[-1] = '255'
-    
     # Join the parts back together to form the broadcast address
     broadcast_address = '.'.join(ip_parts)
-    
     return broadcast_address
 
-    
     
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
