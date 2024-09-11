@@ -86,6 +86,7 @@ def get_broadcast():
 
     # Replace the last part with '255' to create the broadcast address
     ip_parts[-1] = '255'
+    ip_parts[-2] = '255'
     
     # Join the parts back together to form the broadcast address
     broadcast_address = '.'.join(ip_parts)
