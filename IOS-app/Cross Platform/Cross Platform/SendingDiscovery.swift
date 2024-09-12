@@ -22,19 +22,25 @@ class SendingDiscovery: ObservableObject {
             isListening = true
         }
 
+        // Start the discovery timer
         discoveryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.sendDiscoverMessage()
         }
     }
 
     func stopContinuousDiscovery() {
+        // Invalidate the timer
         discoveryTimer?.invalidate()
         discoveryTimer = nil
-        isListening = false
-        stopUDPListener()
+
+        // Stop the UDP listener
+        if isListening {
+            stopUDPListener()
+            isListening = false
+        }
     }
 
-    func setupUDPListener() {
+    private func setupUDPListener() {
         do {
             udpListener = try NWListener(using: .udp, on: listeningPort)  // Listen on port 12346
             udpListener?.newConnectionHandler = { [weak self] connection in
@@ -47,13 +53,13 @@ class SendingDiscovery: ObservableObject {
         }
     }
 
-    func stopUDPListener() {
+    private func stopUDPListener() {
         udpListener?.cancel()
         udpListener = nil
         print("UDP Listener stopped")
     }
 
-    func sendDiscoverMessage() {
+    private func sendDiscoverMessage() {
         guard let broadcastIp = broadcastIp else {
             print("Broadcast IP is not available")
             return
