@@ -10,6 +10,11 @@ class SendingDiscovery: ObservableObject {
     private let listeningPort: NWEndpoint.Port = 12346  // Port for listening to RECEIVER messages
     private var isListening = false
     private var discoveryTimer: Timer?
+    private var broadcastIp: String?
+
+    init() {
+        self.broadcastIp = calculateBroadcastIp()  // Calculate the broadcast IP address on initialization
+    }
 
     func startContinuousDiscovery() {
         if !isListening {
@@ -49,9 +54,13 @@ class SendingDiscovery: ObservableObject {
     }
 
     func sendDiscoverMessage() {
-        print("Sending DISCOVER message")
-        let broadcastAddress = "192.168.29.255"
-        let connection = NWConnection(host: NWEndpoint.Host(broadcastAddress), port: discoveryPort, using: .udp)  // Send on port 12345
+        guard let broadcastIp = broadcastIp else {
+            print("Broadcast IP is not available")
+            return
+        }
+        print("Sending DISCOVER message to \(broadcastIp)")
+        
+        let connection = NWConnection(host: NWEndpoint.Host(broadcastIp), port: discoveryPort, using: .udp)  // Send on port 12345
         connection.start(queue: udpQueue)
         let discoverMessage = "DISCOVER".data(using: .utf8)
         
@@ -91,5 +100,40 @@ class SendingDiscovery: ObservableObject {
                 }
             }
         }
+    }
+
+    private func calculateBroadcastIp() -> String? {
+        var address: String?
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        
+        if getifaddrs(&ifaddr) == 0 {
+            var ptr = ifaddr
+            while ptr != nil {
+                defer { ptr = ptr?.pointee.ifa_next }
+                
+                guard let interface = ptr?.pointee else { continue }
+                let addrFamily = interface.ifa_addr.pointee.sa_family
+                
+                if addrFamily == UInt8(AF_INET), let cString = interface.ifa_name {
+                    let name = String(cString: cString)
+                    if name == "en0" {  // Typically "en0" is the Wi-Fi interface on iOS
+                        var addr = interface.ifa_addr.pointee
+                        let ipAddress = withUnsafePointer(to: &addr) {
+                            $0.withMemoryRebound(to: sockaddr_in.self, capacity: 1) {
+                                String(cString: inet_ntoa($0.pointee.sin_addr))
+                            }
+                        }
+                        address = ipAddress
+                        break
+                    }
+                }
+            }
+            freeifaddrs(ifaddr)
+        }
+        
+        guard let localIp = address else { return nil }
+        var ipParts = localIp.split(separator: ".")
+        ipParts[3] = "255"
+        return ipParts.joined(separator: ".")
     }
 }
