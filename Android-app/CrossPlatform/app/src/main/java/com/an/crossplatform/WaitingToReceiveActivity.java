@@ -7,6 +7,10 @@ import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,11 +25,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
@@ -44,10 +45,37 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         TextView txtWaiting = findViewById(R.id.txt_waiting);
         txtWaiting.setText("Waiting to receive file...");
 
-        // Get the device name
-        DEVICE_NAME = Build.MODEL;
-
+        // Get the device name from config.json present in the internal storage
+        String rawJson = readJsonFromFile();
+        if (rawJson != null) {
+            try {
+                JSONObject json = new JSONObject(rawJson);
+                DEVICE_NAME = json.getString("device_name");
+                Log.d("WaitingToReceive", "Device name: " + DEVICE_NAME);
+            } catch (Exception e) {
+                Log.e("WaitingToReceive", "Error parsing JSON", e);
+            }
+        }
         startListeningForDiscover();
+    }
+
+    private String readJsonFromFile(){
+        File file = new File(getFilesDir(), "config.json");
+        if (file.exists()) {
+            StringBuilder jsonString = new StringBuilder();
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonString.append(line);
+                }
+                reader.close();
+                return jsonString.toString();
+            } catch (Exception e) {
+                Log.e("PreferencesActivity", "Error reading JSON from file", e);
+            }
+        }
+        return null;
     }
 
     private void startListeningForDiscover() {

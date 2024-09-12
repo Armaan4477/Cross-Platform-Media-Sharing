@@ -1,0 +1,6 @@
+{
+  "device_name": "Android Device",
+  "save_to_directory": "/tree/primary/Download",
+  "max_filesize": 1000,
+  "encryption": false
+}

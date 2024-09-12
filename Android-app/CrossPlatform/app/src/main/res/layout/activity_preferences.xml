@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Device Name Label -->
+    <TextView
+        android:id="@+id/device_name_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Device Name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Device Name Input -->
+    <EditText
+        android:id="@+id/device_name_input"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Enter Device Name"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/device_name_label"
+        app:layout_constraintWidth_percent="1.0" />
+
+    <!-- Reset Device Name Button -->
+    <Button
+        android:id="@+id/device_name_reset_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reset"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/device_name_input" />
+
+    <!-- Save to Path Label -->
+    <TextView
+        android:id="@+id/save_to_path_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Save to Path"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/device_name_reset_button" />
+
+    <!-- Save to Path Input -->
+    <EditText
+        android:id="@+id/save_to_path_input"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Select Directory"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_to_path_label"
+        app:layout_constraintWidth_percent="1.0" />
+
+    <!-- Buttons for Save Path: Pick and Reset -->
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_to_path_input">
+
+        <Button
+            android:id="@+id/save_to_path_picker_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pick Directory" />
+
+        <Button
+            android:id="@+id/save_to_path_reset_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Reset" />
+    </LinearLayout>
+
+    <!-- Main Menu and Submit Buttons -->
+    <LinearLayout
+        android:id="@+id/buttons_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_to_path_picker_button"
+        tools:ignore="NotSibling">
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/main_menu_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Main Menu"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/submit_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Submit"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
