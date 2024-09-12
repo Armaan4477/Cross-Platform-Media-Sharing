@@ -6,7 +6,8 @@ class SendingDiscovery: ObservableObject {
     @Published var devices: [String] = []
     private var udpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
-    private let udpPort: NWEndpoint.Port = 12345
+    private let discoveryPort: NWEndpoint.Port = 12345  // Port for sending DISCOVER messages
+    private let listeningPort: NWEndpoint.Port = 12346  // Port for listening to RECEIVER messages
     private var isListening = false
     private var discoveryTimer: Timer?
 
@@ -30,12 +31,12 @@ class SendingDiscovery: ObservableObject {
 
     func setupUDPListener() {
         do {
-            udpListener = try NWListener(using: .udp, on: udpPort)
+            udpListener = try NWListener(using: .udp, on: listeningPort)  // Listen on port 12346
             udpListener?.newConnectionHandler = { [weak self] connection in
                 self?.handleNewUDPConnection(connection)
             }
             udpListener?.start(queue: udpQueue)
-            print("UDP Listener started on port \(udpPort.rawValue)")
+            print("UDP Listener started on port \(listeningPort.rawValue)")
         } catch {
             print("Failed to create UDP listener: \(error)")
         }
@@ -49,18 +50,19 @@ class SendingDiscovery: ObservableObject {
 
     func sendDiscoverMessage() {
         print("Sending DISCOVER message")
-        let broadcastAddress = "255.255.255.255"
-        let connection = NWConnection(host: NWEndpoint.Host(broadcastAddress), port: udpPort, using: .udp)
+        let broadcastAddress = "192.168.29.255"
+        let connection = NWConnection(host: NWEndpoint.Host(broadcastAddress), port: discoveryPort, using: .udp)  // Send on port 12345
         connection.start(queue: udpQueue)
         let discoverMessage = "DISCOVER".data(using: .utf8)
         
         connection.send(content: discoverMessage, completion: .contentProcessed { error in
             if let error = error {
                 print("Failed to send DISCOVER message: \(error.localizedDescription)")
+                connection.cancel()
             } else {
                 print("DISCOVER message sent successfully")
+                connection.cancel()
             }
-            connection.cancel()
         })
     }
 
