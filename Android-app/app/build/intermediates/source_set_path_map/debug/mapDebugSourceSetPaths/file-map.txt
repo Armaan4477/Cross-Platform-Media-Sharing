@@ -1,0 +1,34 @@
+com.example.crossplatformmediasharing.app-pngs-0 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\build\generated\res\pngs\debug
+com.example.crossplatformmediasharing.app-resValues-1 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\build\generated\res\resValues\debug
+com.example.crossplatformmediasharing.app-packageDebugResources-2 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.crossplatformmediasharing.app-packageDebugResources-3 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.crossplatformmediasharing.app-debug-4 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.crossplatformmediasharing.app-debug-5 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\src\debug\res
+com.example.crossplatformmediasharing.app-main-6 C:\Java\Cross-Platform-Media-Sharing\Android-app\app\src\main\res
+com.example.crossplatformmediasharing.app-recyclerview-1.1.0-7 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\180e3eda8ef82c764a5645f097b88a6b\transformed\recyclerview-1.1.0\res
+com.example.crossplatformmediasharing.app-lifecycle-viewmodel-2.6.2-8 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\20d5c053a5c4f9314289488d8b236938\transformed\lifecycle-viewmodel-2.6.2\res
+com.example.crossplatformmediasharing.app-constraintlayout-2.1.4-9 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\240feb6a4c564727fdb75a5be0ccfc97\transformed\constraintlayout-2.1.4\res
+com.example.crossplatformmediasharing.app-core-1.13.0-10 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\278a9b808b4179588646977873ecae28\transformed\core-1.13.0\res
+com.example.crossplatformmediasharing.app-lifecycle-runtime-2.6.2-11 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\2d0dc27397fe37bb494fe9615634a939\transformed\lifecycle-runtime-2.6.2\res
+com.example.crossplatformmediasharing.app-emoji2-1.3.0-12 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\32b97fe5394bfc3c8c279d3add8d0d45\transformed\emoji2-1.3.0\res
+com.example.crossplatformmediasharing.app-lifecycle-viewmodel-savedstate-2.6.2-13 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\3877bf60678552e37215156c0980668e\transformed\lifecycle-viewmodel-savedstate-2.6.2\res
+com.example.crossplatformmediasharing.app-activity-1.9.0-14 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\3ed21d27a06396bdd1201bc834905436\transformed\activity-1.9.0\res
+com.example.crossplatformmediasharing.app-core-ktx-1.13.0-15 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\409fbb465ced3e64b1d8a40bf09f61c9\transformed\core-ktx-1.13.0\res
+com.example.crossplatformmediasharing.app-annotation-experimental-1.4.0-16 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\4b4f6ff01adfc93ae82af61b1254ee28\transformed\annotation-experimental-1.4.0\res
+com.example.crossplatformmediasharing.app-startup-runtime-1.1.1-17 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\5111a06e424a2134585946b5d2e4b748\transformed\startup-runtime-1.1.1\res
+com.example.crossplatformmediasharing.app-appcompat-resources-1.7.0-18 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\638669c6e55e43e5758fcc305ae0865a\transformed\appcompat-resources-1.7.0\res
+com.example.crossplatformmediasharing.app-drawerlayout-1.1.1-19 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\6df82590d58d39c33beb168fe396f399\transformed\drawerlayout-1.1.1\res
+com.example.crossplatformmediasharing.app-transition-1.5.0-20 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\717834aed8c7608d922ab7a2b1fd5ff2\transformed\transition-1.5.0\res
+com.example.crossplatformmediasharing.app-lifecycle-process-2.6.2-21 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\7205d6621e920d716cad5cc16545168f\transformed\lifecycle-process-2.6.2\res
+com.example.crossplatformmediasharing.app-lifecycle-livedata-core-2.6.2-22 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\7e9c8d7038478e3305cd9084fa0307e5\transformed\lifecycle-livedata-core-2.6.2\res
+com.example.crossplatformmediasharing.app-emoji2-views-helper-1.3.0-23 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\7ee7c6508fabb34d1cfa51ea8d7f4977\transformed\emoji2-views-helper-1.3.0\res
+com.example.crossplatformmediasharing.app-cardview-1.0.0-24 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\8af662f8d02cebba0b57206ad028c931\transformed\cardview-1.0.0\res
+com.example.crossplatformmediasharing.app-appcompat-1.7.0-25 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\9fec72012c70a25fabd0ef96aec02de2\transformed\appcompat-1.7.0\res
+com.example.crossplatformmediasharing.app-coordinatorlayout-1.1.0-26 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\a8e1b8e99987a648fdd6d9dd23aca0f8\transformed\coordinatorlayout-1.1.0\res
+com.example.crossplatformmediasharing.app-savedstate-1.2.1-27 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\c21409c817d34cdbbc44b15ba4d53968\transformed\savedstate-1.2.1\res
+com.example.crossplatformmediasharing.app-core-runtime-2.2.0-28 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\cfb7df053087b4274f233ea4fac10c34\transformed\core-runtime-2.2.0\res
+com.example.crossplatformmediasharing.app-viewpager2-1.0.0-29 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\ed460e05191289d8f425180169183921\transformed\viewpager2-1.0.0\res
+com.example.crossplatformmediasharing.app-material-1.12.0-30 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\f1753f668e20fc71efa1fdbd537fef03\transformed\material-1.12.0\res
+com.example.crossplatformmediasharing.app-profileinstaller-1.3.1-31 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\f3a968569c4cf0cc8a6c4325c0d95466\transformed\profileinstaller-1.3.1\res
+com.example.crossplatformmediasharing.app-fragment-1.5.4-32 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\f4897a751562484ef62cb4fbc757fc17\transformed\fragment-1.5.4\res
+com.example.crossplatformmediasharing.app-lifecycle-livedata-2.6.2-33 C:\Users\nishal gopal poojary\.gradle\caches\transforms-4\fee480bd46ee5a5ccb8e70d76362bdf9\transformed\lifecycle-livedata-2.6.2\res

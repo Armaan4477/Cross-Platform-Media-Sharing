@@ -50,15 +50,28 @@ class FileSender(QThread):
         return True
 
     def run(self):
+        metadata_file_path = None
+        self.metadata_created = False
+        metadata_file_path = None
         if not self.initialize_connection():
             return
+
+        self.encryption_flag = self.config['encryption']
+        # logger.debug("Encryption flag: %s", self.encryption_flag)
 
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
                 self.send_folder(file_path)
             else:
-                self.send_file(file_path)
-
+                if not self.metadata_created:
+                    metadata_file_path = self.create_metadata(file_paths=self.file_paths)
+                    self.send_file(metadata_file_path)
+                self.send_file(file_path, encrypted_transfer=self.encryption_flag)
+        
+        # Delete metadata file
+        if self.metadata_created and metadata_file_path:
+            os.remove(metadata_file_path)
+    
             # Ask the user if they want to send more files or close the connection
         message_box = QMessageBox()
         message_box.setIcon(QMessageBox.Icon.Question)
@@ -104,39 +117,55 @@ class FileSender(QThread):
         self.main_app = MainApp()  # Create a new instance of the main menu
         self.main_app.show()  # Show the main menu window        
 
-    def send_folder(self, folder_path):
-        print("Sending folder")
-
-        # Collect metadata for all files and folders
-        metadata = []
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                relative_path = os.path.relpath(file_path, folder_path)
+    def create_metadata(self, folder_path=None,file_paths=None):
+        if folder_path:
+            metadata = []
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(file_path, folder_path)
+                    file_size = os.path.getsize(file_path)
+                    metadata.append({
+                        'path': relative_path,
+                        'size': file_size
+                    })
+                for dir in dirs:
+                    dir_path = os.path.join(root, dir)
+                    relative_path = os.path.relpath(dir_path, folder_path)
+                    metadata.append({
+                        'path': relative_path + '/',
+                        'size': 0  # Size is 0 for directories
+                    })
+            metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
+            metadata_json = json.dumps(metadata)
+            metadata_file_path = os.path.join(folder_path, 'metadata.json')
+            with open(metadata_file_path, 'w') as f:
+                f.write(metadata_json)
+            self.metadata_created = True
+            return metadata_file_path
+        elif file_paths:
+            metadata = []
+            for file_path in file_paths:
                 file_size = os.path.getsize(file_path)
                 metadata.append({
-                    'path': relative_path,
+                    'path': os.path.basename(file_path),
                     'size': file_size
                 })
-            for dir in dirs:
-                dir_path = os.path.join(root, dir)
-                relative_path = os.path.relpath(dir_path, folder_path)
-                metadata.append({
-                    'path': relative_path + '/',
-                    'size': 0  # Size is 0 for directories
-                })
-
-        # Add metadata for folder structure
-        metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
-        metadata_json = json.dumps(metadata)
-        metadata_file_path = os.path.join(folder_path, 'metadata.json')
-
-        # Write metadata to file
-        with open(metadata_file_path, 'w') as f:
-            f.write(metadata_json)
-
-        # Send metadata file
-        self.send_file(metadata_file_path)
+            metadata_json = json.dumps(metadata)
+            metadata_file_path = os.path.join(os.path.dirname(file_paths[0]), 'metadata.json')
+            with open(metadata_file_path, 'w') as f:
+                f.write(metadata_json)
+            self.metadata_created = True
+            return metadata_file_path
+            
+    def send_folder(self, folder_path):
+        print("Sending folder")
+        
+        if not self.metadata_created:
+            metadata_file_path = self.create_metadata(folder_path=folder_path)
+            metadata = json.loads(open(metadata_file_path).read())
+            # Send metadata file
+            self.send_file(metadata_file_path)
 
         # Send all files
         for file_info in metadata:
@@ -144,7 +173,9 @@ class FileSender(QThread):
             file_path = os.path.join(folder_path, relative_file_path)
             if not relative_file_path.endswith('.delete'):
                 if file_info['size'] > 0:
-                    self.send_file(file_path, relative_file_path=relative_file_path)
+                    if self.encryption_flag:
+                        relative_file_path += ".crypt"
+                    self.send_file(file_path, relative_file_path=relative_file_path, encrypted_transfer=self.encryption_flag)
                 else:
                     # Handle directory creation (if needed, in receiver)
                     pass
@@ -152,8 +183,17 @@ class FileSender(QThread):
         # Clean up metadata file
         os.remove(metadata_file_path)
 
+    def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
+        logger.debug("Sending file: %s", file_path)
+        # if self.metadata_created:
+        #     self.createmetadata(file_path=file_path)
 
-    def send_file(self, file_path, relative_file_path=None):
+        # Encrypt the file if encrypted_transfer argument is present
+        if encrypted_transfer:
+            logger.debug("Encrypted transfer with password: %s", self.password)
+
+            file_path = encrypt_file(file_path, self.password)
+
         sent_size = 0
         file_size = os.path.getsize(file_path)
         if relative_file_path is None:
@@ -161,7 +201,8 @@ class FileSender(QThread):
         file_name_size = len(relative_file_path.encode())
         logger.debug("Sending %s, %s", relative_file_path, file_size)
 
-        encryption_flag = 'encyp: t' if self.config['encryption'] else 'encyp: f'
+        encryption_flag = 'encyp: t' if encrypted_transfer else 'encyp: f'
+
         self.client_skt.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
 
@@ -177,11 +218,10 @@ class FileSender(QThread):
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
 
-        if self.config['encryption']:
+        if encrypted_transfer:
             os.remove(file_path)
 
         return True
-
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
@@ -221,6 +261,8 @@ class SendApp(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.config = get_config()
+        logger.debug("Encryption : %s", self.config['encryption'])
         self.setWindowTitle('Send File')
         self.setGeometry(100, 100, 400, 300)
         self.center_window()

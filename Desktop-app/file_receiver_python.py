@@ -113,7 +113,12 @@ class ReceiveWorkerPython(QThread):
                 if file_name == 'metadata.json':
                     logger.debug("Receiving metadata file.")
                     self.metadata = self.receive_metadata(file_size)
-                    self.destination_folder = self.create_folder_structure(self.metadata)
+                    ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
+                    if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
+                        self.destination_folder = self.create_folder_structure(self.metadata)
+                    else:
+                        ## If not, set the destination folder to the default directory
+                        self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
                     # Determine the correct path using metadata
