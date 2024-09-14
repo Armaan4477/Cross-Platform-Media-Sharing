@@ -170,22 +170,27 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 // Flag for handling which activity to launch
                 final JSONObject[] receivedJsonContainer = new JSONObject[1]; // Use array to allow modification inside thread
 
-                // Start a thread to receive the JSON from the sender after sending
                 Thread receiveThread = new Thread(() -> {
                     try {
                         // Read the JSON size first (as a long, little-endian)
                         byte[] recvSizeBuf = new byte[Long.BYTES];
-                        bufferedInputStream.read(recvSizeBuf);
+                        if (bufferedInputStream.read(recvSizeBuf) == -1) {
+                            Log.e("WaitingToReceive", "End of stream reached while reading size");
+                            return;
+                        }
+
                         ByteBuffer sizeBufferReceived = ByteBuffer.wrap(recvSizeBuf).order(ByteOrder.LITTLE_ENDIAN);
                         long jsonSize = sizeBufferReceived.getLong();
 
                         // Read the actual JSON data
                         byte[] recvBuf = new byte[(int) jsonSize];
                         int totalBytesRead = 0;
+
                         while (totalBytesRead < recvBuf.length) {
                             int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
                             if (bytesRead == -1) {
-                                throw new IOException("End of stream reached before reading complete data");
+                                Log.e("WaitingToReceive", "End of stream reached before reading complete data");
+                                return;
                             }
                             totalBytesRead += bytesRead;
                         }
@@ -194,14 +199,11 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
                         JSONObject receivedJson = new JSONObject(jsonStr);
                         Log.d("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
-
-                        // Save the received JSON to the container
                         receivedJsonContainer[0] = receivedJson;
 
                     } catch (Exception e) {
                         Log.e("WaitingToReceive", "Error receiving JSON data", e);
                     } finally {
-                        // Only close this specific socket after the entire communication is done
                         try {
                             if (bufferedInputStream != null) bufferedInputStream.close();
                             if (bufferedOutputStream != null) bufferedOutputStream.close();
@@ -211,7 +213,6 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         }
                     }
                 });
-
                 // Start the receiving thread and wait for it to complete
                 receiveThread.start();
                 receiveThread.join(); // Wait until the thread finishes before continuing

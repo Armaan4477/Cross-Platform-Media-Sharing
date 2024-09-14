@@ -178,7 +178,7 @@ class FileSenderJava(QThread):
 
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
-                data = f.read(4096)
+                data = f.read(4096*4)
                 self.client_skt.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
