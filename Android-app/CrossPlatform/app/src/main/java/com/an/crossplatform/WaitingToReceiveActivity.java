@@ -7,6 +7,10 @@ import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,11 +25,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
@@ -44,10 +45,53 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         TextView txtWaiting = findViewById(R.id.txt_waiting);
         txtWaiting.setText("Waiting to receive file...");
 
-        // Get the device name
-        DEVICE_NAME = Build.MODEL;
-
+        // Get the device name from config.json present in the internal storage
+        String rawJson = readJsonFromFile();
+        if (rawJson != null) {
+            try {
+                // Read JSON from internal storage at Android/data/com.an.crossplatform/files/config/config.json
+                JSONObject json = new JSONObject(rawJson);
+                DEVICE_NAME = json.getString("device_name");  // Ensure correct key here
+                Log.d("WaitingToReceive", "Device name from config: " + DEVICE_NAME);
+            } catch (Exception e) {
+                Log.e("WaitingToReceive", "Error parsing JSON", e);
+                DEVICE_NAME = "Android Device";  // Fallback if error occurs
+            }
+        } else {
+            DEVICE_NAME = "Android Device";  // Fallback if config.json doesn't exist
+            Log.d("WaitingToReceive", "Using default device name: " + DEVICE_NAME);
+        }
         startListeningForDiscover();
+    }
+
+    private String readJsonFromFile() {
+        // Use internal storage for folder
+        File folder = new File(getFilesDir(), "config");
+        if (!folder.exists()) {
+            Log.d("readJsonFromFile", "Config folder does not exist. Returning null.");
+            return null;
+        }
+
+        File file = new File(folder, "config.json");
+        Log.d("readJsonFromFile", "Looking for file at: " + file.getAbsolutePath());
+
+        if (file.exists()) {
+            Log.d("readJsonFromFile", "File exists. Reading contents...");
+            StringBuilder jsonString = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonString.append(line);
+                }
+                Log.d("readJsonFromFile", "File content: " + jsonString.toString());
+                return jsonString.toString();
+            } catch (Exception e) {
+                Log.e("readJsonFromFile", "Error reading JSON from file", e);
+            }
+        } else {
+            Log.d("readJsonFromFile", "File does not exist at: " + file.getAbsolutePath());
+        }
+        return null;
     }
 
     private void startListeningForDiscover() {
