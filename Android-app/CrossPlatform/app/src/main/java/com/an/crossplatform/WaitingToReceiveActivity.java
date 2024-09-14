@@ -49,31 +49,47 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         String rawJson = readJsonFromFile();
         if (rawJson != null) {
             try {
+                // Read JSON from internal storage at Android/data/com.an.crossplatform/files/config/config.json
                 JSONObject json = new JSONObject(rawJson);
-                DEVICE_NAME = json.getString("device_name");
-                Log.d("WaitingToReceive", "Device name: " + DEVICE_NAME);
+                DEVICE_NAME = json.getString("device_name");  // Ensure correct key here
+                Log.d("WaitingToReceive", "Device name from config: " + DEVICE_NAME);
             } catch (Exception e) {
                 Log.e("WaitingToReceive", "Error parsing JSON", e);
+                DEVICE_NAME = "Android Device";  // Fallback if error occurs
             }
+        } else {
+            DEVICE_NAME = "Android Device";  // Fallback if config.json doesn't exist
+            Log.d("WaitingToReceive", "Using default device name: " + DEVICE_NAME);
         }
         startListeningForDiscover();
     }
 
-    private String readJsonFromFile(){
-        File file = new File(getFilesDir(), "config.json");
+    private String readJsonFromFile() {
+        // Use internal storage for folder
+        File folder = new File(getFilesDir(), "config");
+        if (!folder.exists()) {
+            Log.d("readJsonFromFile", "Config folder does not exist. Returning null.");
+            return null;
+        }
+
+        File file = new File(folder, "config.json");
+        Log.d("readJsonFromFile", "Looking for file at: " + file.getAbsolutePath());
+
         if (file.exists()) {
+            Log.d("readJsonFromFile", "File exists. Reading contents...");
             StringBuilder jsonString = new StringBuilder();
-            try {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     jsonString.append(line);
                 }
-                reader.close();
+                Log.d("readJsonFromFile", "File content: " + jsonString.toString());
                 return jsonString.toString();
             } catch (Exception e) {
-                Log.e("PreferencesActivity", "Error reading JSON from file", e);
+                Log.e("readJsonFromFile", "Error reading JSON from file", e);
             }
+        } else {
+            Log.d("readJsonFromFile", "File does not exist at: " + file.getAbsolutePath());
         }
         return null;
     }
