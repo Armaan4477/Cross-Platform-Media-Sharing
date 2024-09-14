@@ -66,7 +66,7 @@ class ReceiverNetwork: ObservableObject {
         }))
     }
 }
-
+//test
 
 private func calculateBroadcastIp() -> String? {
     var address: String?
