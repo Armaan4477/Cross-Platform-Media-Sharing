@@ -12,7 +12,7 @@ class ReceiverNetwork: ObservableObject {
     private let listenPort: NWEndpoint.Port = 12345
     private let responsePort: NWEndpoint.Port = 12346
     private let tcpListenPort: NWEndpoint.Port = 54000  // For receiving JSON
-    private let tcpSendPort: NWEndpoint.Port = 54000  // For sending JSON
+    private let tcpSendPort: NWEndpoint.Port = 53000  // For sending JSON
     private var broadcastIp: String?
     
     init() {
