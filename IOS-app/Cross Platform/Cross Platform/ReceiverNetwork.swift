@@ -6,9 +6,13 @@ import UIKit
 class ReceiverNetwork: ObservableObject {
     @Published var devices: [String] = []
     private var udpListener: NWListener?
+    private var tcpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
+    private let tcpQueue = DispatchQueue(label: "TCPQueue")
     private let listenPort: NWEndpoint.Port = 12345
     private let responsePort: NWEndpoint.Port = 12346
+    private let tcpListenPort: NWEndpoint.Port = 53000  // For receiving JSON
+    private let tcpSendPort: NWEndpoint.Port = 54000  // For sending JSON
     private var broadcastIp: String?
     
     init() {
@@ -32,6 +36,7 @@ class ReceiverNetwork: ObservableObject {
         connection.receiveMessage { [weak self] data, _, _, _ in
             guard let self = self, let data = data else { return }
             let message = String(data: data, encoding: .utf8)
+            
             if message == "DISCOVER" {
                 self.sendResponse(from: connection)
             }
@@ -51,6 +56,76 @@ class ReceiverNetwork: ObservableObject {
         responseConnection.send(content: response.data(using: .utf8), completion: .contentProcessed({ _ in
             responseConnection.cancel()
         }))
+        
+        // After sending "RECEIVER" response, start TCP listener for receiving JSON
+        self.setupTCPListener()
+    }
+    
+    private func setupTCPListener() {
+        do {
+            tcpListener = try NWListener(using: .tcp, on: tcpListenPort)
+            tcpListener?.newConnectionHandler = { [weak self] connection in
+                self?.handleNewTCPConnection(connection)
+            }
+            tcpListener?.start(queue: tcpQueue)
+        } catch {
+            print("Failed to create TCP listener: \(error)")
+        }
+    }
+
+    private func handleNewTCPConnection(_ connection: NWConnection) {
+        connection.start(queue: tcpQueue)
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, _ in
+            guard let self = self, let jsonData = data else { return }
+            if let json = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                // Handle received JSON
+                self.handleReceivedJSON(json, connection: connection)
+            }
+            
+            if isComplete {
+                connection.cancel()
+            }
+        }
+    }
+
+    private func handleReceivedJSON(_ json: [String: Any], connection: NWConnection) {
+        // Process the received JSON data (equivalent to Python's device_type negotiation)
+        print("Received JSON: \(json)")
+        guard let deviceType = json["device_type"] as? String else {
+            print("Unknown device type received.")
+            return
+        }
+        
+        if deviceType == "python" {
+            print("Connected to a Python device.")
+            // Send a JSON response back on TCP port 54000
+            self.sendJSONResponse(to: connection.endpoint)
+        } else if deviceType == "java" {
+            print("Connected to a Java device. This feature is not implemented yet.")
+        } else {
+            print("Unknown device type.")
+        }
+    }
+
+    private func sendJSONResponse(to endpoint: NWEndpoint) {
+        guard case .hostPort(let host, _) = endpoint else {
+            print("Failed to extract host from endpoint")
+            return
+        }
+
+        // Create the JSON response (equivalent to sending JSON in Python)
+        let responseData: [String: Any] = [
+            "device_type": "swift",
+            "os": "ipad"
+        ]
+        
+        if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {
+            let responseConnection = NWConnection(host: host, port: tcpSendPort, using: .tcp)
+            responseConnection.start(queue: tcpQueue)
+            responseConnection.send(content: jsonData, completion: .contentProcessed({ _ in
+                responseConnection.cancel()  // Close connection after sending
+            }))
+        }
     }
 
     func scanForDevices() {
@@ -66,8 +141,8 @@ class ReceiverNetwork: ObservableObject {
         }))
     }
 }
-//test
 
+// Helper function to calculate broadcast IP
 private func calculateBroadcastIp() -> String? {
     var address: String?
     var ifaddr: UnsafeMutablePointer<ifaddrs>?
@@ -102,4 +177,3 @@ private func calculateBroadcastIp() -> String? {
     ipParts[3] = "255"
     return ipParts.joined(separator: ".")
 }
-

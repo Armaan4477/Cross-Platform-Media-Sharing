@@ -101,6 +101,18 @@ class BroadcastWorker(QThread):
                 # Emit signal with device information when a connection is established
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
 
+            elif device_type == 'java':
+                logger.info(f"Connected with Java device {device_name}")
+                self.cleanup_sockets()
+
+            elif device_type == 'swift':
+                logger.info(f"Connected with Swift device {device_name}")
+                self.cleanup_sockets()
+
+            else:
+                logger.error(f"Unknown device type received from {device_name}")
+                self.cleanup_sockets
+
     def initialize_connection(self, ip_address):
         logger.debug("Initializing connection")
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
