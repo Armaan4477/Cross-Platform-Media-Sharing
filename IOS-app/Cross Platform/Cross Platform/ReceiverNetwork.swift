@@ -11,7 +11,7 @@ class ReceiverNetwork: ObservableObject {
     private let tcpQueue = DispatchQueue(label: "TCPQueue")
     private let listenPort: NWEndpoint.Port = 12345
     private let responsePort: NWEndpoint.Port = 12346
-    private let tcpListenPort: NWEndpoint.Port = 53000  // For receiving JSON
+    private let tcpListenPort: NWEndpoint.Port = 54000  // For receiving JSON
     private let tcpSendPort: NWEndpoint.Port = 54000  // For sending JSON
     private var broadcastIp: String?
     
@@ -57,6 +57,9 @@ class ReceiverNetwork: ObservableObject {
             responseConnection.cancel()
         }))
         
+        // Log the sent UDP response
+        print("Sent UDP response: \(response)")
+        
         // After sending "RECEIVER" response, start TCP listener for receiving JSON
         self.setupTCPListener()
     }
@@ -75,15 +78,27 @@ class ReceiverNetwork: ObservableObject {
 
     private func handleNewTCPConnection(_ connection: NWConnection) {
         connection.start(queue: tcpQueue)
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, _ in
-            guard let self = self, let jsonData = data else { return }
-            if let json = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
-                // Handle received JSON
-                self.handleReceivedJSON(json, connection: connection)
-            }
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 8) { [weak self] sizeData, _, isComplete, _ in
+            guard let self = self, let sizeData = sizeData else { return }
             
-            if isComplete {
-                connection.cancel()
+            // Extract and log the size of the incoming JSON file
+            let fileSize = sizeData.withUnsafeBytes { $0.load(as: UInt64.self) }
+            print("Received JSON file size: \(fileSize) bytes")
+            
+            connection.receive(minimumIncompleteLength: Int(fileSize), maximumLength: Int(fileSize)) { [weak self] jsonData, _, isComplete, _ in
+                guard let self = self, let jsonData = jsonData else { return }
+                
+                // Log received data
+                print("Received raw JSON data: \(String(data: jsonData, encoding: .utf8) ?? "Invalid JSON")")
+                
+                if let json = try? JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                    // Handle received JSON
+                    self.handleReceivedJSON(json, connection: connection)
+                }
+                
+                if isComplete {
+                    connection.cancel()
+                }
             }
         }
     }
@@ -120,10 +135,19 @@ class ReceiverNetwork: ObservableObject {
         ]
         
         if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {
+            let jsonSize = UInt64(jsonData.count)
+            let sizeData = withUnsafeBytes(of: jsonSize) { Data($0) }
             let responseConnection = NWConnection(host: host, port: tcpSendPort, using: .tcp)
             responseConnection.start(queue: tcpQueue)
-            responseConnection.send(content: jsonData, completion: .contentProcessed({ _ in
-                responseConnection.cancel()  // Close connection after sending
+            
+            // Log the JSON data and size to be sent
+            print("Sending JSON file size: \(jsonSize) bytes")
+            print("Sending JSON response: \(responseData)")
+            
+            responseConnection.send(content: sizeData, completion: .contentProcessed({ _ in
+                responseConnection.send(content: jsonData, completion: .contentProcessed({ _ in
+                    responseConnection.cancel()  // Close connection after sending
+                }))
             }))
         }
     }
@@ -136,6 +160,10 @@ class ReceiverNetwork: ObservableObject {
         let connection = NWConnection(host: NWEndpoint.Host(broadcastIp), port: listenPort, using: .udp)
         connection.start(queue: udpQueue)
         let discoverMessage = "DISCOVER".data(using: .utf8)
+        
+        // Log the UDP discover message being sent
+        print("Sending UDP discover message to \(broadcastIp)")
+        
         connection.send(content: discoverMessage, completion: .contentProcessed({ _ in
             connection.cancel()
         }))
