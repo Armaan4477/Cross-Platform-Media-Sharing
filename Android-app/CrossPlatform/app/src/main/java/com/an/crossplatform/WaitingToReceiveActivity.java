@@ -199,6 +199,10 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         // If the received JSON is from the expected device, handle accordingly
                         if (receivedJson.getString("device_type").equals("python")) {
                             Log.d("WaitingToReceive", "Received JSON data from Python app");
+                            // Proceed to the next activity (ReceiveFileActivityPython)
+                            Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
+                            intent.putExtra("receivedJson", receivedJson.toString());
+                            startActivity(intent);
                         } else if (receivedJson.getString("device_type").equals("java")) {
                             Log.d("WaitingToReceive", "Received JSON data from Java app");
                             // Proceed to the next activity (ReceiveFileActivity)

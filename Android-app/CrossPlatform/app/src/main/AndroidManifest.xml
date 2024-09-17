@@ -42,6 +42,7 @@
         <activity android:name=".PreferencesActivity" />
         <activity android:name=".SendFileActivityPython" />
         <activity android:name=".FileAdapter" />
+        <activity android:name=".ReceiveFileActivityPython" />
     </application>
 
 </manifest>
