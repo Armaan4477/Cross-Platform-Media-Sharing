@@ -40,6 +40,8 @@
         <activity android:name=".WaitingToReceiveActivity" />
         <activity android:name=".ReceiveFileActivity" />
         <activity android:name=".PreferencesActivity" />
+        <activity android:name=".SendFileActivityPython" />
+        <activity android:name=".FileAdapter" />
     </application>
 
 </manifest>

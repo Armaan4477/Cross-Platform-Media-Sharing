@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SendFileActivity extends AppCompatActivity {
+public class SendFileActivityPython extends AppCompatActivity {
 
     private String receiverJson;
     private List<String> filePaths = new ArrayList<>();
