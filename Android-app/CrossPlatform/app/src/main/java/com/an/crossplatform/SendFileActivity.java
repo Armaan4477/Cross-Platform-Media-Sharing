@@ -3,31 +3,45 @@ package com.an.crossplatform;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import android.content.ContentResolver;
+import android.net.Uri;
+import android.content.Context;
+import android.database.Cursor;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 
 public class SendFileActivity extends AppCompatActivity {
 
-    private String receiverJson;
+    private String receivedJson;
     private List<String> filePaths = new ArrayList<>();
     private FileAdapter fileAdapter;
     private RecyclerView recyclerView;
     private boolean metadataCreated = false;
     private String metadataFilePath = null;
+    private String osType;
+    private static final String TAG = "SendFileActivity";
+    private boolean isFolder = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,8 +49,15 @@ public class SendFileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_send);
 
         // Retrieve the JSON string from the intent
-        receiverJson = getIntent().getStringExtra("receiverJson");
-        Log.d("SendFileActivity", "Received JSON: " + receiverJson);
+        receivedJson = getIntent().getStringExtra("receivedJson");
+        // Retrieve the OS type from the string with try catch block
+        try {
+            osType = new JSONObject(receivedJson).getString("os");
+        } catch (Exception e) {
+            Log.e("SendFileActivity", "Failed to retrieve OS type", e);
+        }
+        Log.d("SendFileActivity", "Received JSON: " + receivedJson);
+        Log.d("SendFileActivity", "OS Type: " + osType);
 
         // Set up buttons
         Button selectFileButton = findViewById(R.id.btn_select_file);
@@ -130,6 +151,7 @@ public class SendFileActivity extends AppCompatActivity {
         filePaths.clear();
 
         folderPickerLauncher.launch(intent);
+        isFolder = true;
     }
 
     private void onSendClicked() {
@@ -138,7 +160,11 @@ public class SendFileActivity extends AppCompatActivity {
         if (!filePaths.isEmpty()) {
             try {
                 // Create metadata based on the selected files or folder
-                metadataFilePath = createMetadata();
+                if (isFolder) {
+                    metadataFilePath = createFolderMetadata();
+                } else {
+                    metadataFilePath = createFileMetadata();
+                }
                 Toast.makeText(this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
 
                 // Log and send the selected file/folder paths
@@ -150,77 +176,243 @@ public class SendFileActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
         }
-        Log.d("SendFileActivity", "Metadata created: " + metadataCreated);
-    }
 
-    private String createMetadata() throws IOException, JSONException {
-        JSONArray metadata = new JSONArray();
-
-        // Check if we are working with a folder or a list of files
-        if (filePaths.size() == 1 && isFolder(filePaths.get(0))) {
-            // Handle folder case
-            String folderPath = filePaths.get(0);
-            File folder = new File(Uri.parse(folderPath).getPath());
-
-            if (folder.isDirectory()) {
-                // Recursively list files and directories
-                addFolderMetadata(folder, folder, metadata);
+        Log.d("SendFileActivity", "Metadata created: " + metadataFilePath);
+        // Log the contents of the metadata file
+        if (metadataCreated) {
+            try {
+                Log.d("SendFileActivity", "Metadata file contents: " + readMetadataFile(metadataFilePath));
+            } catch (IOException e) {
+                Log.e("SendFileActivity", "Failed to read metadata file", e);
             }
-
-            // Save metadata to a JSON file in the selected folder
-            String metadataFilePath = folder.getAbsolutePath() + "/metadata.json";
-            saveMetadataToFile(metadataFilePath, metadata);
-            metadataCreated = true;
-            return metadataFilePath;
-        } else {
-            // Handle individual files case
-            for (String filePath : filePaths) {
-                File file = new File(Uri.parse(filePath).getPath());
-                if (file.isFile()) {
-                    JSONObject fileMetadata = new JSONObject();
-                    fileMetadata.put("path", file.getName());
-                    fileMetadata.put("size", file.length());
-                    metadata.put(fileMetadata);
-                }
-            }
-
-            // Save metadata to a JSON file in the same directory as the first file
-            File firstFile = new File(Uri.parse(filePaths.get(0)).getPath());
-            String metadataFilePath = firstFile.getParent() + "/metadata.json";
-            saveMetadataToFile(metadataFilePath, metadata);
-            metadataCreated = true;
-            return metadataFilePath;
         }
     }
 
-    private void addFolderMetadata(File baseFolder, File currentFolder, JSONArray metadata) throws IOException, JSONException {
-        File[] files = currentFolder.listFiles();
+    private String createFileMetadata() throws IOException, JSONException {
+        JSONArray metadata = new JSONArray();
+        Log.d(TAG, "Starting file metadata creation");
+
+        // Determine the target directory for metadata files
+        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
+        ensureDirectoryExists(metadataDirectory);
+
+        String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
+        Log.d(TAG, "Metadata file path: " + metadataFilePath);
+
+        for (String filePath : filePaths) {
+            Uri uri = Uri.parse(filePath);
+
+            if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using ContentResolver
+                try {
+                    ContentResolver contentResolver = getContentResolver();
+                    if (uri != null) {
+                        // Try to query and get file metadata
+                        Cursor cursor = contentResolver.query(uri, null, null, null, null);
+                        if (cursor != null && cursor.moveToFirst()) {
+                            String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                            long size = cursor.getLong(cursor.getColumnIndex(OpenableColumns.SIZE));
+
+                            JSONObject fileMetadata = new JSONObject();
+                            fileMetadata.put("path", displayName);
+                            fileMetadata.put("size", size);
+                            metadata.put(fileMetadata);
+
+                            Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                            cursor.close();
+                        } else {
+                            Log.e(TAG, "Failed to get metadata for URI: " + filePath);
+                        }
+                    } else {
+                        Log.e(TAG, "Invalid URI: " + filePath);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error handling content URI: " + filePath + " Exception: " + e.getMessage(), e);
+                }
+            } else {
+                // Handle file system paths
+                File file = new File(filePath);
+                if (file.exists() && file.isFile()) {
+                    JSONObject fileMetadata = new JSONObject();
+                    fileMetadata.put("path", file.getAbsolutePath());
+                    fileMetadata.put("size", file.length());
+                    metadata.put(fileMetadata);
+                    Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                } else {
+                    Log.e(TAG, "File not found or not valid: " + filePath);
+                }
+            }
+        }
+
+        // Log metadata before saving
+        Log.d(TAG, "Metadata before saving: " + metadata.toString());
+
+        // Save metadata to a JSON file in the specified directory
+        Log.d(TAG, "Saving metadata to file: " + metadataFilePath);
+        try {
+            saveMetadataToFile(metadataFilePath, metadata);
+            metadataCreated = true;
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create metadata: " + e.getMessage(), e);
+            metadataCreated = false;
+        }
+
+        return metadataFilePath;
+    }
+
+    private String createFolderMetadata() throws IOException, JSONException {
+        JSONArray metadata = new JSONArray();
+        Log.d(TAG, "Starting folder metadata creation");
+
+        // Determine the target directory for metadata files
+        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
+        ensureDirectoryExists(metadataDirectory);
+
+        String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
+        Log.d(TAG, "Metadata file path: " + metadataFilePath);
+
+        for (String filePath : filePaths) {
+            Uri uri = Uri.parse(filePath);
+
+            if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using DocumentFile
+                DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
+                if (documentFile != null) {
+                    if (documentFile.isDirectory()) {
+                        Log.d(TAG, "Processing directory from URI: " + filePath);
+                        addFolderMetadataFromDocumentFile(documentFile, metadata);
+                    } else if (documentFile.isFile()) {
+                        // Handle individual file
+                        JSONObject fileMetadata = new JSONObject();
+                        fileMetadata.put("path", documentFile.getName());
+                        fileMetadata.put("size", documentFile.length());
+                        metadata.put(fileMetadata);
+                        Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                    } else {
+                        Log.e(TAG, "Unsupported content URI: " + filePath);
+                    }
+                } else {
+                    Log.e(TAG, "Could not resolve content URI: " + filePath);
+                }
+            } else {
+                // Handle file system paths
+                File file = new File(filePath);
+                if (file.isDirectory()) {
+                    // Process directory
+                    Log.d(TAG, "Processing directory: " + filePath);
+                    addFolderMetadata(file, metadata);
+                } else {
+                    Log.e(TAG, "File not found or not valid: " + filePath);
+                }
+            }
+        }
+
+        // Log metadata before saving
+        Log.d(TAG, "Metadata before saving: " + metadata.toString());
+
+        // Save metadata to a JSON file in the specified directory
+        Log.d(TAG, "Saving metadata to file: " + metadataFilePath);
+        try {
+            saveMetadataToFile(metadataFilePath, metadata);
+            metadataCreated = true;
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create metadata: " + e.getMessage(), e);
+            metadataCreated = false;
+        }
+
+        return metadataFilePath;
+    }
+
+    private void addFolderMetadataFromDocumentFile(DocumentFile folder, JSONArray metadata) throws JSONException {
+        Log.d(TAG, "Traversing DocumentFile folder: " + folder.getUri().toString());
+        DocumentFile[] files = folder.listFiles();
+        if (files != null) {
+            for (DocumentFile file : files) {
+                JSONObject fileMetadata = new JSONObject();
+                String path = file.getName();
+                fileMetadata.put("path", path + (file.isDirectory() ? "/" : ""));
+                fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
+                metadata.put(fileMetadata);
+                Log.d(TAG, "Added metadata: " + fileMetadata.toString());
+
+                if (file.isDirectory()) {
+                    addFolderMetadataFromDocumentFile(file, metadata);
+                }
+            }
+        } else {
+            Log.e(TAG, "Could not list files for directory: " + folder.getUri().toString());
+        }
+    }
+
+    private void ensureDirectoryExists(File directory) {
+        if (!directory.exists()) {
+            Log.d(TAG, "Directory does not exist, attempting to create: " + directory.getAbsolutePath());
+            if (directory.mkdirs()) {
+                Log.d(TAG, "Directory created: " + directory.getAbsolutePath());
+            } else {
+                Log.e(TAG, "Failed to create directory: " + directory.getAbsolutePath());
+            }
+        } else {
+            Log.d(TAG, "Directory already exists: " + directory.getAbsolutePath());
+        }
+    }
+
+    private void saveMetadataToFile(String filePath, JSONArray metadata) throws IOException {
+        Log.d(TAG, "Saving metadata to file: " + filePath);
+        try (FileWriter fileWriter = new FileWriter(filePath)) {
+            fileWriter.write(metadata.toString());
+            fileWriter.flush();
+            Log.d(TAG, "Metadata saved successfully");
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving metadata to file: " + e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    private void addFolderMetadata(File folder, JSONArray metadata) throws IOException, JSONException {
+        Log.d(TAG, "Traversing folder: " + folder.getAbsolutePath());
+        File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {
                 JSONObject fileMetadata = new JSONObject();
-                String relativePath = baseFolder.toURI().relativize(file.toURI()).getPath();
-                fileMetadata.put("path", relativePath);
+                String relativePath = folder.getAbsolutePath();
+                fileMetadata.put("path", relativePath + "/" + file.getName());
                 fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
                 metadata.put(fileMetadata);
+                Log.d(TAG, "Added metadata: " + fileMetadata.toString());
 
+                // If it's a directory, recurse into it
                 if (file.isDirectory()) {
-                    // Recurse into subdirectories
-                    addFolderMetadata(baseFolder, file, metadata);
+                    addFolderMetadata(file, metadata);
                 }
             }
+        } else {
+            Log.e(TAG, "Could not list files for directory: " + folder.getAbsolutePath());
         }
     }
 
-    private void saveMetadataToFile(String metadataFilePath, JSONArray metadata) throws IOException {
-        try (FileWriter fileWriter = new FileWriter(metadataFilePath)) {
-            fileWriter.write(metadata.toString());
-            fileWriter.flush();
+    private String readMetadataFile(String filePath) throws IOException {
+        StringBuilder metadataContent = new StringBuilder();
+        try {
+            File metadataFile = new File(filePath);
+            if (metadataFile.exists()) {
+                try (FileReader fileReader = new FileReader(metadataFile);
+                     BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        metadataContent.append(line);
+                    }
+                }
+            } else {
+                Log.e(TAG, "Metadata file not found: " + filePath);
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error reading metadata file: " + e.getMessage(), e);
+            throw e;
         }
-    }
-
-    private boolean isFolder(String path) {
-        File file = new File(Uri.parse(path).getPath());
-        return file.isDirectory();
+        return metadataContent.toString();
     }
 
     private void refreshRecyclerView() {
