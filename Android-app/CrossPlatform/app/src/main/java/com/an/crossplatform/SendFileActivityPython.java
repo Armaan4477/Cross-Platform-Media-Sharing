@@ -3,6 +3,7 @@ package com.an.crossplatform;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
@@ -40,6 +41,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     private String metadataFilePath = null;
     private String osType;
     private static final String TAG = "SendFileActivity";
+    private boolean isFolder = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,6 +151,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         filePaths.clear();
 
         folderPickerLauncher.launch(intent);
+        isFolder = true;
     }
 
     private void onSendClicked() {
@@ -157,7 +160,11 @@ public class SendFileActivityPython extends AppCompatActivity {
         if (!filePaths.isEmpty()) {
             try {
                 // Create metadata based on the selected files or folder
-                metadataFilePath = createMetadata();
+                if (isFolder) {
+                    metadataFilePath = createFolderMetadata();
+                } else {
+                    metadataFilePath = createFileMetadata();
+                }
                 Toast.makeText(this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
 
                 // Log and send the selected file/folder paths
@@ -181,9 +188,9 @@ public class SendFileActivityPython extends AppCompatActivity {
         }
     }
 
-    private String createMetadata() throws IOException, JSONException {
+    private String createFileMetadata() throws IOException, JSONException {
         JSONArray metadata = new JSONArray();
-        Log.d(TAG, "Starting metadata creation");
+        Log.d(TAG, "Starting file metadata creation");
 
         // Determine the target directory for metadata files
         File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
@@ -193,23 +200,101 @@ public class SendFileActivityPython extends AppCompatActivity {
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
         Log.d(TAG, "Metadata file path: " + metadataFilePath);
 
-        // Process the file paths
         for (String filePath : filePaths) {
             Uri uri = Uri.parse(filePath);
 
-            if (uri.getScheme().equals("content")) {
-                // Handle content URIs using DocumentFile
-                DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
-                if (documentFile != null && documentFile.isDirectory()) {
-                    Log.d(TAG, "Processing directory from URI: " + filePath);
-                    addFolderMetadataFromDocumentFile(documentFile, metadata);
-                } else if (documentFile != null && documentFile.isFile()) {
-                    // Handle individual file
+            if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using ContentResolver
+                try {
+                    ContentResolver contentResolver = getContentResolver();
+                    if (uri != null) {
+                        // Try to query and get file metadata
+                        Cursor cursor = contentResolver.query(uri, null, null, null, null);
+                        if (cursor != null && cursor.moveToFirst()) {
+                            String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                            long size = cursor.getLong(cursor.getColumnIndex(OpenableColumns.SIZE));
+
+                            JSONObject fileMetadata = new JSONObject();
+                            fileMetadata.put("path", displayName);
+                            fileMetadata.put("size", size);
+                            metadata.put(fileMetadata);
+
+                            Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                            cursor.close();
+                        } else {
+                            Log.e(TAG, "Failed to get metadata for URI: " + filePath);
+                        }
+                    } else {
+                        Log.e(TAG, "Invalid URI: " + filePath);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error handling content URI: " + filePath + " Exception: " + e.getMessage(), e);
+                }
+            } else {
+                // Handle file system paths
+                File file = new File(filePath);
+                if (file.exists() && file.isFile()) {
                     JSONObject fileMetadata = new JSONObject();
-                    fileMetadata.put("path", documentFile.getName());
-                    fileMetadata.put("size", documentFile.length());
+                    fileMetadata.put("path", file.getAbsolutePath());
+                    fileMetadata.put("size", file.length());
                     metadata.put(fileMetadata);
                     Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                } else {
+                    Log.e(TAG, "File not found or not valid: " + filePath);
+                }
+            }
+        }
+
+        // Log metadata before saving
+        Log.d(TAG, "Metadata before saving: " + metadata.toString());
+
+        // Save metadata to a JSON file in the specified directory
+        Log.d(TAG, "Saving metadata to file: " + metadataFilePath);
+        try {
+            saveMetadataToFile(metadataFilePath, metadata);
+            metadataCreated = true;
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create metadata: " + e.getMessage(), e);
+            metadataCreated = false;
+        }
+
+        return metadataFilePath;
+    }
+
+    private String createFolderMetadata() throws IOException, JSONException {
+        JSONArray metadata = new JSONArray();
+        Log.d(TAG, "Starting folder metadata creation");
+
+        // Determine the target directory for metadata files
+        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
+        ensureDirectoryExists(metadataDirectory);
+
+        String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
+        Log.d(TAG, "Metadata file path: " + metadataFilePath);
+
+        for (String filePath : filePaths) {
+            Uri uri = Uri.parse(filePath);
+
+            if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using DocumentFile
+                DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
+                if (documentFile != null) {
+                    if (documentFile.isDirectory()) {
+                        Log.d(TAG, "Processing directory from URI: " + filePath);
+                        addFolderMetadataFromDocumentFile(documentFile, metadata);
+                    } else if (documentFile.isFile()) {
+                        // Handle individual file
+                        JSONObject fileMetadata = new JSONObject();
+                        fileMetadata.put("path", documentFile.getName());
+                        fileMetadata.put("size", documentFile.length());
+                        metadata.put(fileMetadata);
+                        Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                    } else {
+                        Log.e(TAG, "Unsupported content URI: " + filePath);
+                    }
+                } else {
+                    Log.e(TAG, "Could not resolve content URI: " + filePath);
                 }
             } else {
                 // Handle file system paths
@@ -218,13 +303,6 @@ public class SendFileActivityPython extends AppCompatActivity {
                     // Process directory
                     Log.d(TAG, "Processing directory: " + filePath);
                     addFolderMetadata(file, metadata);
-                } else if (file.isFile()) {
-                    // Handle individual file
-                    JSONObject fileMetadata = new JSONObject();
-                    fileMetadata.put("path", file.getAbsolutePath());
-                    fileMetadata.put("size", file.length());
-                    metadata.put(fileMetadata);
-                    Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
                 } else {
                     Log.e(TAG, "File not found or not valid: " + filePath);
                 }
@@ -253,12 +331,12 @@ public class SendFileActivityPython extends AppCompatActivity {
         if (files != null) {
             for (DocumentFile file : files) {
                 JSONObject fileMetadata = new JSONObject();
-                fileMetadata.put("path", file.getName());
+                String path = file.getName();
+                fileMetadata.put("path", path + (file.isDirectory() ? "/" : ""));
                 fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
                 metadata.put(fileMetadata);
                 Log.d(TAG, "Added metadata: " + fileMetadata.toString());
 
-                // If it's a directory, recurse into it
                 if (file.isDirectory()) {
                     addFolderMetadataFromDocumentFile(file, metadata);
                 }
