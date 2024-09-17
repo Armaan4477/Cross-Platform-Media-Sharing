@@ -3,7 +3,6 @@ package com.an.crossplatform;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
@@ -12,6 +11,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +26,8 @@ public class SendFileActivity extends AppCompatActivity {
     private List<String> filePaths = new ArrayList<>();
     private FileAdapter fileAdapter;
     private RecyclerView recyclerView;
+    private boolean metadataCreated = false;
+    private String metadataFilePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,13 +135,92 @@ public class SendFileActivity extends AppCompatActivity {
     private void onSendClicked() {
         Log.d("SendFileActivity", "Send button clicked");
 
-        // Log and send the selected file/folder paths
         if (!filePaths.isEmpty()) {
-            Log.d("SendFileActivity", "Files to send: " + filePaths);
-            Toast.makeText(this, "Files selected: " + filePaths.size(), Toast.LENGTH_SHORT).show();
+            try {
+                // Create metadata based on the selected files or folder
+                metadataFilePath = createMetadata();
+                Toast.makeText(this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
+
+                // Log and send the selected file/folder paths
+                Log.d("SendFileActivity", "Files to send: " + filePaths);
+            } catch (IOException | JSONException e) {
+                Log.e("SendFileActivity", "Failed to create metadata", e);
+                Toast.makeText(this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
+            }
         } else {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
         }
+        Log.d("SendFileActivity", "Metadata created: " + metadataCreated);
+    }
+
+    private String createMetadata() throws IOException, JSONException {
+        JSONArray metadata = new JSONArray();
+
+        // Check if we are working with a folder or a list of files
+        if (filePaths.size() == 1 && isFolder(filePaths.get(0))) {
+            // Handle folder case
+            String folderPath = filePaths.get(0);
+            File folder = new File(Uri.parse(folderPath).getPath());
+
+            if (folder.isDirectory()) {
+                // Recursively list files and directories
+                addFolderMetadata(folder, folder, metadata);
+            }
+
+            // Save metadata to a JSON file in the selected folder
+            String metadataFilePath = folder.getAbsolutePath() + "/metadata.json";
+            saveMetadataToFile(metadataFilePath, metadata);
+            metadataCreated = true;
+            return metadataFilePath;
+        } else {
+            // Handle individual files case
+            for (String filePath : filePaths) {
+                File file = new File(Uri.parse(filePath).getPath());
+                if (file.isFile()) {
+                    JSONObject fileMetadata = new JSONObject();
+                    fileMetadata.put("path", file.getName());
+                    fileMetadata.put("size", file.length());
+                    metadata.put(fileMetadata);
+                }
+            }
+
+            // Save metadata to a JSON file in the same directory as the first file
+            File firstFile = new File(Uri.parse(filePaths.get(0)).getPath());
+            String metadataFilePath = firstFile.getParent() + "/metadata.json";
+            saveMetadataToFile(metadataFilePath, metadata);
+            metadataCreated = true;
+            return metadataFilePath;
+        }
+    }
+
+    private void addFolderMetadata(File baseFolder, File currentFolder, JSONArray metadata) throws IOException, JSONException {
+        File[] files = currentFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                JSONObject fileMetadata = new JSONObject();
+                String relativePath = baseFolder.toURI().relativize(file.toURI()).getPath();
+                fileMetadata.put("path", relativePath);
+                fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
+                metadata.put(fileMetadata);
+
+                if (file.isDirectory()) {
+                    // Recurse into subdirectories
+                    addFolderMetadata(baseFolder, file, metadata);
+                }
+            }
+        }
+    }
+
+    private void saveMetadataToFile(String metadataFilePath, JSONArray metadata) throws IOException {
+        try (FileWriter fileWriter = new FileWriter(metadataFilePath)) {
+            fileWriter.write(metadata.toString());
+            fileWriter.flush();
+        }
+    }
+
+    private boolean isFolder(String path) {
+        File file = new File(Uri.parse(path).getPath());
+        return file.isDirectory();
     }
 
     private void refreshRecyclerView() {
