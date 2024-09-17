@@ -1,0 +1,29 @@
+R_DEF: Internal format may change without notice
+local
+color black
+color white
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id deviceListView
+id fileNameEditText
+id main
+id preferences
+id progressBar
+id receive
+id searchDeviceButton
+id selectFileButton
+id send
+id sendButton
+id statusTextView
+id title
+layout activity_main
+layout preferences
+layout receive
+layout send
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+style Base.Theme.CrossPlatformMediaSharing
+style Theme.CrossPlatformMediaSharing
+xml backup_rules
+xml data_extraction_rules

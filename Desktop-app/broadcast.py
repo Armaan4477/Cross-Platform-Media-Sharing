@@ -63,6 +63,7 @@ class BroadcastWorker(QThread):
 
     def discover_receivers(self):
         logger.info("Discovering receivers")
+        logger.info(BROADCAST_ADDRESS)
         receivers = []
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

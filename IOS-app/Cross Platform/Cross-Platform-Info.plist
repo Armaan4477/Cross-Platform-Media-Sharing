@@ -2,12 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict/>
-    </array>
-    
-    <!-- Allow arbitrary loads for network access -->
+    <!-- Network access settings -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
@@ -25,15 +20,11 @@
         <string>_udp.local.</string>
     </array>
 
-    <!-- Additional network-related permissions -->
+    <!-- Location usage description -->
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>This app requires location access to improve network functionality and device discovery.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app requires continuous location access to enhance network and device discovery even in the background.</string>
-
-    <!-- Additional network security configurations -->
-    <key>NSAllowsLocalNetworking</key>
-    <true/>
 
     <!-- Background modes for network activity -->
     <key>UIBackgroundModes</key>
@@ -47,5 +38,25 @@
     <key>com.apple.developer.networking.multicast</key>
     <true/>
 
+    <!-- Local network privacy settings -->
+    <key>NSLocalNetworkPrivacy</key>
+    <dict>
+        <key>NSLocalNetworkUsageDescription</key>
+        <string>This app needs access to the local network for discovering and communicating with other devices on the same network.</string>
+    </dict>
+
+    <!-- Additional network permissions -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app requires Bluetooth access to connect to nearby devices.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>This app uses Bluetooth to communicate with peripherals and other devices.</string>
+
+    <!-- Additional networking and connectivity settings -->
+    <key>NSNearbyInteractionUsageDescription</key>
+    <string>This app uses Nearby Interaction to interact with devices nearby.</string>
+
+    <!-- Usage descriptions for other necessary services -->
+    <key>NSUserTrackingUsageDescription</key>
+    <string>This app tracks the user's activity to improve user experience and functionality.</string>
 </dict>
 </plist>
