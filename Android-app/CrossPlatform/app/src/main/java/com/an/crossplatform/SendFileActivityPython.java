@@ -31,7 +31,7 @@ import android.database.Cursor;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 
-public class SendFileActivity extends AppCompatActivity {
+public class SendFileActivityPython extends AppCompatActivity {
 
     private String receivedJson;
     private List<String> filePaths = new ArrayList<>();
