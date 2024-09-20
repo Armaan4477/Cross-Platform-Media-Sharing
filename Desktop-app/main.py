@@ -4,6 +4,7 @@ from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
+from credits_dialog import CreditsDialog  # Import CreditsDialog
 import sys
 import os
 import platform
@@ -32,6 +33,10 @@ class MainApp(QWidget):
         self.preferences_button = QPushButton('Preferences', self)
         self.preferences_button.clicked.connect(self.preferences_handler)
         layout.addWidget(self.preferences_button)
+
+        self.credits_button = QPushButton('Credits', self)
+        self.credits_button.clicked.connect(self.show_credits)
+        layout.addWidget(self.credits_button)
 
         self.setLayout(layout)
         logger.info("Started Main App") 
@@ -67,6 +72,12 @@ class MainApp(QWidget):
         self.hide()
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
+
+    # Method to show the Credits Dialog
+    def show_credits(self):
+        logger.info("Opened Credits Dialog")
+        credits_dialog = CreditsDialog()  # Create an instance of CreditsDialog
+        credits_dialog.exec()  # Show the dialog
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
