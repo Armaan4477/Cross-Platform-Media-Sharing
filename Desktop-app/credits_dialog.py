@@ -23,37 +23,37 @@ class CreditsDialog(QDialog):
         # Coder/Debugger - Alphabetical Order (Armaan, Nishal, Samay, Urmi, Yash)
         # Armaan's row
         layout.addWidget(QLabel("Armaan"), 2, 0)
-        armaan_github = QLabel('<a href="https://github.com/armaan">GitHub</a>')
+        armaan_github = QLabel('<a href="https://github.com/Armaan4477">GitHub</a>')
         armaan_github.setOpenExternalLinks(True)
         layout.addWidget(armaan_github, 2, 1)
 
-        armaan_linkedin = QLabel('<a href="https://linkedin.com/in/armaan">LinkedIn</a>')
+        armaan_linkedin = QLabel('<a href="https://www.linkedin.com/in/armaan-nakhuda-756492235/">LinkedIn</a>')
         armaan_linkedin.setOpenExternalLinks(True)
         layout.addWidget(armaan_linkedin, 2, 2)
 
         # Nishal's row
         layout.addWidget(QLabel("Nishal"), 3, 0)
-        nishal_github = QLabel('<a href="https://github.com/nishal">GitHub</a>')
+        nishal_github = QLabel('<a href="https://github.com/Ailover123">GitHub</a>')
         nishal_github.setOpenExternalLinks(True)
         layout.addWidget(nishal_github, 3, 1)
 
-        nishal_linkedin = QLabel('<a href="https://linkedin.com/in/nishal">LinkedIn</a>')
+        nishal_linkedin = QLabel('<a href="www.linkedin.com/in/nishal-poojary-159530290">LinkedIn</a>')
         nishal_linkedin.setOpenExternalLinks(True)
         layout.addWidget(nishal_linkedin, 3, 2)
 
         # Samay's row
         layout.addWidget(QLabel("Samay"), 4, 0)
-        samay_github = QLabel('<a href="https://github.com/samay">GitHub</a>')
+        samay_github = QLabel('<a href="https://github.com/ChampionSamay1644">GitHub</a>')
         samay_github.setOpenExternalLinks(True)
         layout.addWidget(samay_github, 4, 1)
 
-        samay_linkedin = QLabel('<a href="https://linkedin.com/in/samay">LinkedIn</a>')
+        samay_linkedin = QLabel('<a href="https://www.linkedin.com/in/samaypandey1644">LinkedIn</a>')
         samay_linkedin.setOpenExternalLinks(True)
         layout.addWidget(samay_linkedin, 4, 2)
 
         # Urmi's row
         layout.addWidget(QLabel("Urmi"), 5, 0)
-        urmi_github = QLabel('<a href="https://github.com/urmi">GitHub</a>')
+        urmi_github = QLabel('<a href="https://github.com/ura-dev04">GitHub</a>')
         urmi_github.setOpenExternalLinks(True)
         layout.addWidget(urmi_github, 5, 1)
 
@@ -63,11 +63,11 @@ class CreditsDialog(QDialog):
 
         # Yash's row
         layout.addWidget(QLabel("Yash"), 6, 0)
-        yash_github = QLabel('<a href="https://github.com/yash">GitHub</a>')
+        yash_github = QLabel('<a href="https://github.com/FrosT2k5">GitHub</a>')
         yash_github.setOpenExternalLinks(True)
         layout.addWidget(yash_github, 6, 1)
 
-        yash_linkedin = QLabel('<a href="https://linkedin.com/in/yash">LinkedIn</a>')
+        yash_linkedin = QLabel('<a href="https://www.linkedin.com/in/yash-patil-385171257">LinkedIn</a>')
         yash_linkedin.setOpenExternalLinks(True)
         layout.addWidget(yash_linkedin, 6, 2)
 
