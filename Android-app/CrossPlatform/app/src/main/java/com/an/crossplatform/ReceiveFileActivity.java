@@ -11,6 +11,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     private String senderJson;
     private String deviceName;
+    private String osType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,14 +22,17 @@ public class ReceiveFileActivity extends AppCompatActivity {
         senderJson = getIntent().getStringExtra("receiverJson");
         Log.d("ReceiveFileActivityPython", "Received JSON: " + senderJson);
 
-        // Parse the JSON to extract the device name
+        // Retrieve the JSON string from the intent
+        senderJson = getIntent().getStringExtra("receivedJson");
+        // Retrieve the OS type from the string with try catch block
         try {
-            JSONObject jsonObject = new JSONObject(senderJson);
-            deviceName = jsonObject.optString("device_name", "Unknown Device");  // Default to "Unknown Device" if not found
-        } catch (JSONException e) {
-            Log.e("ReceiveFileActivityPython", "Failed to parse senderJson", e);
-            deviceName = "Unknown Device";  // Fallback in case of error
+            osType = new JSONObject(senderJson).getString("os");
+            deviceName = new JSONObject(senderJson).getString("device_name");
+        } catch (Exception e) {
+            Log.e("SendFileActivity", "Failed to retrieve OS type", e);
         }
+        Log.d("SendFileActivity", "Received JSON: " + senderJson);
+        Log.d("SendFileActivity", "OS Type: " + osType);
 
         // Update the TextView with the message
         TextView txt_waiting = findViewById(R.id.txt_waiting);
