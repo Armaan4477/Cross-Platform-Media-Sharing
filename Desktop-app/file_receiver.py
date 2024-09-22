@@ -13,12 +13,14 @@ from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
 from file_receiver_python import ReceiveAppP
+from file_receiver_android import ReceiveAppPJava
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
 
 class FileReceiver(QThread):
     show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window
+    show_receive_app_p_signal_java = pyqtSignal()  # Signal to show the ReceiveAppP window for Java devices
 
     def __init__(self):
         super().__init__()
@@ -73,6 +75,9 @@ class FileReceiver(QThread):
             self.cleanup_sockets() # Clean up before proceeding
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
+            self.show_receive_app_p_signal_java.emit()
+            sleep(1)
+            self.cleanup_sockets()
         else:
             logger.debug("Unknown device type received.")
     
@@ -101,6 +106,7 @@ class ReceiveApp(QWidget):
 
         self.file_receiver = FileReceiver()
         self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)  # Connect the signal to the slot
+        self.file_receiver.show_receive_app_p_signal_java.connect(self.show_receive_app_p_java)
         self.file_receiver.start()
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
@@ -129,6 +135,13 @@ class ReceiveApp(QWidget):
         self.hide()
         self.receive_app_p = ReceiveAppP(client_ip)
         self.receive_app_p.show()
+
+    def show_receive_app_p_java(self):
+        client_ip = self.file_receiver.client_ip
+        """Slot to show the ReceiveAppP window on the main thread."""
+        self.hide()
+        self.receive_app_p_java = ReceiveAppPJava(client_ip)
+        self.receive_app_p_java.show()
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
