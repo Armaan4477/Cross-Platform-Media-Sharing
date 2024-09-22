@@ -55,6 +55,9 @@ class FileSender(QThread):
         metadata_file_path = None
         if not self.initialize_connection():
             return
+        
+        # Reload config on each file transfer session
+        self.config = get_config()
 
         self.encryption_flag = self.config['encryption']
         # logger.debug("Encryption flag: %s", self.encryption_flag)
