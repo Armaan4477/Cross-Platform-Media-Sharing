@@ -57,7 +57,7 @@ class CreditsDialog(QDialog):
         urmi_github.setOpenExternalLinks(True)
         layout.addWidget(urmi_github, 5, 1)
 
-        urmi_linkedin = QLabel('<a href="https://linkedin.com/in/urmi">LinkedIn</a>')
+        urmi_linkedin = QLabel('<a href="https://www.linkedin.com/in/urmi-joshi-6697a7320/i">LinkedIn</a>')
         urmi_linkedin.setOpenExternalLinks(True)
         layout.addWidget(urmi_linkedin, 5, 2)
 
