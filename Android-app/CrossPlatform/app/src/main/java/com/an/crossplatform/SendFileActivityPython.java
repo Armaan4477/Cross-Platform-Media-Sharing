@@ -426,46 +426,8 @@ public class SendFileActivityPython extends AppCompatActivity {
         }
     }
 
-    private String readMetadataFile(String filePath) throws IOException {
-        StringBuilder metadataContent = new StringBuilder();
-        try {
-            File metadataFile = new File(filePath);
-            if (metadataFile.exists()) {
-                try (FileReader fileReader = new FileReader(metadataFile);
-                     BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        metadataContent.append(line);
-                    }
-                }
-            } else {
-                Log.e(TAG, "Metadata file not found: " + filePath);
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error reading metadata file: " + e.getMessage(), e);
-            throw e;
-        }
-        return metadataContent.toString();
-    }
-
     private void refreshRecyclerView() {
         fileAdapter.notifyDataSetChanged();
-    }
-
-    private void initialize_connection() {
-        // Create a new socket connection to send files
-        socket = new Socket();
-//        try {
-//            socket.bind(new InetSocketAddress(57000));
-//            Log.d("SendFileActivity", "Connected to server: " + socket.getInetAddress());
-//        } catch (IOException e) {
-//            Log.e("SendFileActivity", "Failed to connect to server", e);
-//        }
-        try {
-            socket.connect(new InetSocketAddress(selected_device_ip,58000 ), 10000);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     // AsyncTask to handle connection initialization and file/folder sending
