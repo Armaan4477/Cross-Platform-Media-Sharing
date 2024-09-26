@@ -58,5 +58,17 @@
     <!-- Usage descriptions for other necessary services -->
     <key>NSUserTrackingUsageDescription</key>
     <string>This app tracks the user's activity to improve user experience and functionality.</string>
+
+    <!-- Enable TCP Connections -->
+    <key>NSExceptionDomains</key>
+    <dict>
+        <key>localhost</key>
+        <dict>
+            <key>NSExceptionAllowsInsecureHTTPLoads</key>
+            <true/>
+            <key>NSIncludesSubdomains</key>
+            <true/>
+        </dict>
+    </dict>
 </dict>
 </plist>
