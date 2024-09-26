@@ -22,7 +22,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ReceiveFileActivityPython extends AppCompatActivity {
 
@@ -81,7 +80,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.d("ReceiveFileActivityPython", "Connection established with the sender.");
                 // Update the UI after connection is established
                 TextView txt_waiting = findViewById(R.id.txt_waiting);
-                txt_waiting.setText("Receiving file from " + deviceType);
+                txt_waiting.setText("Receiving files from " + deviceType);
             } else {
                 Log.e("ReceiveFileActivityPython", "Failed to establish connection.");
             }
@@ -188,6 +187,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 while (receivedSize < fileSize) {
                     int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
                     if (bytesRead == -1) {
+                        Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
                         break; // Handle connection loss or other issues
                     }
                     fos.write(buffer, 0, bytesRead);
@@ -195,7 +195,6 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
                 }
                 fos.close();
-
                 Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
             }
         } catch (IOException e) {
@@ -223,63 +222,10 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         return saveToDirectory;
     }
 
-    // Method to receive metadata from the sender
-    private JSONObject receiveMetadata(long fileSize) {
-        byte[] receivedData = new byte[(int) fileSize];
-        try {
-            clientSocket.getInputStream().read(receivedData);
-            String metadataJson = new String(receivedData, StandardCharsets.UTF_8);
-            return new JSONObject(metadataJson);
-        } catch (IOException e) {
-            Log.e("ReceiveFileActivity", "Error receiving metadata", e);
-        } catch (JSONException e) {
-            Log.e("ReceiveFileActivity", "Error parsing metadata JSON", e);
-        }
-        return null; // Return null or handle accordingly if metadata reception fails
-    }
-
-
-    // Method to create folder structure based on metadata
-    private String createFolderStructure(JSONObject metadata, String defaultDir) {
-        String topLevelFolder = metadata.optString("base_folder_name", "");
-        if (topLevelFolder.isEmpty()) {
-            Log.e("ReceiveFileActivity", "Base folder name not found in metadata");
-            return defaultDir; // Return default if no base folder
-        }
-
-        String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
-        Log.d("ReceiveFileActivity", "Destination folder: " + destinationFolder);
-
-        File destinationDir = new File(destinationFolder);
-        if (!destinationDir.exists()) {
-            destinationDir.mkdirs();
-            Log.d("ReceiveFileActivity", "Created base folder: " + destinationFolder);
-        }
-
-        // Assuming metadata contains an array of file paths to create directories for
-        try {
-            JSONArray fileArray = metadata.optJSONArray("files");
-            if (fileArray != null) {
-                for (int i = 0; i < fileArray.length(); i++) {
-                    String filePath = fileArray.getString(i);
-                    File folderPath = new File(destinationFolder, filePath).getParentFile();
-                    if (folderPath != null && !folderPath.exists()) {
-                        folderPath.mkdirs();
-                        Log.d("ReceiveFileActivity", "Created folder: " + folderPath.getPath());
-                    }
-                }
-            }
-        } catch (JSONException e) {
-            Log.e("ReceiveFileActivity", "Error handling JSON metadata", e);
-        }
-
-        return destinationFolder;
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clean up the socket when the activity is destroyed
+        // Close sockets on activity destruction
         try {
             if (clientSocket != null && !clientSocket.isClosed()) {
                 clientSocket.close();
@@ -288,7 +234,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error closing sockets", e);
+            Log.e("ReceiveFileActivity", "Error closing sockets", e);
         }
     }
 }
