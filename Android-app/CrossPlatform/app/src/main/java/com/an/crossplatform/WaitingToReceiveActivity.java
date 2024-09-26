@@ -1,19 +1,10 @@
 package com.an.crossplatform;
 
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.json.JSONObject;
 
@@ -21,21 +12,31 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.net.SocketException;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
-    private static final int UDP_PORT = 12345; // Discovery port on Android
-    private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on Python app
+    private static final int UDP_PORT = 12345; // Discovery port
+    private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on the Python app
     private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private int LISTEN_PORT = 12346;
+
+    private boolean tcpConnectionEstablished = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,11 +46,10 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         TextView txtWaiting = findViewById(R.id.txt_waiting);
         txtWaiting.setText("Waiting to receive file...");
 
-        // Get the device name from config.json present in the internal storage
+        // Get the device name from config.json in the internal storage
         String rawJson = readJsonFromFile();
         if (rawJson != null) {
             try {
-                // Read JSON from internal storage at Android/data/com.an.crossplatform/files/config/config.json
                 JSONObject json = new JSONObject(rawJson);
                 DEVICE_NAME = json.getString("device_name");  // Ensure correct key here
                 Log.d("WaitingToReceive", "Device name from config: " + DEVICE_NAME);
@@ -61,11 +61,12 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             DEVICE_NAME = "Android Device";  // Fallback if config.json doesn't exist
             Log.d("WaitingToReceive", "Using default device name: " + DEVICE_NAME);
         }
+
+        // Start listening for discover messages
         startListeningForDiscover();
     }
 
     private String readJsonFromFile() {
-        // Use internal storage for folder
         File folder = new File(getFilesDir(), "config");
         if (!folder.exists()) {
             Log.d("readJsonFromFile", "Config folder does not exist. Returning null.");
@@ -99,14 +100,11 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             try (DatagramSocket socket = new DatagramSocket(UDP_PORT)) {
                 byte[] recvBuf = new byte[15000];
 
-                while (true) {
+                while (!tcpConnectionEstablished) { // Continue listening until a TCP connection is confirmed
                     DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
                     socket.receive(receivePacket);
 
-                    Log.d("Waiting", "Waiting ");
-                    // Extract the raw data
                     String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
-
                     Log.d("WaitingToReceive", "Received raw message: " + message);
                     Log.d("WaitingToReceive", "Sender address: " + receivePacket.getAddress().getHostAddress());
                     Log.d("WaitingToReceive", "Sender port: " + receivePacket.getPort());
@@ -118,9 +116,8 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         socket.send(sendPacket);
                         Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
 
-                        // Remove the loop and run `establishTcpConnection` once
-                        establishTcpConnection(senderAddress);
-                        // Stop listening once the device is discovered and connected
+                        // Start a new thread to handle the TCP connection while still listening for discover messages
+                        new Thread(() -> establishTcpConnection(senderAddress)).start();
                     }
                 }
             } catch (Exception e) {
@@ -137,10 +134,8 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         Log.d("WaitingToReceive", "Establishing TCP connection with Sender");
 
         try {
-            // Create a new ServerSocket to listen for multiple connections
             serverSocket = new ServerSocket(RECEIVER_PORT_JSON);  // Listening for incoming connections on RECEIVER_PORT_JSON
-//            serverSocket.bind(new InetSocketAddress("0.0.0.0", SENDER_PORT_JSON));
-            Log.d("WaitingToReceive", "Trying to establish TCP connection on port " + RECEIVER_PORT_JSON + " with Receiver on port " + SENDER_PORT_JSON);
+            Log.d("WaitingToReceive", "Waiting for incoming connections on port " + RECEIVER_PORT_JSON);
 
             while (true) { // Loop to handle multiple connections
                 Log.d("WaitingToReceive", "Waiting for incoming connections...");
@@ -212,19 +207,26 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         }
                     } catch (Exception e) {
                         Log.e("WaitingToReceive", "Error receiving JSON data", e);
+                    } finally {
+                        // Only close this specific socket after the entire communication is done
+                        try {
+                            if (bufferedInputStream != null) bufferedInputStream.close();
+                            if (bufferedOutputStream != null) bufferedOutputStream.close();
+                            if (finalSocket != null && !finalSocket.isClosed()) finalSocket.close();
+                        } catch (IOException e) {
+                            Log.e("WaitingToReceive", "Error closing socket resources", e);
+                        }
                     }
                 }).start();
             }
-
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.e("WaitingToReceive", "Error establishing TCP connection", e);
         } finally {
-            // Close resources
+            // Make sure the serverSocket is only closed once we're done with all transactions
             try {
-                if (inputStream != null) inputStream.close();
-                if (outputStream != null) outputStream.close();
-                if (socket != null) socket.close();
+                if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
             } catch (IOException e) {
-                Log.e("WaitingToReceive", "Error closing resources", e);
+                Log.e("WaitingToReceive", "Error closing ServerSocket", e);
             }
         }
     }
