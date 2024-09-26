@@ -33,6 +33,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     // Server socket to accept connections
     private ServerSocket serverSocket;
     private Socket clientSocket;
+    private String destinationFolder; // Declare destinationFolder here
+    private JSONArray metadata; // Assuming metadata is also stored at class level
+    private String saveToDirectory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +125,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     .replace("/", File.separator);
             actualPath = Environment.getExternalStorageDirectory().getPath() + "/" + actualPath; // Ensure proper slash
 
-            // Create the directory if it doesn't exist
+            // Create the main directory if it doesn't exist
             File directory = new File(actualPath);
             if (!directory.exists()) {
                 boolean dirCreated = directory.mkdirs();
@@ -142,16 +145,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.d("ReceiveFileActivity", "Received encryption flag: " + encryptionFlag);
 
                 if (encryptionFlag.isEmpty()) {
-                    Log.d("ReceiveFileActivity", "End of transfer signal received.");
+                    Log.d("ReceiveFileActivity", "Dropped redundant data: " + encryptionFlag);
                     break;
                 }
 
-                // Check last character of encryption flag to determine if encryption is enabled
-                boolean halt = encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h';
-                Log.d("ReceiveFileActivity", "Encryption halt: " + halt);
-                if (halt) {
-                    Log.e("ReceiveFileActivity", "Encryption halt received. File transfer aborted.");
-                    break;
+                if (encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
+                    Log.e("ReceiveFileActivity", "Received halt signal. Stopping file reception.");
+                    break; // Halting signal
                 }
 
                 // Receive file name size
@@ -159,6 +159,12 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 clientSocket.getInputStream().read(fileNameSizeBytes);
                 long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
                 Log.d("ReceiveFileActivity", "File name size received: " + fileNameSize);
+
+                // End of transfer signal
+                if (fileNameSize == 0) {
+                    Log.d("ReceiveFileActivity", "End of transfer signal received.");
+                    break;
+                }
 
                 // Receive file name
                 byte[] fileNameBytes = new byte[(int) fileNameSize];
@@ -178,24 +184,69 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     continue; // Skip this iteration or handle accordingly
                 }
 
-                // Receive file data
-                File receivedFile = new File(directory, fileName); // Save to the specified directory
-                FileOutputStream fos = new FileOutputStream(receivedFile);
+                // Check if it's metadata
+                if (fileName.equals("metadata.json")) {
+                    Log.d("ReceiveFileActivity", "Receiving metadata file.");
+                    JSONArray metadataArray = receiveMetadata(fileSize); // Assuming this returns a JSONArray
 
-                byte[] buffer = new byte[4096];
-                long receivedSize = 0;
-                while (receivedSize < fileSize) {
-                    int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
-                    if (bytesRead == -1) {
-                        Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
-                        break; // Handle connection loss or other issues
+                    if (metadataArray != null && metadataArray.length() > 0) {
+                        this.metadata = metadataArray; // Store the received metadata
+
+                        try {
+                            // Access the last element
+                            JSONObject lastMetadata = metadataArray.getJSONObject(metadataArray.length() - 1);
+
+                            // Check if it has the base folder name
+                            if (lastMetadata.has("base_folder_name")) {
+                                String baseFolderName = lastMetadata.getString("base_folder_name");
+                                if (!baseFolderName.isEmpty()) {
+                                    this.destinationFolder = createFolderStructure(metadataArray, directory.getPath()); // Pass the directory path
+                                } else {
+                                    this.destinationFolder = directory.getPath(); // Set to default
+                                }
+                            } else {
+                                this.destinationFolder = directory.getPath(); // Set to default
+                            }
+                            Log.d("ReceiveFileActivity", "Metadata processed. Destination folder set to: " + this.destinationFolder);
+                        } catch (JSONException e) {
+                            Log.e("ReceiveFileActivity", "Error processing metadata JSON", e);
+                        }
+                    } else {
+                        Log.e("ReceiveFileActivity", "No valid metadata received.");
                     }
-                    fos.write(buffer, 0, bytesRead);
-                    receivedSize += bytesRead;
-                    Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
+                } else {
+                    // Normal file reception logic
+                    File receivedFile = new File(destinationFolder, fileName); // Save to the specified destination folder
+
+                    // Ensure the parent directory exists before creating the file
+                    File parentDir = receivedFile.getParentFile();
+                    if (parentDir != null && !parentDir.exists()) {
+                        boolean dirCreated = parentDir.mkdirs(); // Create the parent directory
+                        if (dirCreated) {
+                            Log.d("ReceiveFileActivity", "Created directory: " + parentDir.getPath());
+                        } else {
+                            Log.e("ReceiveFileActivity", "Failed to create directory: " + parentDir.getPath());
+                            continue; // Skip this file if the directory cannot be created
+                        }
+                    }
+
+                    FileOutputStream fos = new FileOutputStream(receivedFile);
+
+                    byte[] buffer = new byte[4096];
+                    long receivedSize = 0;
+                    while (receivedSize < fileSize) {
+                        int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
+                        if (bytesRead == -1) {
+                            Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
+                            break; // Handle connection loss or other issues
+                        }
+                        fos.write(buffer, 0, bytesRead);
+                        receivedSize += bytesRead;
+                        Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
+                    }
+                    fos.close();
+                    Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
                 }
-                fos.close();
-                Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
             }
         } catch (IOException e) {
             Log.e("ReceiveFileActivity", "Error receiving files", e);
@@ -220,6 +271,76 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             Log.e("ReceiveFileActivity", "Error loading config.json", e);
         }
         return saveToDirectory;
+    }
+
+    private JSONArray receiveMetadata(long fileSize) {
+        byte[] receivedData = new byte[(int) fileSize];
+        try {
+            clientSocket.getInputStream().read(receivedData);
+            String metadataJson = new String(receivedData, StandardCharsets.UTF_8);
+            return new JSONArray(metadataJson); // Change to JSONArray
+        } catch (IOException e) {
+            Log.e("ReceiveFileActivity", "Error receiving metadata", e);
+        } catch (JSONException e) {
+            Log.e("ReceiveFileActivity", "Error parsing metadata JSON", e);
+        }
+        return null; // Return null or handle accordingly if metadata reception fails
+    }
+
+    private String createFolderStructure(JSONArray metadataArray, String defaultDir) {
+        if (metadataArray.length() == 0) {
+            Log.e("ReceiveFileActivity", "No metadata provided for folder structure.");
+            return defaultDir; // Return default if no metadata
+        }
+
+        String topLevelFolder = ""; // Variable to hold the top-level folder name
+
+        try {
+            // Extract the base folder name from the last entry
+            JSONObject lastMetadata = metadataArray.getJSONObject(metadataArray.length() - 1);
+            topLevelFolder = lastMetadata.optString("base_folder_name", "");
+
+            if (topLevelFolder.isEmpty()) {
+                Log.e("ReceiveFileActivity", "Base folder name not found in metadata");
+                return defaultDir; // Return default if no base folder
+            }
+
+        } catch (JSONException e) {
+            Log.e("ReceiveFileActivity", "Error processing metadata JSON to extract base folder name", e);
+            return defaultDir; // Return default if any error occurs
+        }
+
+        // Construct the destination folder path
+        String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
+        Log.d("ReceiveFileActivity", "Destination folder: " + destinationFolder);
+
+        File destinationDir = new File(destinationFolder);
+        if (!destinationDir.exists()) {
+            destinationDir.mkdirs(); // Create the base folder if it doesn't exist
+            Log.d("ReceiveFileActivity", "Created base folder: " + destinationFolder);
+        }
+
+        // Process each file info in the metadata array
+        for (int i = 0; i < metadataArray.length() - 1; i++) { // Exclude the last entry
+            try {
+                JSONObject fileInfo = metadataArray.getJSONObject(i);
+                String filePath = fileInfo.optString("path", "");
+                if (filePath.equals(".delete")) {
+                    continue; // Skip paths marked for deletion
+                }
+
+                File folderPath = new File(destinationFolder, filePath).getParentFile();
+                if (folderPath != null && !folderPath.exists()) {
+                    folderPath.mkdirs(); // Create the folder structure if it doesn't exist
+                    Log.d("ReceiveFileActivity", "Created folder: " + folderPath.getPath());
+                }
+            } catch (JSONException e) {
+                Log.e("ReceiveFileActivity", "Error processing file info in metadata", e);
+                // Continue to the next file if there's an error with the current one
+            }
+        }
+
+        return destinationFolder; // Return the path of the created folder structure
     }
 
     @Override
