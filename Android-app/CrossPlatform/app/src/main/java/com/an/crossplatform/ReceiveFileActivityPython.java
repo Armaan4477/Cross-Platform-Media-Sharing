@@ -230,22 +230,24 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                         }
                     }
 
-                    FileOutputStream fos = new FileOutputStream(receivedFile);
-
-                    byte[] buffer = new byte[4096];
-                    long receivedSize = 0;
-                    while (receivedSize < fileSize) {
-                        int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
-                        if (bytesRead == -1) {
-                            Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
-                            break; // Handle connection loss or other issues
+                    // Handle file writing
+                    try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
+                        byte[] buffer = new byte[4096];
+                        long receivedSize = 0;
+                        while (receivedSize < fileSize) {
+                            int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
+                            if (bytesRead == -1) {
+                                Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
+                                break; // Handle connection loss or other issues
+                            }
+                            fos.write(buffer, 0, bytesRead);
+                            receivedSize += bytesRead;
+                            Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
                         }
-                        fos.write(buffer, 0, bytesRead);
-                        receivedSize += bytesRead;
-                        Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
+                        Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
+                    } catch (IOException e) {
+                        Log.e("ReceiveFileActivity", "Error writing file " + fileName, e);
                     }
-                    fos.close();
-                    Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
                 }
             }
         } catch (IOException e) {
