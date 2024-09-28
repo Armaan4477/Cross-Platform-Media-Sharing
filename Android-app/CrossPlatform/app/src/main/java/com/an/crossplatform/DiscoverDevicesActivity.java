@@ -270,11 +270,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
                 if (receivedJson.getString("device_type").equals("python")) {
                     Log.d("WaitingToReceive", "Received JSON data from Python app");
-                    // Proceed to the next activity (SendFileActivityPython)
-                    Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivityPython.class);
-                    intent.putExtra("receivedJson", receivedJson.toString());
-                    intent.putExtra("selectedDeviceIP", selectedDeviceIP); // Send the selected device IP
-                    startActivity(intent);
                 } else if (receivedJson.getString("device_type").equals("java")) {
                     Log.d("WaitingToReceive", "Received JSON data from Java app");
                     // Proceed to the next activity (ReceiveFileActivity)
