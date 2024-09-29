@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ReceiveFileActivity extends AppCompatActivity {
+public class ReceiveFileActivityPython extends AppCompatActivity {
 
     private String senderJson;
     private String deviceName;
