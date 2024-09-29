@@ -127,19 +127,19 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     }
 
     private void establishTcpConnection(final InetAddress receiverAddress) {
-        ServerSocket serverSocket = null; // Use ServerSocket for listening
+        ServerSocket serverSocket = null;
         Socket socket = null;
         BufferedOutputStream outputStream = null;
         BufferedInputStream inputStream = null;
         Log.d("WaitingToReceive", "Establishing TCP connection with Sender");
 
         try {
-            serverSocket = new ServerSocket(RECEIVER_PORT_JSON);  // Listening for incoming connections on RECEIVER_PORT_JSON
+            serverSocket = new ServerSocket(RECEIVER_PORT_JSON);
             Log.d("WaitingToReceive", "Waiting for incoming connections on port " + RECEIVER_PORT_JSON);
 
-            while (true) { // Loop to handle multiple connections
+            while (true) {
                 Log.d("WaitingToReceive", "Waiting for incoming connections...");
-                socket = serverSocket.accept(); // Accept an incoming connection
+                socket = serverSocket.accept();
                 Log.d("WaitingToReceive", "Accepted connection from: " + socket.getInetAddress().toString());
 
                 DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -165,9 +165,13 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
                 Log.d("WaitingToReceive", "Sent JSON data to receiver");
 
-                // Start a thread to receive the JSON from the sender after sending
                 Socket finalSocket = socket;
-                new Thread(() -> {
+
+                // Flag for handling which activity to launch
+                final JSONObject[] receivedJsonContainer = new JSONObject[1]; // Use array to allow modification inside thread
+
+                // Start a thread to receive the JSON from the sender after sending
+                Thread receiveThread = new Thread(() -> {
                     try {
                         // Read the JSON size first (as a long, little-endian)
                         byte[] recvSizeBuf = new byte[Long.BYTES];
@@ -191,20 +195,9 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         JSONObject receivedJson = new JSONObject(jsonStr);
                         Log.d("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
 
-                        // If the received JSON is from the expected device, handle accordingly
-                        if (receivedJson.getString("device_type").equals("python")) {
-                            Log.d("WaitingToReceive", "Received JSON data from Python app");
-                            // Proceed to the next activity (ReceiveFileActivityPython)
-                            Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
-                            intent.putExtra("receivedJson", receivedJson.toString());
-                            startActivity(intent);
-                        } else if (receivedJson.getString("device_type").equals("java")) {
-                            Log.d("WaitingToReceive", "Received JSON data from Java app");
-                            // Proceed to the next activity (ReceiveFileActivity)
-                            Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
-                            intent.putExtra("receivedJson", receivedJson.toString());
-                            startActivity(intent);
-                        }
+                        // Save the received JSON to the container
+                        receivedJsonContainer[0] = receivedJson;
+
                     } catch (Exception e) {
                         Log.e("WaitingToReceive", "Error receiving JSON data", e);
                     } finally {
@@ -217,7 +210,27 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                             Log.e("WaitingToReceive", "Error closing socket resources", e);
                         }
                     }
-                }).start();
+                });
+
+                // Start the receiving thread and wait for it to complete
+                receiveThread.start();
+                receiveThread.join(); // Wait until the thread finishes before continuing
+
+                // Once JSON is received, decide which activity to start based on the device_type
+                JSONObject receivedJson = receivedJsonContainer[0];
+                if (receivedJson != null) {
+                    if (receivedJson.getString("device_type").equals("python")) {
+                        Log.d("WaitingToReceive", "Received JSON data from Python app");
+                        Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
+                        intent.putExtra("receivedJson", receivedJson.toString());
+                        startActivity(intent);
+                    } else if (receivedJson.getString("device_type").equals("java")) {
+                        Log.d("WaitingToReceive", "Received JSON data from Java app");
+                        Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
+                        intent.putExtra("receivedJson", receivedJson.toString());
+                        startActivity(intent);
+                    }
+                }
             }
         } catch (Exception e) {
             Log.e("WaitingToReceive", "Error establishing TCP connection", e);
