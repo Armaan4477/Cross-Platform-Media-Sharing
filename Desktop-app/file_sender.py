@@ -75,13 +75,12 @@ class FileSender(QThread):
         if self.metadata_created and metadata_file_path:
             os.remove(metadata_file_path)
             
-            logger.debug("Sent halt signal")
-            self.client_skt.send('encyp: h'.encode())
-            sleep(0.5)
-            self.client_skt.send('encyp: h'.encode())
-            sleep(0.5)
-            self.client_skt.close()
-       
+        logger.debug("Sent halt signal")
+        self.client_skt.send('encyp: h'.encode())
+        sleep(0.5)
+        self.client_skt.send('encyp: h'.encode())
+        sleep(0.5)
+        self.client_skt.close()
 
     def create_metadata(self, folder_path=None,file_paths=None):
         if folder_path:
