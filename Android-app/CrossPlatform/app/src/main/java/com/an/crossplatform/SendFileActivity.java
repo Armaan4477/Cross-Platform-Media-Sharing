@@ -440,7 +440,7 @@ public class SendFileActivity extends AppCompatActivity {
             // Initialize connection in the background
             try {
                 socket = new Socket();
-                socket.connect(new InetSocketAddress(ip, 58000), 10000);
+                socket.connect(new InetSocketAddress(ip, 58100), 10000);
                 Log.d("SendFileActivity", "Socket connected: " + socket.isConnected());
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Failed to connect to server", e);
@@ -542,6 +542,7 @@ public class SendFileActivity extends AppCompatActivity {
                         // Send the relative path size and the path
                         byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
                         long relativePathSize = relativePathBytes.length;
+
 
                         ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
                         pathSizeBuffer.putLong(relativePathSize);
