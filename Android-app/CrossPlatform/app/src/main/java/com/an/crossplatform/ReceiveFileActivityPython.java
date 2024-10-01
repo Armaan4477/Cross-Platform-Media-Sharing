@@ -98,7 +98,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             }
 
             // Create a new server socket and bind to the specific port
-            serverSocket = new ServerSocket(58000); // Replace with the desired port
+            serverSocket = new ServerSocket(58100); // Replace with the desired port
             Log.d("ReceiveFileActivityPython", "Waiting for a connection...");
 
             // Wait for a client connection
@@ -259,6 +259,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private String loadSaveDirectoryFromConfig(File configFile) {
         String saveToDirectory = getFilesDir().getPath(); // Default directory if config fails
         try {
+            // Update the path to point to the correct location of config.json
+            configFile = new File(getFilesDir(), "config/config.json"); // Corrected path
+
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();

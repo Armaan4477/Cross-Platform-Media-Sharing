@@ -219,6 +219,9 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 // Once JSON is received, decide which activity to start based on the device_type
                 JSONObject receivedJson = receivedJsonContainer[0];
                 if (receivedJson != null) {
+                    // Close socket and serverSocket before starting the new activity
+                    if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
+                    if (socket != null && !socket.isClosed()) socket.close();
                     if (receivedJson.getString("device_type").equals("python")) {
                         Log.d("WaitingToReceive", "Received JSON data from Python app");
                         Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
@@ -238,6 +241,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             // Make sure the serverSocket is only closed once we're done with all transactions
             try {
                 if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
+                Log.d("WaitingToReceive", "ServerSocket closed");
             } catch (IOException e) {
                 Log.e("WaitingToReceive", "Error closing ServerSocket", e);
             }
