@@ -3,7 +3,7 @@ import socket
 import struct
 import json
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
 from PyQt6.QtGui import QScreen
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
@@ -273,6 +273,11 @@ class ReceiveAppP(QWidget):
         self.progress_bar = QProgressBar(self)
         layout.addWidget(self.progress_bar)
 
+        self.open_dir_button = QPushButton("Open Receiving Directory", self)
+        self.open_dir_button.clicked.connect(self.open_receiving_directory)
+        self.open_dir_button.setVisible(False)  # Initially hidden
+        layout.addWidget(self.open_dir_button)
+
         self.setLayout(layout)
 
         client_ip = self.client_ip
@@ -294,12 +299,30 @@ class ReceiveAppP(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
+            self.open_dir_button.setVisible(True)  # Show the button when file is received
+
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
         if value:
             self.decryptor = Decryptor(value)
             self.decryptor.show()
+
+    def open_receiving_directory(self):
+        config = get_config()
+        receiving_dir = config.get("save_to_directory")
+        
+        if receiving_dir and os.path.exists(receiving_dir):
+            try:
+                if os.name == 'nt':  # For Windows
+                    os.startfile(receiving_dir)
+                elif os.name == 'posix':  # For macOS and Linux
+                    subprocess.call(('open', receiving_dir)) if sys.platform == 'darwin' else subprocess.call(('xdg-open', receiving_dir))
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to open directory: {str(e)}")
+        else:
+            QMessageBox.warning(self, "Error", "Receiving directory not found or not configured.")
+     
 
 if __name__ == '__main__':
     import sys
