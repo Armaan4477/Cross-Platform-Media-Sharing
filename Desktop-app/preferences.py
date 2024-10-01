@@ -1,8 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
-from PyQt6.QtCore import Qt
-
 from PyQt6.QtGui import QScreen
 from PyQt6.QtCore import Qt
 import sys
@@ -135,9 +133,7 @@ class PreferencesApp(QWidget):
         }
 
         write_config(preferences)
-        reply = QMessageBox.information(self, "Success", "Preferences saved successfully!", QMessageBox.StandardButton.Ok)
-        if  reply == QMessageBox.StandardButton.Ok:
-         self.goToMainMenu()  # Go to main menu after confirmation
+        QMessageBox.information(self, "Success", "Preferences saved successfully!")
         self.go_to_main_menu()
 
     def center_window(self):

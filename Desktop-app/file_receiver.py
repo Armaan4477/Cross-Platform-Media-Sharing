@@ -68,20 +68,18 @@ class FileReceiver(QThread):
         device_json = self.client_socket.recv(device_json_size).decode()
         self.device_info = json.loads(device_json)
         sender_device_type = self.device_info.get("device_type", "unknown")
-
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
             self.show_receive_app_p_signal.emit()
             sleep(1)  # Wait for the signal to be processed
-            self.cleanup_sockets()  # Clean up sockets and close connections
-
+            self.cleanup_sockets() # Clean up before proceeding
         elif sender_device_type == "java":
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             self.show_receive_app_p_signal_java.emit()
             sleep(1)
             self.cleanup_sockets()
         else:
-           logger.debug("Unknown device type received.")
+            logger.debug("Unknown device type received.")
     
     def cleanup_sockets(self):
         if self.client_socket:
