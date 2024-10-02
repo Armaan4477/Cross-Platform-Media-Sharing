@@ -11,6 +11,7 @@ import platform
 from constant import logger,get_config
 
 # Test commit from linux 
+# I am in Samay2 branch
 
 class MainApp(QWidget):
     def __init__(self):
