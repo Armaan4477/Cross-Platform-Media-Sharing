@@ -1,5 +1,6 @@
 package com.an.crossplatform;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -31,62 +32,49 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private String osType;
     private String senderIp;
 
-    // Server socket to accept connections
     private ServerSocket serverSocket;
     private Socket clientSocket;
-    private String destinationFolder; // Declare destinationFolder here
-    private JSONArray metadata; // Assuming metadata is also stored at class level
+    private String destinationFolder;
+    private JSONArray metadata;
     private String saveToDirectory;
     private ProgressBar progressBar;
+    private TextView txt_waiting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
         progressBar = findViewById(R.id.fileProgressBar);
+        txt_waiting = findViewById(R.id.txt_waiting);
 
-        // Retrieve senderJson from the intent
         senderJson = getIntent().getStringExtra("receivedJson");
-        Log.d("ReceiveFileActivity", "Received JSON: " + senderJson);
-
         senderIp = getIntent().getStringExtra("senderIp");
 
-        // Parse the JSON and extract device info
         try {
-            osType = new JSONObject(senderJson).getString("os");
-            deviceType = new JSONObject(senderJson).getString("device_type");
-        } catch (Exception e) {
+            JSONObject jsonObject = new JSONObject(senderJson);
+            osType = jsonObject.getString("os");
+            deviceType = jsonObject.getString("device_type");
+        } catch (JSONException e) {
             Log.e("ReceiveFileActivity", "Failed to retrieve OS type", e);
         }
 
-        Log.d("ReceiveFileActivity", "OS Type: " + osType);
-
-        // Update the TextView with the message
-        TextView txt_waiting = findViewById(R.id.txt_waiting);
         txt_waiting.setText("Waiting to receive file from " + deviceType);
 
-        // Start the connection task as soon as the activity starts
         new ConnectionTask().execute();
     }
 
-    // Update your ConnectionTask to receive files in the background
     private class ConnectionTask extends AsyncTask<Void, Void, Boolean> {
         @Override
         protected Boolean doInBackground(Void... voids) {
-            boolean connectionSuccessful = initializeConnection();
-            if (connectionSuccessful) {
-                receiveFiles(); // Call receiveFiles here
-            }
-            return connectionSuccessful;  // Return the connection status
+            return initializeConnection();
         }
 
         @Override
         protected void onPostExecute(Boolean connectionSuccessful) {
             if (connectionSuccessful) {
                 Log.d("ReceiveFileActivity", "Connection established with the sender.");
-                // Update the UI after connection is established
-                TextView txt_waiting = findViewById(R.id.txt_waiting);
                 txt_waiting.setText("Receiving files from " + deviceType);
+                new ReceiveFilesTask().execute();
             } else {
                 Log.e("ReceiveFileActivity", "Failed to establish connection.");
             }
@@ -95,159 +83,125 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     private boolean initializeConnection() {
         try {
-            // Close any existing server socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-
-            // Create a new server socket and bind to the specific port
-            serverSocket = new ServerSocket(58100); // Replace with the desired port
+            serverSocket = new ServerSocket(58100);
             Log.d("ReceiveFileActivity", "Waiting for a connection...");
-
-            // Wait for a client connection
             clientSocket = serverSocket.accept();
             Log.d("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
-
-            return true;  // Connection successful
+            return true;
         } catch (IOException e) {
             Log.e("ReceiveFileActivity", "Error initializing connection", e);
-            return false;  // Connection failed
+            return false;
         }
     }
 
-    private void receiveFiles() {
-        Log.d("ReceiveFileActivity", "File reception started.");
-        try {
-            // Load the save directory from config
-            File configFile = new File(getFilesDir(), "config/config.json");
-            String saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+    @SuppressLint("StaticFieldLeak")
+    private class ReceiveFilesTask extends AsyncTask<Void, Integer, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            receiveFiles();
+            return null;
+        }
 
-            // Convert URI-like path to a proper file path
-            String actualPath = saveToDirectory.replace("/tree/primary:", "")
-                    .replace("Download", Environment.DIRECTORY_DOWNLOADS)
-                    .replace("/", File.separator);
-            actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            progressBar.setProgress(values[0]);
+        }
 
-            // Create the main directory if it doesn't exist
-            File directory = new File(actualPath);
-            if (!directory.exists()) {
-                boolean dirCreated = directory.mkdirs();
-                if (dirCreated) {
-                    Log.d("ReceiveFileActivity", "Created directory: " + actualPath);
-                } else {
+        @Override
+        protected void onPostExecute(Void result) {
+            txt_waiting.setText("File transfer completed");
+            progressBar.setProgress(0);
+        }
+
+        private void receiveFiles() {
+            Log.d("ReceiveFileActivity", "File reception started.");
+            try {
+                File configFile = new File(getFilesDir(), "config/config.json");
+                saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+
+                String actualPath = saveToDirectory.replace("/tree/primary:", "")
+                        .replace("Download", Environment.DIRECTORY_DOWNLOADS)
+                        .replace("/", File.separator);
+                actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
+
+                File directory = new File(actualPath);
+                if (!directory.exists() && !directory.mkdirs()) {
                     Log.e("ReceiveFileActivity", "Failed to create directory: " + actualPath);
                     return;
                 }
-            }
 
-            String destinationFolder = actualPath;
-            JSONArray metadataArray = null;
+                destinationFolder = actualPath;
+                JSONArray metadataArray = null;
 
-            while (true) {
-                // Receive and decode encryption flag
-                byte[] encryptionFlagBytes = new byte[8];
-                clientSocket.getInputStream().read(encryptionFlagBytes);
-                String encryptionFlag = new String(encryptionFlagBytes).trim();
-                Log.d("ReceiveFileActivity", "Received encryption flag: " + encryptionFlag);
+                while (true) {
+                    byte[] encryptionFlagBytes = new byte[8];
+                    clientSocket.getInputStream().read(encryptionFlagBytes);
+                    String encryptionFlag = new String(encryptionFlagBytes).trim();
 
-                if (encryptionFlag.isEmpty()) {
-                    Log.d("ReceiveFileActivity", "Dropped redundant data: " + encryptionFlag);
-                    break;
-                }
-
-                if (encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
-                    Log.e("ReceiveFileActivity", "Received halt signal. Stopping file reception.");
-                    break;
-                }
-
-                // Receive file name size
-                byte[] fileNameSizeBytes = new byte[8];
-                clientSocket.getInputStream().read(fileNameSizeBytes);
-                long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-                Log.d("ReceiveFileActivity", "File name size received: " + fileNameSize);
-
-                if (fileNameSize == 0) {
-                    Log.d("ReceiveFileActivity", "End of transfer signal received.");
-                    break;
-                }
-
-                // Receive file name
-                byte[] fileNameBytes = new byte[(int) fileNameSize];
-                clientSocket.getInputStream().read(fileNameBytes);
-                String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
-                Log.d("ReceiveFileActivity", "Normalized file name: " + fileName);
-
-                // Receive file size
-                byte[] fileSizeBytes = new byte[8];
-                clientSocket.getInputStream().read(fileSizeBytes);
-                long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-                Log.d("ReceiveFileActivity", "Receiving file " + fileName + ", size: " + fileSize + " bytes");
-
-                if (fileSize < 0) {
-                    Log.e("ReceiveFileActivity", "Received invalid file size: " + fileSize);
-                    continue;
-                }
-
-                // Check if the file is metadata.json
-                if (fileName.equals("metadata.json")) {
-                    metadataArray = receiveMetadata(fileSize);
-                    if (metadataArray != null) {
-                        destinationFolder = createFolderStructure(metadataArray, actualPath);
+                    if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
+                        break;
                     }
-                    continue; // Skip to the next file
-                }
 
-                // Determine the file path based on metadata
-                String filePath = fileName;
-                if (metadataArray != null) {
-                    filePath = getFilePathFromMetadata(metadataArray, fileName);
-                }
+                    byte[] fileNameSizeBytes = new byte[8];
+                    clientSocket.getInputStream().read(fileNameSizeBytes);
+                    long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 
-                // Handle file writing
-                File receivedFile = new File(destinationFolder, filePath);
-                Log.d("ReceiveFileActivity", "File will be saved to: " + receivedFile.getAbsolutePath());
+                    if (fileNameSize == 0) {
+                        break;
+                    }
 
-                File parentDir = receivedFile.getParentFile();
-                if (parentDir != null && !parentDir.exists()) {
-                    boolean dirCreated = parentDir.mkdirs();
-                    if (dirCreated) {
-                        Log.d("ReceiveFileActivity", "Created directory: " + parentDir.getPath());
-                    } else {
+                    byte[] fileNameBytes = new byte[(int) fileNameSize];
+                    clientSocket.getInputStream().read(fileNameBytes);
+                    String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
+
+                    byte[] fileSizeBytes = new byte[8];
+                    clientSocket.getInputStream().read(fileSizeBytes);
+                    long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+
+                    if (fileSize < 0) {
+                        continue;
+                    }
+
+                    if (fileName.equals("metadata.json")) {
+                        metadataArray = receiveMetadata(fileSize);
+                        if (metadataArray != null) {
+                            destinationFolder = createFolderStructure(metadataArray, actualPath);
+                        }
+                        continue;
+                    }
+
+                    String filePath = (metadataArray != null) ? getFilePathFromMetadata(metadataArray, fileName) : fileName;
+                    File receivedFile = new File(destinationFolder, filePath);
+
+                    File parentDir = receivedFile.getParentFile();
+                    if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
                         Log.e("ReceiveFileActivity", "Failed to create directory: " + parentDir.getPath());
                         continue;
                     }
-                }
 
-                // Initialize progress bar
-                runOnUiThread(() -> {
-                    progressBar.setMax(100);
-                    progressBar.setProgress(0);
-                });
+                    try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
+                        byte[] buffer = new byte[8192]; // Increased buffer size for faster transfer
+                        long receivedSize = 0;
+                        while (receivedSize < fileSize) {
+                            int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
+                            if (bytesRead == -1) {
+                                break;
+                            }
+                            fos.write(buffer, 0, bytesRead);
+                            receivedSize += bytesRead;
 
-                try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                    byte[] buffer = new byte[4096];
-                    long receivedSize = 0;
-                    while (receivedSize < fileSize) {
-                        int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
-                        if (bytesRead == -1) {
-                            Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
-                            break;
+                            // Update progress
+                            int progress = (int) ((receivedSize * 100) / fileSize);
+                            publishProgress(progress);
                         }
-                        fos.write(buffer, 0, bytesRead);
-                        receivedSize += bytesRead;
-                        Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
-
-                        // Update progress bar
-                        int finalProgress = (int) ((receivedSize * 100) / fileSize);
-                        runOnUiThread(() -> progressBar.setProgress(finalProgress));
                     }
-                    Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
-                } catch (IOException e) {
-                    Log.e("ReceiveFileActivity", "Error writing file " + fileName, e);
                 }
+            } catch (IOException e) {
+                Log.e("ReceiveFileActivity", "Error receiving files", e);
             }
-        } catch (IOException e) {
-            Log.e("ReceiveFileActivity", "Error receiving files", e);
         }
     }
 

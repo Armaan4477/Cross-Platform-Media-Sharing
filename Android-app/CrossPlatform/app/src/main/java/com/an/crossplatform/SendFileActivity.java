@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -61,13 +62,13 @@ public class SendFileActivity extends AppCompatActivity {
     Socket socket = null;
     DataOutputStream dos = null;
     DataInputStream dis = null;
-    private ProgressBar progressBar;
+    private ProgressBar progressBar_send;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
-        ProgressBar progressBar = findViewById(R.id.progressBar);
+        progressBar_send = findViewById(R.id.progressBar_send);
 
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
@@ -531,8 +532,8 @@ public class SendFileActivity extends AppCompatActivity {
 
             // Initialize the progress bar
             runOnUiThread(() -> {
-                progressBar.setMax(100);
-                progressBar.setProgress(0);
+                progressBar_send.setMax(100);
+                progressBar_send.setProgress(0);
             });
 
             // Initialize the socket connection inside AsyncTask
@@ -590,13 +591,13 @@ public class SendFileActivity extends AppCompatActivity {
 
                 @Override
                 protected void onProgressUpdate(Integer... values) {
-                    progressBar.setProgress(values[0]);
+                    progressBar_send.setProgress(values[0]);
                 }
 
                 @Override
                 protected void onPostExecute(Void aVoid) {
                     // Reset progress bar when done
-                    progressBar.setProgress(0);
+                    progressBar_send.setProgress(0);
                 }
             }.execute();
         } catch (IOException e) {
