@@ -10,6 +10,8 @@ import os
 import platform
 from constant import logger,get_config
 
+# Test commit from linux 
+
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
