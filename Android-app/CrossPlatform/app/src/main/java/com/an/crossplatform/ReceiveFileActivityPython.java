@@ -303,8 +303,12 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         try {
             // Extract the base folder name from the last entry
             JSONObject lastMetadata = metadataArray.getJSONObject(metadataArray.length() - 1);
-            topLevelFolder = lastMetadata.optString("base_folder_name", "");
-
+            // Check if the base_folder_name has the word primary in it
+            if(lastMetadata.optString("base_folder_name", "").contains("primary")) {
+                topLevelFolder = lastMetadata.optString("base_folder_name", "").replace("primary%3A", "");
+            } else {
+                topLevelFolder = lastMetadata.optString("base_folder_name", "");
+            }
             if (topLevelFolder.isEmpty()) {
                 Log.e("ReceiveFileActivity", "Base folder name not found in metadata");
                 return defaultDir; // Return default if no base folder
