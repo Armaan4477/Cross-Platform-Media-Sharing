@@ -42,6 +42,7 @@ import android.os.Looper;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
+import android.widget.ProgressBar;
 
 public class SendFileActivity extends AppCompatActivity {
 
@@ -60,11 +61,13 @@ public class SendFileActivity extends AppCompatActivity {
     Socket socket = null;
     DataOutputStream dos = null;
     DataInputStream dis = null;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
+        ProgressBar progressBar = findViewById(R.id.progressBar);
 
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
@@ -526,8 +529,14 @@ public class SendFileActivity extends AppCompatActivity {
             Log.d("SendFileActivity", "File size: " + fileSize);
             Log.d("SendFileActivity", "Final file name: " + finalPathToSend);  // Check file name
 
+            // Initialize the progress bar
+            runOnUiThread(() -> {
+                progressBar.setMax(100);
+                progressBar.setProgress(0);
+            });
+
             // Initialize the socket connection inside AsyncTask
-            new AsyncTask<Void, Void, Void>() {
+            new AsyncTask<Void, Integer, Void>() {
                 @Override
                 protected Void doInBackground(Void... voids) {
                     try {
@@ -542,7 +551,6 @@ public class SendFileActivity extends AppCompatActivity {
                         // Send the relative path size and the path
                         byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
                         long relativePathSize = relativePathBytes.length;
-
 
                         ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
                         pathSizeBuffer.putLong(relativePathSize);
@@ -568,6 +576,7 @@ public class SendFileActivity extends AppCompatActivity {
                             dos.write(buffer, 0, bytesRead);
                             sentSize += bytesRead;
                             int progress = (int) (sentSize * 100 / fileSize);
+                            publishProgress(progress);
                             Log.d("SendFileActivity", "Progress: " + progress + "%");
                         }
                         dos.flush();
@@ -577,6 +586,17 @@ public class SendFileActivity extends AppCompatActivity {
                         Log.e("SendFileActivity", "Error sending file", e);
                     }
                     return null;
+                }
+
+                @Override
+                protected void onProgressUpdate(Integer... values) {
+                    progressBar.setProgress(values[0]);
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    // Reset progress bar when done
+                    progressBar.setProgress(0);
                 }
             }.execute();
         } catch (IOException e) {

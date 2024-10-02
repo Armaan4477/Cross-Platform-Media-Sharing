@@ -4,6 +4,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,11 +37,13 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private String destinationFolder; // Declare destinationFolder here
     private JSONArray metadata; // Assuming metadata is also stored at class level
     private String saveToDirectory;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
+        progressBar = findViewById(R.id.fileProgressBar);
 
         // Retrieve senderJson from the intent
         senderJson = getIntent().getStringExtra("receivedJson");
@@ -215,6 +218,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     }
                 }
 
+                // Initialize progress bar
+                runOnUiThread(() -> {
+                    progressBar.setMax(100);
+                    progressBar.setProgress(0);
+                });
+
                 try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
                     byte[] buffer = new byte[4096];
                     long receivedSize = 0;
@@ -227,6 +236,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         fos.write(buffer, 0, bytesRead);
                         receivedSize += bytesRead;
                         Log.d("ReceiveFileActivity", "Received " + receivedSize + "/" + fileSize + " bytes");
+
+                        // Update progress bar
+                        int finalProgress = (int) ((receivedSize * 100) / fileSize);
+                        runOnUiThread(() -> progressBar.setProgress(finalProgress));
                     }
                     Log.d("ReceiveFileActivity", "File " + fileName + " received successfully.");
                 } catch (IOException e) {
