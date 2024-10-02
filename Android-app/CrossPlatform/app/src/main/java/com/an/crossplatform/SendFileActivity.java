@@ -584,7 +584,6 @@ public class SendFileActivity extends AppCompatActivity {
         }
     }
 
-    // Update sendFolder to accept a String instead of Uri
     private void sendFolder(String folderPath) {
         boolean encryptionFlag = false;  // Set to true if you want to encrypt the files before sending
 
@@ -594,7 +593,7 @@ public class SendFileActivity extends AppCompatActivity {
         // Ensure metadataFilePath is set and not null
         if (metadataFilePath != null) {
             // Send the metadata file first
-            sendFile(metadataFilePath, "");
+            sendFile(metadataFilePath, "metadata.json");
         } else {
             Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
             return;
@@ -612,8 +611,14 @@ public class SendFileActivity extends AppCompatActivity {
 
                 // Check if the DocumentFile is a directory (folder)
                 if (folderDocument.isDirectory()) {
+                    // Get the name of the top-level folder
+                    String topLevelFolderName = folderDocument.getName();
+                    if (topLevelFolderName == null) {
+                        topLevelFolderName = ""; // Fallback if name is null
+                    }
+
                     // Send the folder contents recursively
-                    sendDocumentFile(folderDocument, "", encryptionFlag);
+                    sendDocumentFile(folderDocument, "", encryptionFlag, topLevelFolderName);
                 } else {
                     Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
                 }
@@ -623,20 +628,33 @@ public class SendFileActivity extends AppCompatActivity {
         });
     }
 
-    // Recursive method to send the contents of a DocumentFile (folder or file)
-    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag) {
+    // Modified recursive method to send the contents of a DocumentFile (folder or file)
+    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag, String topLevelFolderName) {
         if (documentFile.isDirectory()) {
-            // Send the directory creation command
-            String directoryPath = parentPath + documentFile.getName() + "/";
-            Log.d("SendFileActivity", "Directory creation needed for: " + directoryPath);
+            // Construct the directory path without the top-level folder name
+            String directoryPath = parentPath.isEmpty() ? documentFile.getName() + "/"
+                    : parentPath + documentFile.getName() + "/";
+
+            // Remove the top-level folder name from the path
+            String relativeDirectoryPath = directoryPath.startsWith(topLevelFolderName + "/")
+                    ? directoryPath.substring(topLevelFolderName.length() + 1)
+                    : directoryPath;
+
+            Log.d("SendFileActivity", "Directory creation needed for: " + relativeDirectoryPath);
 
             // Recursively send the contents of the directory
             for (DocumentFile file : documentFile.listFiles()) {
-                sendDocumentFile(file, directoryPath, encryptionFlag);
+                sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
             }
         } else if (documentFile.isFile()) {
-            // It's a file, send the file
-            String relativeFilePath = parentPath + documentFile.getName();
+            // Construct the file path
+            String filePath = parentPath + documentFile.getName();
+
+            // Remove the top-level folder name from the path
+            String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
+                    ? filePath.substring(topLevelFolderName.length() + 1)
+                    : filePath;
+
             Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
 
             try {

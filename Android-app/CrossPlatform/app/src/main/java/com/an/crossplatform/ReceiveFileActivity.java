@@ -116,14 +116,14 @@ public class ReceiveFileActivity extends AppCompatActivity {
         Log.d("ReceiveFileActivity", "File reception started.");
         try {
             // Load the save directory from config
-            File configFile = new File(getFilesDir(), "config.json");
+            File configFile = new File(getFilesDir(), "config/config.json");
             String saveToDirectory = loadSaveDirectoryFromConfig(configFile);
 
             // Convert URI-like path to a proper file path
             String actualPath = saveToDirectory.replace("/tree/primary:", "")
                     .replace("Download", Environment.DIRECTORY_DOWNLOADS)
                     .replace("/", File.separator);
-            actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath; // Ensure proper slash
+            actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
 
             // Create the main directory if it doesn't exist
             File directory = new File(actualPath);
@@ -133,9 +133,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     Log.d("ReceiveFileActivity", "Created directory: " + actualPath);
                 } else {
                     Log.e("ReceiveFileActivity", "Failed to create directory: " + actualPath);
-                    return; // Exit if directory creation fails
+                    return;
                 }
             }
+
+            String destinationFolder = actualPath;
+            JSONArray metadataArray = null;
 
             while (true) {
                 // Receive and decode encryption flag
@@ -151,7 +154,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
                 if (encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
                     Log.e("ReceiveFileActivity", "Received halt signal. Stopping file reception.");
-                    break; // Halting signal
+                    break;
                 }
 
                 // Receive file name size
@@ -160,7 +163,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
                 Log.d("ReceiveFileActivity", "File name size received: " + fileNameSize);
 
-                // End of transfer signal
                 if (fileNameSize == 0) {
                     Log.d("ReceiveFileActivity", "End of transfer signal received.");
                     break;
@@ -169,7 +171,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 // Receive file name
                 byte[] fileNameBytes = new byte[(int) fileNameSize];
                 clientSocket.getInputStream().read(fileNameBytes);
-                String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/'); // Use UTF-8 for decoding
+                String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
                 Log.d("ReceiveFileActivity", "Normalized file name: " + fileName);
 
                 // Receive file size
@@ -178,29 +180,41 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
                 Log.d("ReceiveFileActivity", "Receiving file " + fileName + ", size: " + fileSize + " bytes");
 
-                // Validate file size
                 if (fileSize < 0) {
                     Log.e("ReceiveFileActivity", "Received invalid file size: " + fileSize);
-                    continue; // Skip this iteration or handle accordingly
+                    continue;
+                }
+
+                // Check if the file is metadata.json
+                if (fileName.equals("metadata.json")) {
+                    metadataArray = receiveMetadata(fileSize);
+                    if (metadataArray != null) {
+                        destinationFolder = createFolderStructure(metadataArray, actualPath);
+                    }
+                    continue; // Skip to the next file
+                }
+
+                // Determine the file path based on metadata
+                String filePath = fileName;
+                if (metadataArray != null) {
+                    filePath = getFilePathFromMetadata(metadataArray, fileName);
                 }
 
                 // Handle file writing
-                File receivedFile = new File(directory, fileName); // Save to the specified destination directory
+                File receivedFile = new File(destinationFolder, filePath);
                 Log.d("ReceiveFileActivity", "File will be saved to: " + receivedFile.getAbsolutePath());
 
-                // Ensure the parent directory exists before creating the file
                 File parentDir = receivedFile.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
-                    boolean dirCreated = parentDir.mkdirs(); // Create the parent directory
+                    boolean dirCreated = parentDir.mkdirs();
                     if (dirCreated) {
                         Log.d("ReceiveFileActivity", "Created directory: " + parentDir.getPath());
                     } else {
                         Log.e("ReceiveFileActivity", "Failed to create directory: " + parentDir.getPath());
-                        continue; // Skip this file if the directory cannot be created
+                        continue;
                     }
                 }
 
-                // Handle file writing
                 try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
                     byte[] buffer = new byte[4096];
                     long receivedSize = 0;
@@ -208,7 +222,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
                         if (bytesRead == -1) {
                             Log.e("ReceiveFileActivity", "Error reading file data. Connection might have been lost.");
-                            break; // Handle connection loss or other issues
+                            break;
                         }
                         fos.write(buffer, 0, bytesRead);
                         receivedSize += bytesRead;
@@ -222,6 +236,21 @@ public class ReceiveFileActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e("ReceiveFileActivity", "Error receiving files", e);
         }
+    }
+
+    private String getFilePathFromMetadata(JSONArray metadataArray, String fileName) {
+        for (int i = 0; i < metadataArray.length(); i++) {
+            try {
+                JSONObject fileInfo = metadataArray.getJSONObject(i);
+                String path = fileInfo.optString("path", "");
+                if (path.endsWith(fileName)) {
+                    return path;
+                }
+            } catch (JSONException e) {
+                Log.e("ReceiveFileActivity", "Error processing metadata for file: " + fileName, e);
+            }
+        }
+        return fileName; // Return original fileName if not found in metadata
     }
 
     // Method to load the save directory from config.json
