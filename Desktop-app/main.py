@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QApplication,
-                             QHBoxLayout, QLabel, QFrame, QScrollArea)
-from PyQt6.QtGui import QScreen, QIcon, QFont
-from PyQt6.QtCore import Qt, QSize
+                             QHBoxLayout, QLabel, QFrame, QGraphicsOpacityEffect)
+from PyQt6.QtGui import QScreen, QFont, QColor, QPainter, QPen, QBrush
+from PyQt6.QtCore import Qt, QSize, QTimer, QPropertyAnimation, QEasingCurve
 from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
@@ -11,98 +11,110 @@ import sys
 import os
 from constant import logger, get_config
 
-class IconButton(QPushButton):
-    def __init__(self, icon_path, text, parent=None):
-        super().__init__(parent)
-        self.setIcon(QIcon(icon_path))
-        self.setIconSize(QSize(40, 40))
-        self.setText(text)
-        self.setFixedSize(80, 80)
+class SophisticatedButton(QPushButton):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.setFixedSize(80, 40)
+        self.setFont(QFont("Arial", 10))
         self.setStyleSheet("""
             QPushButton {
-                background-color: #f0f0f0;
-                border-radius: 10px;
-                font-size: 12px;
-                color: #333;
-                text-align: center;
+                background-color: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 5px;
+                color: white;
             }
             QPushButton:hover {
-                background-color: #e0e0e0;
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.1);
             }
         """)
 
+class WifiAnimationWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(300, 300)
+        self.signal_strength = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_signal)
+        self.timer.start(50)
+
+    def update_signal(self):
+        self.signal_strength = (self.signal_strength + 1) % 100
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        center = self.rect().center()
+        max_radius = min(self.width(), self.height()) // 2
+
+        # Draw WiFi signals
+        for i in range(3):
+            radius = max_radius * (i + 1) // 3
+            opacity = min(1, self.signal_strength / 100 * 3 - i)
+            painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 100)), 2))
+            painter.drawArc(center.x() - radius, center.y() - radius,
+                            radius * 2, radius * 2, 0, 180 * 16)
+
+        # Draw profile picture placeholder
+        profile_radius = max_radius // 4
+        painter.setBrush(QBrush(QColor(200, 200, 200)))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(center, profile_radius, profile_radius)
+        
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('SHAREit')
+        self.setWindowTitle('DataDash')
         self.setGeometry(100, 100, 360, 640)
         self.center_window()
 
-        main_layout = QVBoxLayout()
+        main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Header
+        # Background
+        self.setStyleSheet("""
+            QWidget#mainWidget {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                            stop:0 #1a237e, stop:1 #4a148c);
+            }
+        """)
+        self.setObjectName("mainWidget")
+
+        # Header with buttons
         header = QFrame()
-        header.setStyleSheet("background-color: white;")
+        header.setStyleSheet("background-color: rgba(255, 255, 255, 0.1);")
         header_layout = QHBoxLayout(header)
-        menu_button = QPushButton("≡")
-        menu_button.setStyleSheet("font-size: 24px; border: none;")
-        title_label = QLabel("SHAREit")
-        title_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        profile_button = QPushButton("👤")
-        profile_button.setStyleSheet("font-size: 24px; border: none;")
-        header_layout.addWidget(menu_button)
-        header_layout.addWidget(title_label, 1, Qt.AlignmentFlag.AlignCenter)
-        header_layout.addWidget(profile_button)
+        header_layout.setContentsMargins(10, 10, 10, 10)
+        header_layout.setSpacing(10)
+
+        buttons = ["Send", "Receive", "Preferences", "Credits"]
+        for text in buttons:
+            btn = SophisticatedButton(text)
+            btn.clicked.connect(getattr(self, f"{text.lower()}_handler"))
+            header_layout.addWidget(btn)
+
         main_layout.addWidget(header)
 
-        # Scrollable content area
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("background-color: #f5f5f5; border: none;")
-        scroll_content = QWidget()
-        scroll_layout = QVBoxLayout(scroll_content)
+        # WiFi Animation
+        self.wifi_widget = WifiAnimationWidget(self)
+        main_layout.addWidget(self.wifi_widget, 1, Qt.AlignmentFlag.AlignCenter)
 
-        # Icon buttons
-        icon_layout = QHBoxLayout()
-        icons = [
-            ("icons/folder.png", "Local", self.local_files),
-            ("icons/send.png", "Send", self.sendFile),
-            ("icons/receive.png", "Receive", self.receiveFile),
-            ("icons/invite.png", "Invite", self.invite_friends)
-        ]
-        for icon, text, func in icons:
-            btn = IconButton(icon, text)
-            btn.clicked.connect(func)
-            icon_layout.addWidget(btn)
-        scroll_layout.addLayout(icon_layout)
+        # Project Name
+        project_label = QLabel("DataDash")
+        project_label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
+        project_label.setStyleSheet("color: white; margin-top: 20px;")
+        project_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(project_label)
 
-        # Video buffering section
-        video_frame = QFrame()
-        video_frame.setStyleSheet("""
-            background-color: white;
-            border-radius: 10px;
-            margin: 10px;
-        """)
-        video_layout = QVBoxLayout(video_frame)
-        video_title = QLabel("Video Buffering")
-        video_title.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        video_desc = QLabel("See video without the network")
-        video_desc.setStyleSheet("color: #666;")
-        video_layout.addWidget(video_title)
-        video_layout.addWidget(video_desc)
-        # Add video thumbnail and details here
-        scroll_layout.addWidget(video_frame)
-
-        scroll_area.setWidget(scroll_content)
-        main_layout.addWidget(scroll_area)
-
-        self.setLayout(main_layout)
-        logger.info("Started Main App")
+        logger.info("Started DataDash App")
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
@@ -116,25 +128,17 @@ class MainApp(QWidget):
             os.makedirs(dest)
             logger.info("Created folder to receive files")
 
-    def local_files(self):
-        logger.info("Accessed Local Files")
-        # Implement local files functionality
-
-    def sendFile(self):
+    def send_handler(self):
         logger.info("Started Send File App")
         self.hide()
         self.broadcast_app = Broadcast()
         self.broadcast_app.show()
 
-    def receiveFile(self):
+    def receive_handler(self):
         logger.info("Started Receive File App")
         self.hide()
         self.receive_app = ReceiveApp()
         self.receive_app.show()
-
-    def invite_friends(self):
-        logger.info("Invite Friends")
-        # Implement invite friends functionality
 
     def preferences_handler(self):
         logger.info("Started Preferences handler menu")
@@ -142,7 +146,7 @@ class MainApp(QWidget):
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
 
-    def show_credits(self):
+    def credits_handler(self):
         logger.info("Opened Credits Dialog")
         credits_dialog = CreditsDialog()
         credits_dialog.exec()
