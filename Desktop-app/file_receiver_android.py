@@ -199,6 +199,9 @@ class ReceiveWorkerJava(QThread):
         top_level_folder = metadata[-1].get('base_folder_name', '')
         if not top_level_folder:
             raise ValueError("Base folder name not found in metadata")
+        if "primary" in top_level_folder:
+            top_level_folder = top_level_folder.replace("primary:", "")
+        top_level_folder = top_level_folder.split('/')[-1]
 
         # Define the destination folder path
         destination_folder = os.path.join(default_dir, top_level_folder)

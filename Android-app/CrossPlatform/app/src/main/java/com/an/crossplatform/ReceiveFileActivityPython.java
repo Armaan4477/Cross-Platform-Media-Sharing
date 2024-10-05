@@ -101,6 +101,14 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private class ReceiveFilesTask extends AsyncTask<Void, Integer, Void> {
         @Override
         protected Void doInBackground(Void... voids) {
+            // Close any existing connections
+            try {
+                if (serverSocket != null && !serverSocket.isClosed()) {
+                    serverSocket.close();
+                }
+            } catch (IOException e) {
+                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+            }
             receiveFiles();
             return null;
         }
@@ -289,26 +297,29 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             topLevelFolder = lastMetadata.optString("base_folder_name", "");
 
             if (topLevelFolder.isEmpty()) {
-                Log.e("ReceiveFileActivityPython", "Base folder name not found in metadata, using saveToDirectory");
-                return saveToDirectory; // Return saveToDirectory if no base folder
+                Log.e("ReceiveFileActivityPython", "Base folder name not found in metadata, aborting folder creation.");
+                return saveToDirectory; // Abort if no base folder name is found
             }
         } catch (JSONException e) {
             Log.e("ReceiveFileActivityPython", "Error processing metadata JSON to extract base folder name", e);
-            return saveToDirectory; // Return saveToDirectory if any error occurs
+            return saveToDirectory; // Fallback if there's an error
         }
 
-        // Construct the destination folder path
-        String destinationFolder = new File(saveToDirectory, topLevelFolder).getPath();
-        Log.d("ReceiveFileActivityPython", "Destination folder: " + destinationFolder);
+        // Construct the top-level folder path and create the directory
+        String topLevelFolderPath = new File(saveToDirectory, topLevelFolder).getPath();
+        Log.d("ReceiveFileActivityPython", "Top-level folder path: " + topLevelFolderPath);
 
-        File destinationDir = new File(destinationFolder);
-        if (!destinationDir.exists()) {
-            destinationDir.mkdirs(); // Create the base folder if it doesn't exist
-            Log.d("ReceiveFileActivityPython", "Created base folder: " + destinationFolder);
+        File topLevelDir = new File(topLevelFolderPath);
+        if (!topLevelDir.exists()) {
+            if (!topLevelDir.mkdirs()) {
+                Log.e("ReceiveFileActivityPython", "Failed to create top-level folder: " + topLevelFolderPath);
+                return saveToDirectory; // Fallback if folder creation fails
+            }
+            Log.d("ReceiveFileActivityPython", "Created top-level folder: " + topLevelFolderPath);
         }
 
-        // Process each file info in the metadata array (excluding the last entry)
-        for (int i = 0; i < metadataArray.length() - 1; i++) {
+        // Process each file info in the metadata array
+        for (int i = 0; i < metadataArray.length(); i++) {
             try {
                 JSONObject fileInfo = metadataArray.getJSONObject(i);
                 String filePath = fileInfo.optString("path", "");
@@ -317,10 +328,11 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 }
 
                 // Handle case where the path is provided in metadata
-                File folderPath = new File(destinationFolder, filePath).getParentFile();
-                if (folderPath != null && !folderPath.exists()) {
-                    folderPath.mkdirs(); // Create the folder structure if it doesn't exist
-                    Log.d("ReceiveFileActivityPython", "Created folder: " + folderPath.getPath());
+                File fullFilePath = new File(topLevelFolderPath, filePath); // Prepend top-level folder
+                File parentDir = fullFilePath.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs(); // Create the folder structure if it doesn't exist
+                    Log.d("ReceiveFileActivityPython", "Created folder: " + parentDir.getPath());
                 }
             } catch (JSONException e) {
                 Log.e("ReceiveFileActivityPython", "Error processing file info in metadata", e);
@@ -328,7 +340,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             }
         }
 
-        return destinationFolder; // Return the path of the created folder structure
+        return topLevelFolderPath; // Return the path of the created folder structure
     }
 
     @Override
