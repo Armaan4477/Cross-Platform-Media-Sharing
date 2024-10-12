@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                     // Change device_name to be the model of the device
                     String deviceName = Build.MODEL;
                     jsonObject.put("device_name", deviceName);
-                    jsonObject.put("saveToPath", "Download Folder");
+                    jsonObject.put("saveToPath", "/storage/emulated/0/Download");
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 

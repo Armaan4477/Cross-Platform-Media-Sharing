@@ -139,7 +139,10 @@ public class PreferencesActivity extends AppCompatActivity {
 
     private void submitPreferences() {
         String deviceName = deviceNameInput.getText().toString();
-        String saveToPath = saveToPathInput.getText().toString();
+        String saveToPathURI = saveToPathInput.getText().toString();
+        // Convert into a path like /storage/emulated/0/Download
+        String saveToPath = saveToPathURI.substring(saveToPathURI.indexOf(":", 0) + 1);
+        Log.d("PreferencesActivity", "Save to path: " + saveToPath);
 
         if (deviceName.isEmpty()) {
             Toast.makeText(this, "Device Name cannot be empty", Toast.LENGTH_SHORT).show();
