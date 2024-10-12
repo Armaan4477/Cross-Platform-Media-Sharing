@@ -280,6 +280,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     // Proceed to the next activity (ReceiveFileActivity)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
                     intent.putExtra("receivedJson", receivedJson.toString());
+                    intent.putExtra("selectedDeviceIP", selectedDeviceIP); // Send the selected device IP
                     startActivity(intent);
                 }
 

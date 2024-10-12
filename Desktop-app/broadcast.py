@@ -10,6 +10,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
+from file_sender_java import SendAppJava
 import subprocess
 from time import sleep
 
@@ -19,6 +20,7 @@ RECEIVER_JSON = 54000
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
     device_connected = pyqtSignal(str, str, dict)  # Signal to emit when a device is connected
+    device_connected_java = pyqtSignal(str, str, dict)  # Signal to emit when a Java device is connected
 
     def __init__(self):
         super().__init__()
@@ -100,6 +102,11 @@ class BroadcastWorker(QThread):
                 sleep(1)  # Wait for the receiver to close the socket
                 # Emit signal with device information when a connection is established
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
+            elif device_type == 'java':
+                logger.info(f"Connected with Java device {device_name}")
+                self.cleanup_sockets()
+                sleep(1)
+                self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
 
     def initialize_connection(self, ip_address):
         logger.debug("Initializing connection")
@@ -148,6 +155,7 @@ class BroadcastWorker(QThread):
 
 class Broadcast(QWidget):
     device_connected = pyqtSignal(str, str, dict)  # Signal to indicate device connection
+    device_connected_java = pyqtSignal(str, str, dict)  # Signal to indicate Java device connection
 
     def __init__(self):
         super().__init__()
@@ -171,6 +179,7 @@ class Broadcast(QWidget):
         self.broadcast_worker = BroadcastWorker()
         self.broadcast_worker.device_detected.connect(self.add_device_to_list)
         self.broadcast_worker.device_connected.connect(self.show_send_app)  # Connect the worker's signal to slot
+        self.broadcast_worker.device_connected_java.connect(self.show_send_app_java)
         self.discover_devices()
 
         self.client_socket = None
@@ -206,6 +215,11 @@ class Broadcast(QWidget):
         self.hide()
         self.send_app = SendApp(device_ip, device_name, receiver_data)  # Pass parameters to SendApp
         self.send_app.show()
+    
+    def show_send_app_java(self, device_ip, device_name, receiver_data):
+        self.hide()
+        self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
+        self.send_app_java.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

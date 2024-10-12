@@ -5,3 +5,5 @@
 *.xcuserstate
 /cross
 Android-app/CrossPlatform/.idea/misc.xml
+Android-app/CrossPlatform/.idea/deploymentTargetSelector.xml
+/Android-app/CrossPlatform/.idea
