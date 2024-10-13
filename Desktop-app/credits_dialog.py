@@ -90,12 +90,12 @@ class CreditsDialog(QDialog):
         programmers_section = self.create_section("Programmers", self.get_coder_data())
         scroll_layout.addWidget(programmers_section)
 
-        docs_section = self.create_section("Project Documentation", self.get_docs_data())
+        docs_section = self.create_section("Project Documentation", self.get_docs_data(), centered=True)
         scroll_layout.addWidget(docs_section)
 
         scroll_area.setWidget(scroll_content)
 
-    def create_section(self, title, data):
+    def create_section(self, title, data, centered=False):
         section = QWidget()
         layout = QVBoxLayout(section)
         layout.setContentsMargins(0, 0, 0, 20)
@@ -104,8 +104,13 @@ class CreditsDialog(QDialog):
         title_label.setStyleSheet("font-size: 28px; font-weight: bold; color: #FAEDCE;")
         layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        team_layout = QHBoxLayout()
-        team_layout.setSpacing(40)
+        if centered:
+            team_layout = QHBoxLayout()
+            team_layout.setSpacing(20)  # Minimal gap between items
+            team_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center alignment
+        else:
+            team_layout = QHBoxLayout()
+            team_layout.setSpacing(40)
         
         for name, role, github, linkedin in data:
             member_widget = self.create_member_widget(name, role, github, linkedin)
@@ -157,15 +162,16 @@ class CreditsDialog(QDialog):
 
     def get_coder_data(self):
         return [
-            ("Armaan", "Programmer", "https://github.com/Armaan4477", "https://www.linkedin.com/in/armaan-nakhuda-756492235/"),
-            ("Nishal", "Programmer", "https://github.com/Ailover123", "https://www.linkedin.com/in/nishal-poojary-159530290"),
             ("Samay", "Programmer", "https://github.com/ChampionSamay1644", "https://www.linkedin.com/in/samaypandey1644"),
+            ("Nishal", "Programmer", "https://github.com/Ailover123", "https://www.linkedin.com/in/nishal-poojary-159530290"),
             ("Urmi", "Programmer", "https://github.com/ura-dev04", "https://www.linkedin.com/in/urmi-joshi-6697a7320"),
+            ("Armaan", "Programmer", "https://github.com/Armaan4477", "https://www.linkedin.com/in/armaan-nakhuda-756492235/"),
             ("Yash", "Programmer", "https://github.com/FrosT2k5", "https://www.linkedin.com/in/yash-patil-385171257"),
         ]
 
     def get_docs_data(self):
         return [
+            ("Samay", "Documentation", "https://github.com/ChampionSamay1644", "https://www.linkedin.com/in/samaypandey1644"),
             ("Vedashree", "Documentation", "https://github.com/vedashree2004", "https://www.linkedin.com/in/vedashree-gaikwad-716783298?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app")
         ]
 
