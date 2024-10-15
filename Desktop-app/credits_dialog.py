@@ -100,10 +100,10 @@ class CreditsDialog(QDialog):
 
         # XYZ's row (with placeholders)
         layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 12, 0)  # Increased font size
-        xyz_github = self.create_link_button("GitHub", "#")  # Placeholder link
+        xyz_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
         layout.addWidget(xyz_github, 12, 1)
 
-        xyz_linkedin = self.create_link_button("LinkedIn", "#")  # Placeholder link
+        xyz_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
         layout.addWidget(xyz_linkedin, 12, 2)
 
         # Close button at the bottom
