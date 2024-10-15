@@ -47,7 +47,7 @@ class MainApp(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('Media Sharing App')
+        self.setWindowTitle('DataDash')
         self.setGeometry(100, 100, 800, 400)
         self.center_window()
         self.set_background()
@@ -60,7 +60,7 @@ class MainApp(QWidget):
         header.setFixedHeight(70) 
         header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
-        title_label = QLabel("DataDash: Media Sharing App")
+        title_label = QLabel("DataDash: CrossPlatform Data Sharing")
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
