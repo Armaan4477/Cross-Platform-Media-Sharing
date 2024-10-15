@@ -10,6 +10,7 @@ from credits_dialog import CreditsDialog
 import sys
 import os
 from constant import logger, get_config
+from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -105,26 +106,48 @@ class MainApp(QWidget):
         self.setLayout(main_layout)
         logger.info("Started Main App")
 
+
     def style_button(self, button):
         button.setFixedSize(150, 50)
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
-                background-color: rgba(0, 120, 215, 0.7);
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                );
                 color: white;
                 border-radius: 12px;
-                border: 2px solid #005bb5;
+                border: 2px solid rgba(0, 0, 0, 0.5);
                 padding: 10px;
                 font-weight: bold;
                 font-size: 14px;
             }
             QPushButton:hover {
-                background-color: rgba(0, 91, 181, 0.8);
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),   /* Lightened Dark Color */
+                    stop: 1 rgba(90, 100, 118, 255)  /* Lightened Light Color */
+                );
             }
             QPushButton:pressed {
-                background-color: rgba(0, 120, 215, 0.6);
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),   /* Darker on press */
+                    stop: 1 rgba(65, 75, 88, 255)    /* Darker on press */
+                );
             }
         """)
+
+        # Adding a constant glow effect to the button
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)  # Adjust the blur radius for a softer glow
+        glow_effect.setXOffset(0)       # Center the glow horizontally
+        glow_effect.setYOffset(0)       # Center the glow vertically
+        glow_effect.setColor(QColor(255, 255, 255, 100))  # Soft white glow with some transparency
+        button.setGraphicsEffect(glow_effect)
+
 
     def set_background(self):
         # Set a more prominent gradient background
