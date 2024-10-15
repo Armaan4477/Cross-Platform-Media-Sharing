@@ -8,7 +8,7 @@ class CreditsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Project Credits")
-        self.setFixedSize(600, 550)  # Increased window size to provide more space
+        self.setFixedSize(600, 625)  # Increased window size to provide more space
         self.set_background()  # Set the background style
 
         # Create layout for the dialog in grid form
@@ -90,18 +90,26 @@ class CreditsDialog(QDialog):
         layout.addWidget(QLabel("<b>GitHub</b>"), 10, 1)
         layout.addWidget(QLabel("<b>LinkedIn</b>"), 10, 2)
 
+        #samay's row
+        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 11, 0)  # Increased font size
+        samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
+        layout.addWidget(samay_github, 11, 1)
+
+        samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
+        layout.addWidget(samay_linkedin, 11, 2)
+
         # XYZ's row (with placeholders)
-        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 11, 0)  # Increased font size
+        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 12, 0)  # Increased font size
         xyz_github = self.create_link_button("GitHub", "#")  # Placeholder link
-        layout.addWidget(xyz_github, 11, 1)
+        layout.addWidget(xyz_github, 12, 1)
 
         xyz_linkedin = self.create_link_button("LinkedIn", "#")  # Placeholder link
-        layout.addWidget(xyz_linkedin, 11, 2)
+        layout.addWidget(xyz_linkedin, 12, 2)
 
         # Close button at the bottom
         close_button = QPushButton("Close")
         self.style_button(close_button)  # Apply the style to the button
-        layout.addWidget(close_button, 12, 0, 1, 3)  # Span across 3 columns
+        layout.addWidget(close_button, 13, 0, 1, 3)  # Span across 3 columns
 
         self.setLayout(layout)
 
