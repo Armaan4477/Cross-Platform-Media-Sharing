@@ -8,7 +8,7 @@ class CreditsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Project Credits")
-        self.setFixedSize(600, 450)  # Set a fixed size for the dialog
+        self.setFixedSize(600, 500)  # Adjusted size to accommodate new names
         self.set_background()  # Set the background style
 
         # Create layout for the dialog in grid form
@@ -27,9 +27,9 @@ class CreditsDialog(QDialog):
         layout.addWidget(QLabel("<b>GitHub</b>"), 1, 1)
         layout.addWidget(QLabel("<b>LinkedIn</b>"), 1, 2)
 
-        # Coder/Debugger - Alphabetical Order (Armaan, Nishal, Samay, Urmi, Yash)
+        # Coder/Debugger - Alphabetical Order (Armaan, Nishal, Samay, Urmi, Yash, Adwait)
         # Armaan's row
-        layout.addWidget(QLabel("Armaan"), 2, 0)
+        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 2, 0)  # Increased font size
         armaan_github = self.create_link_button("GitHub", "https://github.com/Armaan4477")
         layout.addWidget(armaan_github, 2, 1)
 
@@ -37,7 +37,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(armaan_linkedin, 2, 2)
 
         # Nishal's row
-        layout.addWidget(QLabel("Nishal"), 3, 0)
+        layout.addWidget(QLabel("Nishal Poojary", font=QFont("Arial", 18)), 3, 0)  # Increased font size
         nishal_github = self.create_link_button("GitHub", "https://github.com/Ailover123")
         layout.addWidget(nishal_github, 3, 1)
 
@@ -45,7 +45,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(nishal_linkedin, 3, 2)
 
         # Samay's row
-        layout.addWidget(QLabel("Samay"), 4, 0)
+        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 4, 0)  # Increased font size
         samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
         layout.addWidget(samay_github, 4, 1)
 
@@ -53,7 +53,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(samay_linkedin, 4, 2)
 
         # Urmi's row
-        layout.addWidget(QLabel("Urmi"), 5, 0)
+        layout.addWidget(QLabel("Urmi Joshi", font=QFont("Arial", 18)), 5, 0)  # Increased font size
         urmi_github = self.create_link_button("GitHub", "https://github.com/ura-dev04")
         layout.addWidget(urmi_github, 5, 1)
 
@@ -61,36 +61,44 @@ class CreditsDialog(QDialog):
         layout.addWidget(urmi_linkedin, 5, 2)
 
         # Yash's row
-        layout.addWidget(QLabel("Yash"), 6, 0)
+        layout.addWidget(QLabel("Yash Patil", font=QFont("Arial", 18)), 6, 0)  # Increased font size
         yash_github = self.create_link_button("GitHub", "https://github.com/FrosT2k5")
         layout.addWidget(yash_github, 6, 1)
 
         yash_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/yash-patil-385171257")
         layout.addWidget(yash_linkedin, 6, 2)
 
+        # Adwait's row
+        layout.addWidget(QLabel("Adwait Patil", font=QFont("Arial", 18)), 7, 0)  # Increased font size
+        adwait_github = self.create_link_button("GitHub", "https://github.com/Adwait0901")
+        layout.addWidget(adwait_github, 7, 1)
+
+        adwait_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/adwait-patil-56a1682a9/")
+        layout.addWidget(adwait_linkedin, 7, 2)
+
         # Title 2: Project Documentation
         title_docs = QLabel("Project Documentation")
         title_docs.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_docs.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
-        layout.addWidget(title_docs, 7, 0, 1, 3)  # Span across 3 columns
+        layout.addWidget(title_docs, 8, 0, 1, 3)  # Span across 3 columns
 
         # Table Headers for Project Documentation
-        layout.addWidget(QLabel("<b>Name</b>"), 8, 0)
-        layout.addWidget(QLabel("<b>GitHub</b>"), 8, 1)
-        layout.addWidget(QLabel("<b>LinkedIn</b>"), 8, 2)
+        layout.addWidget(QLabel("<b>Name</b>"), 9, 0)
+        layout.addWidget(QLabel("<b>GitHub</b>"), 9, 1)
+        layout.addWidget(QLabel("<b>LinkedIn</b>"), 9, 2)
 
         # XYZ's row (with placeholders)
-        layout.addWidget(QLabel("XYZ"), 9, 0)
+        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 10, 0)  # Increased font size
         xyz_github = self.create_link_button("GitHub (Placeholder)", "#")  # Placeholder link
-        layout.addWidget(xyz_github, 9, 1)
+        layout.addWidget(xyz_github, 10, 1)
 
         xyz_linkedin = self.create_link_button("LinkedIn (Placeholder)", "#")  # Placeholder link
-        layout.addWidget(xyz_linkedin, 9, 2)
+        layout.addWidget(xyz_linkedin, 10, 2)
 
         # Close button at the bottom
         close_button = QPushButton("Close")
         self.style_button(close_button)  # Apply the style to the button
-        layout.addWidget(close_button, 10, 0, 1, 3)  # Span across 3 columns
+        layout.addWidget(close_button, 11, 0, 1, 3)  # Span across 3 columns
 
         self.setLayout(layout)
 
