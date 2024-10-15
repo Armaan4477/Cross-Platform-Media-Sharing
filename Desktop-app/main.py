@@ -48,7 +48,7 @@ class MainApp(QWidget):
 
     def initUI(self):
         self.setWindowTitle('DataDash')
-        self.setGeometry(100, 100, 800, 400)
+        self.setGeometry(100, 100, 600, 400)
         self.center_window()
         self.set_background()
 
@@ -164,11 +164,14 @@ class MainApp(QWidget):
 
 
     def center_window(self):
-        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        screen = QApplication.primaryScreen()  # Get the primary screen
+        screen_geometry = screen.availableGeometry()  # Get the available geometry
+
         window_width, window_height = 600, 400
-        x = (screen.width() - window_width) // 2
-        y = (screen.height() - window_height) // 2
-        self.setGeometry(x, y, window_width, window_height)
+        x = (screen_geometry.width() - window_width) // 2  # Center x position
+        y = (screen_geometry.height() - window_height) // 2  # Center y position
+
+        self.setGeometry(x, y, window_width, window_height)  # Set the geometry
 
         dest = get_config()["save_to_directory"]
         if not os.path.exists(dest):

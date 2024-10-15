@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QDialog, QLabel, QGridLayout, QPushButton, QApplication, QSpacerItem, QSizePolicy
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont, QColor, QScreen
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 class CreditsDialog(QDialog):
@@ -10,6 +10,7 @@ class CreditsDialog(QDialog):
         self.setWindowTitle("Project Credits")
         self.setFixedSize(600, 625)  # Increased window size to provide more space
         self.set_background()  # Set the background style
+        self.center_window()
 
         # Create layout for the dialog in grid form
         layout = QGridLayout()
@@ -90,7 +91,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(QLabel("<b>GitHub</b>"), 10, 1)
         layout.addWidget(QLabel("<b>LinkedIn</b>"), 10, 2)
 
-        #samay's row
+        # Samay's row
         layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 11, 0)  # Increased font size
         samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
         layout.addWidget(samay_github, 11, 1)
@@ -98,17 +99,18 @@ class CreditsDialog(QDialog):
         samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
         layout.addWidget(samay_linkedin, 11, 2)
 
-        # XYZ's row (with placeholders)
+        # Vedashree's row
         layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 12, 0)  # Increased font size
-        xyz_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
-        layout.addWidget(xyz_github, 12, 1)
+        vedashree_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
+        layout.addWidget(vedashree_github, 12, 1)
 
-        xyz_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
-        layout.addWidget(xyz_linkedin, 12, 2)
+        vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
+        layout.addWidget(vedashree_linkedin, 12, 2)
 
         # Close button at the bottom
         close_button = QPushButton("Close")
         self.style_button(close_button)  # Apply the style to the button
+        close_button.clicked.connect(self.close)  # Connect button to close the dialog
         layout.addWidget(close_button, 13, 0, 1, 3)  # Span across 3 columns
 
         self.setLayout(layout)
@@ -176,6 +178,13 @@ class CreditsDialog(QDialog):
     def open_link(self, url):
         import webbrowser
         webbrowser.open(url)  # Open the URL in the default web browser
+
+    def center_window(self):
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        window_width, window_height = 600, 625
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
 
 # For testing the dialog directly
 if __name__ == "__main__":
