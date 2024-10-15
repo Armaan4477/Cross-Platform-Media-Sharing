@@ -56,9 +56,10 @@ class MainApp(QWidget):
 
         # Header
         header = QFrame()
-        header.setStyleSheet("background-color: #333; padding: 10px;")
+        header.setFixedHeight(70) 
+        header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
-        title_label = QLabel("Media Sharing App")
+        title_label = QLabel("DataDash: Media Sharing App")
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
