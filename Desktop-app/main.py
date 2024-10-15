@@ -14,7 +14,7 @@ from constant import logger, get_config
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(250, 200)
+        self.setFixedSize(300, 250)
         self.signal_strength = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_signal)
@@ -65,7 +65,7 @@ class MainApp(QWidget):
         main_layout.addWidget(header)
 
         # Add some vertical space before the WiFi Animation Widget
-        main_layout.addSpacing(30)  # Adjust the spacing as needed
+        main_layout.addSpacing(50)  # Adjust the spacing as needed
 
         # Wifi Animation Widget
         wifi_widget = WifiAnimationWidget()
