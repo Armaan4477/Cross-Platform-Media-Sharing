@@ -73,24 +73,25 @@ class MainApp(QWidget):
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
-                background-color: #0078d7;
+                background-color: rgba(0, 120, 215, 0.6);
                 color: white;
-                border-radius: 10px;
+                border-radius: 12px;
+                border: 2px solid #005bb5;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #005bb5;
+                background-color: rgba(0, 91, 181, 0.8);
+            }
+            QPushButton:pressed {
+                background-color: rgba(0, 120, 215, 0.6);
             }
         """)
 
     def set_background(self):
-        # Set a background color or image for the application window
         palette = self.palette()
-        # For a color background, uncomment the following line and set a color
         palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.lightGray)
-        
-        # For an image background, uncomment the following lines and replace 'background.png' with your image file
-        # palette.setBrush(QPalette.ColorRole.Window, QBrush(QPixmap("path/to/your/background.png")))
-        
         self.setPalette(palette)
         self.setAutoFillBackground(True)
 
