@@ -1,14 +1,15 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QApplication
-from PyQt6.QtGui import QScreen
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
+                             QLabel, QFrame)
+from PyQt6.QtGui import QScreen, QFont, QPalette, QBrush, QPixmap
+from PyQt6.QtCore import Qt
 from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
-from credits_dialog import CreditsDialog  # Import CreditsDialog
+from credits_dialog import CreditsDialog
 import sys
 import os
-import platform
-from constant import logger,get_config
+from constant import logger, get_config
 
 class MainApp(QWidget):
     def __init__(self):
@@ -17,38 +18,89 @@ class MainApp(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Media Sharing App')
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 800, 400)
         self.center_window()
+        self.set_background()
 
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.send_button = QPushButton('Send File', self)
+        # Header
+        header = QFrame()
+        header.setStyleSheet("background-color: #333; padding: 10px;")
+        header_layout = QHBoxLayout(header)
+        title_label = QLabel("Media Sharing App")
+        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        title_label.setStyleSheet("color: white;")
+        header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(header)
+
+        # Buttons Layout
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(30)
+        button_layout.setContentsMargins(50, 50, 50, 50)
+
+        # Send File Button
+        self.send_button = QPushButton('Send File')
+        self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
-        layout.addWidget(self.send_button)
+        button_layout.addWidget(self.send_button)
 
-        self.receive_button = QPushButton('Receive File', self)
+        # Receive File Button
+        self.receive_button = QPushButton('Receive File')
+        self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
-        layout.addWidget(self.receive_button)
+        button_layout.addWidget(self.receive_button)
 
-        self.preferences_button = QPushButton('Preferences', self)
+        # Preferences Button
+        self.preferences_button = QPushButton('Preferences')
+        self.style_button(self.preferences_button)
         self.preferences_button.clicked.connect(self.preferences_handler)
-        layout.addWidget(self.preferences_button)
+        button_layout.addWidget(self.preferences_button)
 
-        self.credits_button = QPushButton('Credits', self)
+        # Credits Button
+        self.credits_button = QPushButton('Credits')
+        self.style_button(self.credits_button)
         self.credits_button.clicked.connect(self.show_credits)
-        layout.addWidget(self.credits_button)
+        button_layout.addWidget(self.credits_button)
 
-        self.setLayout(layout)
-        logger.info("Started Main App") 
+        main_layout.addLayout(button_layout)
+        self.setLayout(main_layout)
+        logger.info("Started Main App")
+
+    def style_button(self, button):
+        button.setFixedSize(150, 50)
+        button.setFont(QFont("Arial", 12))
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #0078d7;
+                color: white;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #005bb5;
+            }
+        """)
+
+    def set_background(self):
+        # Set a background color or image for the application window
+        palette = self.palette()
+        # For a color background, uncomment the following line and set a color
+        palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.lightGray)
+        
+        # For an image background, uncomment the following lines and replace 'background.png' with your image file
+        # palette.setBrush(QPalette.ColorRole.Window, QBrush(QPixmap("path/to/your/background.png")))
+        
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 800, 400
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
-        #Check if the folder to receive files exists
         dest = get_config()["save_to_directory"]
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -57,7 +109,6 @@ class MainApp(QWidget):
     def sendFile(self):
         logger.info("Started Send File App")
         self.hide()
-        # Call the broadcast screen
         self.broadcast_app = Broadcast()
         self.broadcast_app.show()
 
@@ -73,11 +124,10 @@ class MainApp(QWidget):
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
 
-    # Method to show the Credits Dialog
     def show_credits(self):
         logger.info("Opened Credits Dialog")
-        credits_dialog = CreditsDialog()  # Create an instance of CreditsDialog
-        credits_dialog.exec()  # Show the dialog
+        credits_dialog = CreditsDialog()
+        credits_dialog.exec()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
