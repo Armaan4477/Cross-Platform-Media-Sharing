@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QBrush, QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QScreen, QFont, QPalette, QColor, QPen, QPainter
+from PyQt6.QtCore import Qt, QTimer
 from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
@@ -10,6 +10,35 @@ from credits_dialog import CreditsDialog
 import sys
 import os
 from constant import logger, get_config
+
+class WifiAnimationWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(250, 200)
+        self.signal_strength = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_signal)
+        self.timer.start(35)
+
+    def update_signal(self):
+        self.signal_strength = (self.signal_strength + 1) % 100
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        center = self.rect().center()
+        max_radius = min(self.width(), self.height()) // 2
+
+        # Draw WiFi signals moving downwards (flipped)
+        for i in range(3):
+            radius = max_radius * (i + 1) // 3
+            opacity = min(1, self.signal_strength / 100 * 3 - i)
+            painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
+            # Adjust the y-coordinate to flip the drawing
+            painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
+                            radius * 2, radius * 2, 0, 180 * 16)
 
 class MainApp(QWidget):
     def __init__(self):
@@ -34,6 +63,13 @@ class MainApp(QWidget):
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(header)
+
+        # Add some vertical space before the WiFi Animation Widget
+        main_layout.addSpacing(30)  # Adjust the spacing as needed
+
+        # Wifi Animation Widget
+        wifi_widget = WifiAnimationWidget()
+        main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Buttons Layout
         button_layout = QHBoxLayout()
@@ -73,7 +109,7 @@ class MainApp(QWidget):
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
-                background-color: rgba(0, 120, 215, 0.6);
+                background-color: rgba(0, 120, 215, 0.7);
                 color: white;
                 border-radius: 12px;
                 border: 2px solid #005bb5;
@@ -97,7 +133,7 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 400
+        window_width, window_height = 600, 400
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
