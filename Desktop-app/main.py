@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QColor, QPen, QPainter
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen
 from PyQt6.QtCore import Qt, QTimer
 from file_receiver import ReceiveApp
 from file_sender import SendApp
@@ -126,10 +126,18 @@ class MainApp(QWidget):
         """)
 
     def set_background(self):
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.lightGray)
-        self.setPalette(palette)
-        self.setAutoFillBackground(True)
+        # Set a more prominent gradient background
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,  /* Start color */
+                    stop: 1 #505050   /* End color */
+                );
+            }
+        """)
+
+
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
