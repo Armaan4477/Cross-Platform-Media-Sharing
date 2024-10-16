@@ -13,6 +13,7 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
+        self.setFixedSize(500, 400)
 
     def initUI(self):
         self.setWindowTitle('Preferences')
