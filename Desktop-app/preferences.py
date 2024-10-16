@@ -113,7 +113,7 @@ class PreferencesApp(QWidget):
             color: #FFFFFF;
             background-color: transparent;  /* Set the background to transparent */
             border: 1px solid #444;  /* Retain the border for input fields */
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 5px;
         """)
 
@@ -130,7 +130,7 @@ class PreferencesApp(QWidget):
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
-        button.setFont(QFont("Arial", 12))
+        button.setFont(QFont("Arial", 15))
         button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(
@@ -139,9 +139,9 @@ class PreferencesApp(QWidget):
                     stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
                 );
                 color: white;
-                border-radius: 12px;
-                border: 2px solid rgba(0, 0, 0, 0.5);
-                padding: 10px;
+                border-radius: 25px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
             }
             QPushButton:hover {
                 background: qlineargradient(
