@@ -1,13 +1,12 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog,
-    QCheckBox, QHBoxLayout, QMessageBox, QApplication, QFrame
+    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
-from PyQt6.QtGui import QFont, QColor, QScreen
+from PyQt6.QtGui import QScreen, QFont, QColor
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 import sys
 import platform
 from constant import get_config, write_config, get_default_path
+from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -21,113 +20,111 @@ class PreferencesApp(QWidget):
         self.center_window()
         self.set_background()
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Header
-        header = QFrame()
-        header.setFixedHeight(60)
-        header.setStyleSheet("background-color: #333;")
-        header_layout = QHBoxLayout(header)
-        title_label = QLabel("Preferences")
-        title_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: white;")
-        header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(header)
+        layout = QVBoxLayout()
 
         # Device Name
-        main_layout.addSpacing(20)
-        self.device_name_label = QLabel('Device Name:', self)
-        self.device_name_label.setFont(QFont("Arial", 12))
-        main_layout.addWidget(self.device_name_label)
-        self.device_name_input = QLineEdit(self)
-        main_layout.addWidget(self.device_name_input)
+        self.device_name_label = QLabel('Device Name:')
+        self.style_label(self.device_name_label)
+        layout.addWidget(self.device_name_label)
 
-        self.device_name_reset_button = QPushButton('Reset', self)
+        self.device_name_input = QLineEdit()
+        self.style_input(self.device_name_input)
+        layout.addWidget(self.device_name_input)
+
+        self.device_name_reset_button = QPushButton('Reset')
         self.style_button(self.device_name_reset_button)
         self.device_name_reset_button.clicked.connect(self.resetDeviceName)
-        main_layout.addWidget(self.device_name_reset_button)
+        layout.addWidget(self.device_name_reset_button)
 
         # Save to Path
-        main_layout.addSpacing(10)
-        self.save_to_path_label = QLabel('Save to Path:', self)
-        self.save_to_path_label.setFont(QFont("Arial", 12))
-        main_layout.addWidget(self.save_to_path_label)
+        self.save_to_path_label = QLabel('Save to Path:')
+        self.style_label(self.save_to_path_label)
+        layout.addWidget(self.save_to_path_label)
 
-        self.save_to_path_input = QLineEdit(self)
-        main_layout.addWidget(self.save_to_path_input)
+        self.save_to_path_input = QLineEdit()
+        self.style_input(self.save_to_path_input)
+        layout.addWidget(self.save_to_path_input)
 
         path_layout = QHBoxLayout()
-        self.save_to_path_picker_button = QPushButton('Pick Directory', self)
+        self.save_to_path_picker_button = QPushButton('Pick Directory')
         self.style_button(self.save_to_path_picker_button)
         self.save_to_path_picker_button.clicked.connect(self.pickDirectory)
         path_layout.addWidget(self.save_to_path_picker_button)
 
-        self.save_to_path_reset_button = QPushButton('Reset', self)
+        self.save_to_path_reset_button = QPushButton('Reset')
         self.style_button(self.save_to_path_reset_button)
         self.save_to_path_reset_button.clicked.connect(self.resetSavePath)
         path_layout.addWidget(self.save_to_path_reset_button)
-        main_layout.addLayout(path_layout)
+        layout.addLayout(path_layout)
 
         # Encryption Toggle
-        main_layout.addSpacing(10)
-        self.encryption_toggle = QCheckBox('Enable Encryption', self)
-        self.encryption_toggle.setFont(QFont("Arial", 12))
-        main_layout.addWidget(self.encryption_toggle)
+        self.encryption_toggle = QCheckBox('Enable Encryption')
+        self.style_checkbox(self.encryption_toggle)
+        layout.addWidget(self.encryption_toggle)
 
         # Buttons
-        main_layout.addSpacing(20)
         buttons_layout = QHBoxLayout()
-        self.main_menu_button = QPushButton('Main Menu', self)
+        self.main_menu_button = QPushButton('Main Menu')
         self.style_button(self.main_menu_button)
         self.main_menu_button.clicked.connect(self.goToMainMenu)
         buttons_layout.addWidget(self.main_menu_button)
 
-        self.submit_button = QPushButton('Save')
+        self.submit_button = QPushButton('Submit')
         self.style_button(self.submit_button)
         self.submit_button.clicked.connect(self.submitPreferences)
         buttons_layout.addWidget(self.submit_button)
-        main_layout.addLayout(buttons_layout)
 
-        self.setLayout(main_layout)
+        layout.addLayout(buttons_layout)
+
+        self.setLayout(layout)
         self.loadPreferences()
 
+    def style_label(self, label):
+        label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        label.setStyleSheet("color: white;")
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+    def style_input(self, input_field):
+        input_field.setFont(QFont("Arial", 10))
+        input_field.setStyleSheet("color: white; background-color: #333; border: 1px solid #555; border-radius: 5px; padding: 5px;")
+        input_field.setGraphicsEffect(self.create_glow_effect())
+
+    def style_checkbox(self, checkbox):
+        checkbox.setFont(QFont("Arial", 12))
+        checkbox.setStyleSheet("color: white;")
+        checkbox.setGraphicsEffect(self.create_glow_effect())
+
     def style_button(self, button):
-        button.setFixedSize(130, 40)
-        button.setFont(QFont("Arial", 11))
+        button.setFixedSize(150, 50)
+        button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255), 
-                    stop: 1 rgba(75, 85, 98, 255)
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
                 );
                 color: white;
-                border-radius: 10px;
+                border-radius: 12px;
                 border: 2px solid rgba(0, 0, 0, 0.5);
-                padding: 5px;
+                padding: 10px;
             }
             QPushButton:hover {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),   
-                    stop: 1 rgba(90, 100, 118, 255)  
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
                 );
             }
             QPushButton:pressed {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),   
-                    stop: 1 rgba(65, 75, 88, 255)    
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
                 );
             }
         """)
-        glow_effect = QGraphicsDropShadowEffect()
-        glow_effect.setBlurRadius(10)
-        glow_effect.setXOffset(0)
-        glow_effect.setYOffset(0)
-        glow_effect.setColor(QColor(255, 255, 255, 80))
-        button.setGraphicsEffect(glow_effect)
+        button.setGraphicsEffect(self.create_glow_effect())
 
     def set_background(self):
         self.setStyleSheet("""
@@ -139,6 +136,14 @@ class PreferencesApp(QWidget):
                 );
             }
         """)
+
+    def create_glow_effect(self):
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)
+        glow_effect.setXOffset(0)
+        glow_effect.setYOffset(0)
+        glow_effect.setColor(QColor(255, 255, 255, 100))
+        return glow_effect
 
     def resetDeviceName(self):
         self.device_name_input.setText(platform.node())
@@ -165,7 +170,7 @@ class PreferencesApp(QWidget):
                 self.go_to_main_menu()
             elif reply == QMessageBox.StandardButton.No:
                 self.go_to_main_menu()
-        else:       
+        else:
             self.go_to_main_menu()
 
     def go_to_main_menu(self):
@@ -217,6 +222,6 @@ class PreferencesApp(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    preferences = PreferencesApp()
-    preferences.show()
+    window = PreferencesApp()
+    window.show()
     sys.exit(app.exec())
