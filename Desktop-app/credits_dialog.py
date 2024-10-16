@@ -23,10 +23,10 @@ class CreditsDialog(QDialog):
         title_coder.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
         layout.addWidget(title_coder, 0, 0, 1, 3)  # Span across 3 columns
 
-        # Table Headers for Coder/Debugger
-        layout.addWidget(QLabel("<b>Name</b>"), 1, 0)
-        layout.addWidget(QLabel("<b>GitHub</b>"), 1, 1)
-        layout.addWidget(QLabel("<b>LinkedIn</b>"), 1, 2)
+        # # Table Headers for Coder/Debugger
+        # layout.addWidget(QLabel("<b>Name</b>"), 1, 0)
+        # layout.addWidget(QLabel("<b>GitHub</b>"), 1, 1)
+        # layout.addWidget(QLabel("<b>LinkedIn</b>"), 1, 2)
 
         # Coder/Debugger - Alphabetical Order (Armaan, Nishal, Samay, Urmi, Yash, Adwait)
         # Armaan's row
@@ -86,10 +86,10 @@ class CreditsDialog(QDialog):
         title_docs.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
         layout.addWidget(title_docs, 9, 0, 1, 3)  # Span across 3 columns
 
-        # Table Headers for Project Documentation
-        layout.addWidget(QLabel("<b>Name</b>"), 10, 0)
-        layout.addWidget(QLabel("<b>GitHub</b>"), 10, 1)
-        layout.addWidget(QLabel("<b>LinkedIn</b>"), 10, 2)
+        # # Table Headers for Project Documentation
+        # layout.addWidget(QLabel("<b>Name</b>"), 10, 0)
+        # layout.addWidget(QLabel("<b>GitHub</b>"), 10, 1)
+        # layout.addWidget(QLabel("<b>LinkedIn</b>"), 10, 2)
 
         # Samay's row
         layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 11, 0)  # Increased font size
