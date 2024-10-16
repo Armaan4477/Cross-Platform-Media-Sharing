@@ -25,11 +25,13 @@ class PreferencesApp(QWidget):
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
         self.device_name_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
+        self.style_label(self.device_name_label)
         layout.addWidget(self.device_name_label)
 
         self.device_name_input = QLineEdit(self)
         self.device_name_input.setFont(QFont("Arial", 16))
         self.device_name_input.setFixedHeight(30)
+        self.style_input(self.device_name_input)
         layout.addWidget(self.device_name_input)
 
         self.device_name_reset_button = QPushButton('Reset', self)
@@ -42,11 +44,13 @@ class PreferencesApp(QWidget):
         # Save to Path
         self.save_to_path_label = QLabel('Save to Path:', self)
         self.save_to_path_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
+        self.style_label(self.save_to_path_label)
         layout.addWidget(self.save_to_path_label)
 
         self.save_to_path_input = QLineEdit(self)
         self.save_to_path_input.setFont(QFont("Arial", 16))
         self.save_to_path_input.setFixedHeight(30)
+        self.style_input(self.save_to_path_input)
         layout.addWidget(self.save_to_path_input)
 
         path_layout = QHBoxLayout()
@@ -68,6 +72,7 @@ class PreferencesApp(QWidget):
         # Encryption Toggle
         self.encryption_toggle = QCheckBox('Encryption', self)
         self.encryption_toggle.setFont(QFont("Arial", 18))
+        self.style_checkbox(self.encryption_toggle)
         layout.addWidget(self.encryption_toggle)
 
         # Submit and Main Menu buttons
@@ -93,25 +98,32 @@ class PreferencesApp(QWidget):
         self.loadPreferences()
 
     def style_label(self, label):
-        label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        label.setStyleSheet("color: white;")
-        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        label.setStyleSheet("""
+            color: #FFFFFF;
+            background-color: transparent;  /* Set the background to transparent */
+        """)
+
+
 
     def style_input(self, input_field):
-        input_field.setFont(QFont("Arial", 22))
         input_field.setStyleSheet("""
             color: #FFFFFF;
-            background-color: #3C3C3C;
-            border: 1px solid #666;
-            border-radius: 5px;
+            background-color: transparent;  /* Set the background to transparent */
+            border: 1px solid #444;  /* Retain the border for input fields */
+            border-radius: 8px;
             padding: 5px;
         """)
 
 
+
+
     def style_checkbox(self, checkbox):
-        checkbox.setFont(QFont("Arial", 12))
-        checkbox.setStyleSheet("color: white;")
         checkbox.setGraphicsEffect(self.create_glow_effect())
+        checkbox.setStyleSheet("""
+        color: #FFFFFF;
+        background-color: transparent;  /* Set the background to transparent */
+        """)
+
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
