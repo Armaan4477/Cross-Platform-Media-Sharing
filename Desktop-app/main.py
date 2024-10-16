@@ -164,12 +164,11 @@ class MainApp(QWidget):
 
 
     def center_window(self):
-        screen = QApplication.primaryScreen()  # Get the primary screen
-        screen_geometry = screen.availableGeometry()  # Get the available geometry
-
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 600, 400
-        x = (screen_geometry.width() - window_width) // 2  # Center x position
-        y = (screen_geometry.height() - window_height) // 2  # Center y position
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
 
         self.setGeometry(x, y, window_width, window_height)  # Set the geometry
 
