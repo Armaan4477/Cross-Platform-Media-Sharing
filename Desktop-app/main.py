@@ -155,8 +155,8 @@ class MainApp(QWidget):
             QWidget {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,  /* Start color */
-                    stop: 1 #505050   /* End color */
+                    stop: 0 #b0b0b0,  /* Start color- light gray */
+                    stop: 1 #505050   /* End color-dark gray */
                 );
             }
         """)
