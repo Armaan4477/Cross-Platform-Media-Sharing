@@ -24,11 +24,11 @@ class PreferencesApp(QWidget):
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
-        self.device_name_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        self.device_name_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         layout.addWidget(self.device_name_label)
 
         self.device_name_input = QLineEdit(self)
-        self.device_name_input.setFont(QFont("Arial", 12))
+        self.device_name_input.setFont(QFont("Arial", 16))
         self.device_name_input.setFixedHeight(30)
         layout.addWidget(self.device_name_input)
 
@@ -41,11 +41,11 @@ class PreferencesApp(QWidget):
 
         # Save to Path
         self.save_to_path_label = QLabel('Save to Path:', self)
-        self.save_to_path_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        self.save_to_path_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
         layout.addWidget(self.save_to_path_label)
 
         self.save_to_path_input = QLineEdit(self)
-        self.save_to_path_input.setFont(QFont("Arial", 12))
+        self.save_to_path_input.setFont(QFont("Arial", 16))
         self.save_to_path_input.setFixedHeight(30)
         layout.addWidget(self.save_to_path_input)
 
@@ -67,7 +67,7 @@ class PreferencesApp(QWidget):
 
         # Encryption Toggle
         self.encryption_toggle = QCheckBox('Encryption', self)
-        self.encryption_toggle.setFont(QFont("Arial", 14))
+        self.encryption_toggle.setFont(QFont("Arial", 18))
         layout.addWidget(self.encryption_toggle)
 
         # Submit and Main Menu buttons
@@ -98,9 +98,15 @@ class PreferencesApp(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
     def style_input(self, input_field):
-        input_field.setFont(QFont("Arial", 10))
-        input_field.setStyleSheet("color: white; background-color: #333; border: 1px solid #555; border-radius: 5px; padding: 5px;")
-        input_field.setGraphicsEffect(self.create_glow_effect())
+        input_field.setFont(QFont("Arial", 22))
+        input_field.setStyleSheet("""
+            color: #FFFFFF;
+            background-color: #3C3C3C;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 5px;
+        """)
+
 
     def style_checkbox(self, checkbox):
         checkbox.setFont(QFont("Arial", 12))
