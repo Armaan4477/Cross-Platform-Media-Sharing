@@ -308,11 +308,18 @@ class PreferencesApp(QWidget):
             msg_box.setIcon(QMessageBox.Icon.Question)
             msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
 
-            # Apply custom style
+            # Apply custom style with gradient background
             msg_box.setStyleSheet("""
                 QMessageBox {
-                    background-color: #505050;
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
                     color: #FFFFFF;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
                 }
                 QPushButton {
                     background: qlineargradient(
@@ -321,9 +328,9 @@ class PreferencesApp(QWidget):
                         stop: 1 rgba(75, 85, 98, 255)
                     );
                     color: white;
-                    border-radius: 25px;
+                    border-radius: 10px;
                     border: 1px solid rgba(0, 0, 0, 0.5);
-                    padding: 6px;
+                    padding: 4px;
                 }
                 QPushButton:hover {
                     background: qlineargradient(
@@ -340,7 +347,7 @@ class PreferencesApp(QWidget):
                     );
                 }
             """)
-            
+
             reply = msg_box.exec()
             if reply == QMessageBox.StandardButton.Yes:
                 self.submitPreferences()
@@ -349,6 +356,7 @@ class PreferencesApp(QWidget):
                 self.go_to_main_menu()
         else:
             self.go_to_main_menu()
+
 
 
     def go_to_main_menu(self):
