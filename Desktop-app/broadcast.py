@@ -3,10 +3,11 @@ import json
 import platform
 import socket
 import struct
-import time
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QMessageBox
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPoint, QTimer, QSize
-from PyQt6.QtGui import QScreen, QColor, QPainter, QPen, QBrush, QFont
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox, QPushButton
+)
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QScreen
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
 from file_sender_java import SendAppJava
@@ -18,9 +19,8 @@ RECEIVER_JSON = 54000
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
-    device_connected = pyqtSignal(str, str, dict)
-    device_connected_java = pyqtSignal(str, str, dict)
-    discovery_complete = pyqtSignal(bool)
+    device_connected = pyqtSignal(str, str, dict)  # Signal to emit when a device is connected
+    device_connected_java = pyqtSignal(str, str, dict)  # Signal to emit when a Java device is connected
 
     def __init__(self):
         super().__init__()
@@ -50,70 +50,46 @@ class BroadcastWorker(QThread):
         except socket.timeout:
             pass
         finally:
-            self.close_socket()
+            self.close_socket()  # Ensure the socket is closed when done
 
     def close_socket(self):
         if self.socket:
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
             self.socket.close()
             self.socket = None
 
     def stop(self):
-        self.close_socket()
+        self.close_socket()  # Ensure the socket is closed when stopping the thread
         self.quit()
         self.wait()
 
     def discover_receivers(self):
-        logger.info("Starting device discovery")
+        logger.info("Discovering receivers")
+        logger.info(BROADCAST_ADDRESS)
         receivers = []
-        max_attempts = 3
-        attempt = 0
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('', LISTEN_PORT))
 
-        while attempt < max_attempts:
+            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+
+            s.settimeout(2)
             try:
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    s.bind(('', LISTEN_PORT))
-                    logger.info(f"Bound to port {LISTEN_PORT}")
-
-                    s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-                    logger.info(f"Sent discovery message to {BROADCAST_ADDRESS}:{BROADCAST_PORT}")
-
-                    s.settimeout(2)
-                    start_time = time.time()
-                    while time.time() - start_time < 5:  # Listen for responses for 5 seconds
-                        try:
-                            message, address = s.recvfrom(1024)
-                            message = message.decode()
-                            logger.info(f"Received message: {message} from {address}")
-                            if message.startswith('RECEIVER:'):
-                                device_name = message.split(':')[1]
-                                receiver = {'ip': address[0], 'name': device_name}
-                                if receiver not in receivers:
-                                    receivers.append(receiver)
-                                    logger.info(f"Added device: {device_name} ({address[0]})")
-                        except socket.timeout:
-                            logger.info("Socket timeout, continuing to listen")
-                            continue  # Continue listening if a timeout occurs
-                
-                if receivers:
-                    logger.info(f"Discovery complete. Found {len(receivers)} device(s)")
-                    break  # Exit the loop if we found any receivers
-            except Exception as e:
-                logger.error(f"Error during discovery attempt {attempt + 1}: {str(e)}")
-            
-            attempt += 1
-            if attempt < max_attempts:
-                logger.info(f"Retrying discovery (attempt {attempt + 1})")
-        
-        if not receivers:
-            logger.warning("No devices found after all attempts")
-        
-        self.discovery_complete.emit(bool(receivers))
+                while True:
+                    message, address = s.recvfrom(1024)
+                    message = message.decode()
+                    if message.startswith('RECEIVER:'):
+                        device_name = message.split(':')[1]
+                        receivers.append({'ip': address[0], 'name': device_name})
+            except socket.timeout:
+                pass
         return receivers
 
-    def connect_to_device(self, device_ip, device_name):
+    def connect_to_device(self, item):
+        device_name = item.data(256)
+        device_ip = item.data(257)
+
         confirm = QMessageBox.question(None, 'Confirm Connection', f"Connect to {device_name}?", 
                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
@@ -122,8 +98,9 @@ class BroadcastWorker(QThread):
 
             if device_type == 'python':
                 logger.info(f"Connected with Python device {device_name}")
-                self.cleanup_sockets()
-                sleep(1)
+                self.cleanup_sockets()  # Clean up before proceeding
+                sleep(1)  # Wait for the receiver to close the socket
+                # Emit signal with device information when a connection is established
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
             elif device_type == 'java':
                 logger.info(f"Connected with Java device {device_name}")
@@ -143,6 +120,7 @@ class BroadcastWorker(QThread):
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return None
 
+        # Send and receive a JSON file containing device type information
         device_data = {
             'device_type': 'python',
             'os': platform.system()
@@ -151,6 +129,7 @@ class BroadcastWorker(QThread):
         self.client_socket.send(struct.pack('<Q', len(device_data_json)))
         self.client_socket.send(device_data_json.encode())
 
+        # Receive the JSON file from the receiver
         receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
         logger.debug("Receiver JSON size: %d", receiver_json_size)
         receiver_json = self.client_socket.recv(receiver_json_size).decode()
@@ -163,169 +142,81 @@ class BroadcastWorker(QThread):
             return device_type
         else:
             QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-            self.cleanup_sockets()
+            self.cleanup_sockets()  # Clean up if the device is not compatible
             return None
+
 
     def cleanup_sockets(self):
         if self.client_socket:
-            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
             self.client_socket.close()
         if self.isRunning():
             self.stop()
 
-class CircularWidget(QWidget):
-    clicked = pyqtSignal(str, str)
-
-    def __init__(self):
-        super().__init__()
-        self.setMinimumSize(600, 600)
-        self.devices = []
-        self.animation_offset = 0
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_animation)
-        self.timer.start(50)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        center = QPoint(self.width() // 2, self.height() // 2)
-        for i in range(4, 0, -1):
-            radius = i * 70 + self.animation_offset
-            painter.setPen(QPen(QColor("white"), 2))
-            painter.drawEllipse(center, radius, radius)
-
-        painter.setBrush(QBrush(QColor("white")))
-        painter.drawEllipse(center, 20, 20)
-
-        if self.devices:
-            angle_step = 360 / len(self.devices)
-            for i, device in enumerate(self.devices):
-                angle = i * angle_step
-                x = center.x() + int(250 * -1 * (angle / 360) * 2 * 3.14159)
-                y = center.y() + int(250 * -1 * (angle / 360) * 2 * 3.14159)
-                painter.setBrush(QBrush(QColor("white")))
-                painter.drawEllipse(QPoint(x, y), 30, 30)
-                painter.setPen(QPen(QColor("#4B0082")))
-                painter.setFont(QFont("Arial", 12))
-                painter.drawText(QPoint(x-15, y+5), device['name'][:2])
-
-    def update_animation(self):
-        self.animation_offset += 1
-        if self.animation_offset > 70:
-            self.animation_offset = 0
-        self.update()
-
-    def mousePressEvent(self, event):
-        center = QPoint(self.width() // 2, self.height() // 2)
-        for device in self.devices:
-            angle = self.devices.index(device) * (360 / len(self.devices))
-            x = center.x() + int(250 * -1 * (angle / 360) * 2 * 3.14159)
-            y = center.y() + int(250 * -1 * (angle / 360) * 2 * 3.14159)
-            if (QPoint(x, y) - event.position().toPoint()).manhattanLength() <= 30:
-                self.clicked.emit(device['ip'], device['name'])
-
-    def set_devices(self, devices):
-        self.devices = devices
-        self.update()
-
 class Broadcast(QWidget):
-    device_connected = pyqtSignal(str, str, dict)
-    device_connected_java = pyqtSignal(str, str, dict)
+    device_connected = pyqtSignal(str, str, dict)  # Signal to indicate device connection
+    device_connected_java = pyqtSignal(str, str, dict)  # Signal to indicate Java device connection
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Device Discovery')
-        self.setGeometry(100, 100, 1280, 720)  # 16:9 ratio
+        self.setGeometry(100, 100, 400, 300)
         self.center_window()
-        self.setStyleSheet(f"background-color: #4B0082; color: white;")
 
         layout = QVBoxLayout()
 
-        self.title_label = QLabel("Searching for devices...")
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin-bottom: 20px;")
-        layout.addWidget(self.title_label)
+        self.device_list = QListWidget(self)
+        self.device_list.itemClicked.connect(self.connect_to_device)
+        layout.addWidget(self.device_list)
 
-        self.circular_widget = CircularWidget()
-        self.circular_widget.clicked.connect(self.on_device_clicked)
-        layout.addWidget(self.circular_widget)
-
-        self.refresh_button = QPushButton('Refresh')
-        self.refresh_button.setStyleSheet("""
-            QPushButton {
-                background-color: white;
-                color: #4B0082;
-                border: none;
-                padding: 10px;
-                border-radius: 5px;
-                font-size: 18px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #E6E6E6;
-            }
-        """)
+        self.refresh_button = QPushButton('Refresh', self)
         self.refresh_button.clicked.connect(self.discover_devices)
         layout.addWidget(self.refresh_button)
 
         self.setLayout(layout)
 
+        # Initialize BroadcastWorker instance
         self.broadcast_worker = BroadcastWorker()
         self.broadcast_worker.device_detected.connect(self.add_device_to_list)
-        self.broadcast_worker.device_connected.connect(self.show_send_app)
+        self.broadcast_worker.device_connected.connect(self.show_send_app)  # Connect the worker's signal to slot
         self.broadcast_worker.device_connected_java.connect(self.show_send_app_java)
-        self.broadcast_worker.discovery_complete.connect(self.on_discovery_complete)
         self.discover_devices()
 
         self.client_socket = None
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 1280, 720
+        window_width, window_height = 400, 300
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
     def discover_devices(self):
-        self.title_label.setText("Searching for devices...")
-        self.circular_widget.set_devices([])
-        self.refresh_button.setEnabled(False)
-        QApplication.processEvents()  # Force UI update
-        
-        # Run discovery in a separate thread
-        self.discovery_thread = QThread()
-        self.broadcast_worker.moveToThread(self.discovery_thread)
-        self.discovery_thread.started.connect(self.broadcast_worker.discover_receivers)
-        self.broadcast_worker.discovery_complete.connect(self.discovery_thread.quit)
-        self.discovery_thread.finished.connect(self.on_discovery_finished)
-        self.discovery_thread.start()
-
-    def on_discovery_complete(self, devices_found):
-        if devices_found:
-            self.title_label.setText("Tap avatar to connect")
-        else:
-            self.title_label.setText("No devices found. Try refreshing.")
-
-    def on_discovery_finished(self):
-        self.refresh_button.setEnabled(True)
-        receivers = self.broadcast_worker.discover_receivers()
+        self.device_list.clear()
+        receivers = self.broadcast_worker.discover_receivers()  # Correctly call the discover_receivers method from BroadcastWorker instance
         for receiver in receivers:
-            self.add_device_to_list(receiver)
+            item = QListWidgetItem(receiver['name'])
+            item.setData(256, receiver['name'])  # Store device name
+            item.setData(257, receiver['ip'])  # Store device IP
+            self.device_list.addItem(item)
+
+    def connect_to_device(self, item):
+        # Ensure you connect through the correct method
+        self.broadcast_worker.connect_to_device(item)
 
     def add_device_to_list(self, device_info):
-        devices = self.circular_widget.devices + [device_info]
-        self.circular_widget.set_devices(devices)
-
-    def on_device_clicked(self, device_ip, device_name):
-        self.broadcast_worker.connect_to_device(device_ip, device_name)
+        # Add the detected device to the list
+        item = QListWidgetItem(device_info['name'])
+        item.setData(256, device_info['name'])  # Store device name
+        item.setData(257, device_info['ip'])  # Store device IP
+        self.device_list.addItem(item)
 
     def show_send_app(self, device_ip, device_name, receiver_data):
         self.hide()
-        self.send_app = SendApp(device_ip, device_name, receiver_data)
+        self.send_app = SendApp(device_ip, device_name, receiver_data)  # Pass parameters to SendApp
         self.send_app.show()
     
-    def show_send_app_java(self, device_ip, device_name,   receiver_data):
+    def show_send_app_java(self, device_ip, device_name, receiver_data):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()

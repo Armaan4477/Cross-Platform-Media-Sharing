@@ -60,6 +60,7 @@ class FileSender(QThread):
         self.config = get_config()
 
         self.encryption_flag = self.config['encryption']
+        # logger.debug("Encryption flag: %s", self.encryption_flag)
 
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
@@ -149,10 +150,13 @@ class FileSender(QThread):
 
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
+        # if self.metadata_created:
+        #     self.createmetadata(file_path=file_path)
 
         # Encrypt the file if encrypted_transfer argument is present
         if encrypted_transfer:
             logger.debug("Encrypted transfer with password: %s", self.password)
+
             file_path = encrypt_file(file_path, self.password)
 
         sent_size = 0
@@ -214,7 +218,7 @@ class Receiver(QListWidgetItem):
 class SendApp(QWidget):
     config = get_config()
 
-    def __init__(self, ip_address, device_name, receiver_data):
+    def __init__(self,ip_address,device_name,receiver_data):
         self.ip_address = ip_address
         self.device_name = device_name
         self.receiver_data = receiver_data
@@ -225,22 +229,17 @@ class SendApp(QWidget):
         self.config = get_config()
         logger.debug("Encryption : %s", self.config['encryption'])
         self.setWindowTitle('Send File')
-        self.setGeometry(100, 100, 1280, 720)
+        self.setGeometry(100, 100, 400, 300)
         self.center_window()
-        
-        # Set the background color to #4B0082 (indigo) and text color to white
-        self.setStyleSheet("background-color: #4B0082; color: white;")
 
         layout = QVBoxLayout()
-        layout.setSpacing(20)
 
         file_selection_layout = QVBoxLayout()
-        file_selection_layout.setSpacing(10)
-
         self.file_button = QPushButton('Select Files', self)
         self.file_button.clicked.connect(self.selectFile)
         file_selection_layout.addWidget(self.file_button)
 
+        #Create a button for folder selection
         self.folder_button = QPushButton('Select Folder', self)
         self.folder_button.clicked.connect(self.selectFolder)
         file_selection_layout.addWidget(self.folder_button)
@@ -274,66 +273,9 @@ class SendApp(QWidget):
 
         self.setLayout(layout)
 
-        # Update button styles
-        button_style = """
-            QPushButton {
-                background-color: white;
-                color: #4B0082;
-                border: none;
-                padding: 10px;
-                border-radius: 5px;
-                font-size: 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #E6E6E6;
-            }
-            QPushButton:disabled {
-                background-color: #CCCCCC;
-                color: #666666;
-            }
-        """
-        self.file_button.setStyleSheet(button_style)
-        self.folder_button.setStyleSheet(button_style)
-        self.send_button.setStyleSheet(button_style)
-
-        # Update QTextEdit style
-        self.file_path_display.setStyleSheet("""
-            QTextEdit {
-                background-color: white;
-                color: #4B0082;
-                border: 2px solid white;
-                border-radius: 5px;
-            }
-        """)
-
-        # Update QProgressBar style
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: 2px solid white;
-                border-radius: 5px;
-                text-align: center;
-            }
-            QProgressBar::chunk {
-                background-color: white;
-            }
-        """)
-
-        # If encryption is enabled, update password input style
-        if self.config['encryption']:
-            self.password_input.setStyleSheet("""
-                QLineEdit {
-                    background-color: white;
-                    color: #4B0082;
-                    border: 2px solid white;
-                    border-radius: 5px;
-                    padding: 5px;
-                }
-            """)
-
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 1280, 720
+        window_width, window_height = 800, 600
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -387,12 +329,12 @@ class SendApp(QWidget):
         if value >= 100:
             self.label.setText("File transfer completed!")
 
-    def  fileSent(self, file_path):
+    def fileSent(self, file_path):
         self.label.setText(f"File sent: {file_path}")
 
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    send_app = SendApp("127.0.0.1", "Test Device", {})  # Example parameters
+    send_app = SendApp()
     send_app.show()
     sys.exit(app.exec())
