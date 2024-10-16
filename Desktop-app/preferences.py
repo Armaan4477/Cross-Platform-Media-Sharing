@@ -213,6 +213,7 @@ class PreferencesApp(QWidget):
                         stop: 1 #505050
                     );
                     color: #FFFFFF;
+                    font-size: 16px;
                 }
                 QPushButton {
                     background: qlineargradient(
@@ -224,6 +225,7 @@ class PreferencesApp(QWidget):
                     border-radius: 10px;
                     border: 1px solid rgba(0, 0, 0, 0.5);
                     padding: 4px;
+                    font-size: 16px;
                 }
                 QPushButton:hover {
                     background: qlineargradient(
@@ -266,6 +268,7 @@ class PreferencesApp(QWidget):
                     stop: 1 #505050
                 );
                 color: #FFFFFF;
+                font-size: 16px;
             }
             QLabel {
                 background-color: transparent; /* Make the label background transparent */
@@ -280,6 +283,7 @@ class PreferencesApp(QWidget):
                 border-radius: 10px;
                 border: 1px solid rgba(0, 0, 0, 0.5);
                 padding: 4px;
+                font-size: 16px;
             }
             QPushButton:hover {
                 background: qlineargradient(
@@ -317,9 +321,11 @@ class PreferencesApp(QWidget):
                         stop: 1 #505050
                     );
                     color: #FFFFFF;
+                    font-size: 16px;
                 }
                 QLabel {
                     background-color: transparent; /* Make the label background transparent */
+                    font-size: 16px;
                 }
                 QPushButton {
                     background: qlineargradient(
@@ -331,6 +337,7 @@ class PreferencesApp(QWidget):
                     border-radius: 10px;
                     border: 1px solid rgba(0, 0, 0, 0.5);
                     padding: 4px;
+                    font-size: 16px;
                 }
                 QPushButton:hover {
                     background: qlineargradient(
