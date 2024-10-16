@@ -191,28 +191,6 @@ class PreferencesApp(QWidget):
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
-    def goToMainMenu(self):
-        if self.changes_made():
-            reply = QMessageBox.question(
-                self,
-                "Save Changes",
-                "Do you want to save changes before returning to the main menu?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Cancel
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                self.submitPreferences()
-                self.go_to_main_menu()
-            elif reply == QMessageBox.StandardButton.No:
-                self.go_to_main_menu()
-        else:
-            self.go_to_main_menu()
-
-    def go_to_main_menu(self):
-        self.hide()
-        from main import MainApp
-        self.main_app = MainApp()
-        self.main_app.show()
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -220,7 +198,51 @@ class PreferencesApp(QWidget):
         encryption = self.encryption_toggle.isChecked()
 
         if not device_name:
-            QMessageBox.critical(self, "Input Error", "Device Name cannot be empty.")
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Input Error")
+            msg_box.setText("Device Name cannot be empty.")
+            msg_box.setIcon(QMessageBox.Icon.Critical)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+            # Apply custom style with gradient background
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+            msg_box.exec()
             return
 
         preferences = {
@@ -230,9 +252,127 @@ class PreferencesApp(QWidget):
         }
 
         write_config(preferences)
-        QMessageBox.information(self, "Success", "Preferences saved successfully!")
+        
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Success")
+        msg_box.setText("Preferences saved successfully!")
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+        # Apply custom style with gradient background and transparent text area
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent; /* Make the label background transparent */
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        msg_box.exec()
         self.go_to_main_menu()
 
+
+    def goToMainMenu(self):
+        if self.changes_made():
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Save Changes")
+            msg_box.setText("Do you want to save changes before returning to the main menu?")
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
+
+            # Apply custom style with gradient background
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+
+            reply = msg_box.exec()
+            if reply == QMessageBox.StandardButton.Yes:
+                self.submitPreferences()
+                self.go_to_main_menu()
+            elif reply == QMessageBox.StandardButton.No:
+                self.go_to_main_menu()
+        else:
+            self.go_to_main_menu()
+
+
+
+    def go_to_main_menu(self):
+        self.hide()
+        from main import MainApp
+        self.main_app = MainApp()
+        self.main_app.show()
+
+    
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 500, 400
