@@ -16,11 +16,14 @@ class PreferencesApp(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Preferences')
-        self.setGeometry(100, 100, 600, 500)  # Adjusted window size for larger elements
+        self.setGeometry(100, 100, 500, 400)  # Adjusted window size for larger elements
         self.center_window()
         self.set_background()
 
         layout = QVBoxLayout()
+        #layout.setSpacing(0)  # Set the spacing between widgets to 0
+        #layout.setContentsMargins(0, 0, 0, 0)  # Set the margins to 0
+
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
@@ -231,7 +234,7 @@ class PreferencesApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 600, 500
+        window_width, window_height = 500, 400
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
