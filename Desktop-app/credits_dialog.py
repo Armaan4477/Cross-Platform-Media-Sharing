@@ -171,7 +171,7 @@ class CreditsDialog(QDialog):
     def create_link_button(self, text, url):
         button = QPushButton(text)
         self.style_button(button)  # Apply the style
-        button.setStyleSheet(button.styleSheet() + "QPushButton { text-align: left; }")  # Align text to the left
+        button.setStyleSheet(button.styleSheet() + "QPushButton { text-align: center; }")  # Align text to the left
         button.clicked.connect(lambda: self.open_link(url))  # Connect to link opening
         return button
 
