@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
-                             QLabel, QFrame, QMenu, QDialog, QSizePolicy)
+                             QLabel, QFrame, QMenu, QDialog, QGridLayout, QSizePolicy)
 from PyQt6.QtGui import QScreen, QFont, QPainter, QColor, QPen
 from PyQt6.QtCore import Qt, QTimer, QPoint
 from file_receiver import ReceiveApp
@@ -13,6 +13,7 @@ from constant import logger, get_config
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 class WifiAnimationWidget(QWidget):
+class CustomMenu(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(300, 250)
@@ -39,17 +40,9 @@ class WifiAnimationWidget(QWidget):
             painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
             painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
                             radius * 2, radius * 2, 0, 180 * 16)
-
-class CustomMenu(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedWidth(150)  # Fixed width for the menu
+        self.setWindowFlags(Qt.WindowType.Popup)
         self.setStyleSheet("""
-            background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,  
-                    stop: 1 #505050   
-                );
+            background-color: #505050;
             border: 1px solid #333;
         """)
         
@@ -145,7 +138,6 @@ class MainApp(QWidget):
         self.setLayout(main_layout)
         
         self.custom_menu = CustomMenu(self)
-        self.custom_menu.hide()  # Start hidden
         logger.info("Started Main App")
 
     def add_main_buttons(self, layout):
@@ -218,10 +210,8 @@ class MainApp(QWidget):
         if self.custom_menu.isVisible():
             self.custom_menu.hide()
         else:
-            # Position the menu on the left side of the window
-            menu_x = self.x()  # Aligns the menu with the left side of the window
-            menu_y = self.y() + 70  # Places it below the header
-            self.custom_menu.move(menu_x, menu_y)
+            pos = self.menu_button.mapToGlobal(QPoint(-self.custom_menu.width(), self.menu_button.height()))
+            self.custom_menu.move(pos)
             self.custom_menu.show()
 
     def set_background(self):
@@ -241,7 +231,6 @@ class MainApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-
         dest = get_config()["save_to_directory"]
         if not os.path.exists(dest):
             os.makedirs(dest)
