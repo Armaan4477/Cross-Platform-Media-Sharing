@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient
 from PyQt6.QtCore import Qt, QTimer, QSize
 import sys
 import os
@@ -40,21 +40,61 @@ class WifiAnimationWidget(QWidget):
                             radius * 2, radius * 2, 0, 180 * 16)
             
 class SvgButton(QPushButton):  # Inherit from QPushButton
-    def __init__(self, icon_path, color=(111, 119, 129), parent=None):  # Default color
+    def __init__(self, icon_path, color_start=(111, 119, 129), color_end=(75, 85, 98), parent=None):  # Default colors
         super().__init__(parent)
         self.renderer = QSvgRenderer(icon_path)
         self.setFixedSize(38, 38)  # Set the size of the button
-        self.color = color  # Store the color
+        self.color_start = color_start  # Store the start color
+        self.color_end = color_end  # Store the end color
+        self.initStyle()  # Initialize the button style
+
+    def initStyle(self):
+        # Set up the button's style to match the other buttons
+        self.setStyleSheet("""
+            QPushButton {
+                background: transparent;  /* No background */
+                border: none;  /* No border */
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+                border-radius: 19px;  /* Match the button's rounded edges */
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+                border-radius: 19px;  /* Match the button's rounded edges */
+            }
+        """)
+
+        # Add glow effect
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)
+        glow_effect.setXOffset(0)
+        glow_effect.setYOffset(0)
+        glow_effect.setColor(QColor(255, 255, 255, 100))
+        self.setGraphicsEffect(glow_effect)
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Set the brush color for the SVG
-        painter.setBrush(QColor(*self.color))  # Use the stored color
+        # Create a linear gradient from top to bottom
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(*self.color_start))  # Start color
+        gradient.setColorAt(1, QColor(*self.color_end))  # End color
+
+        # Set the brush to the gradient
+        painter.setBrush(gradient)
         painter.setPen(QPen())  # No outline
 
-        # Render the SVG icon with the specified color
+        # Render the SVG icon with the specified gradient color
         self.renderer.render(painter)
 
 
