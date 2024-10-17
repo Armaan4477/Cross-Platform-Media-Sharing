@@ -110,21 +110,17 @@ class IconButton(QPushButton):
             path.lineTo(x6, y6)
             path.lineTo(x1, y1)
 
-        
-
         painter.drawPath(path)
-
-
 
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.setFixedSize(700, 480)
+        self.setFixedSize(853, 480)  # Changed from 700 to 853 for 16:9 ratio
 
     def initUI(self):
         self.setWindowTitle('DataDash')
-        self.setGeometry(100, 100, 700, 480)
+        self.setGeometry(100, 100, 853, 480)  # Changed from 700 to 853 for 16:9 ratio
         self.center_window()
         self.set_background()
 
@@ -144,7 +140,6 @@ class MainApp(QWidget):
         icon_button = IconButton()  # Example colors
         icon_button.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
         header_layout.addWidget(icon_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
 
         # Add a stretch after the settings button
         header_layout.addStretch()
@@ -172,14 +167,8 @@ class MainApp(QWidget):
         button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
         button_layout.setContentsMargins(30, 0, 30, 0)
 
-        icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
-        icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
-
-
         # Send File Button
         self.send_button = QPushButton('Send File')
-        self.send_button.setIcon(QIcon(icon_path_send))
-        self.send_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
@@ -187,8 +176,6 @@ class MainApp(QWidget):
 
         # Receive File Button
         self.receive_button = QPushButton('Receive File')
-        self.receive_button.setIcon(QIcon(icon_path_receive))
-        self.receive_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
@@ -216,8 +203,6 @@ class MainApp(QWidget):
 
         self.setLayout(main_layout)
         logger.info("Started Main App")
-
-
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
@@ -272,7 +257,7 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 700, 480
+        window_width, window_height = 853, 480  # Changed from 700 to 853 for 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -313,4 +298,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = MainApp()
     main.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec()) 
