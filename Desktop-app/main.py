@@ -43,10 +43,11 @@ class WifiAnimationWidget(QWidget):
 class IconButton(QPushButton):
     def __init__(self, color_start=(77, 84, 96), color_end=(105, 115, 128), parent=None):
         super().__init__(parent)
-        self.setFixedSize(38, 38)
+        self.setFixedSize(42, 42)
         self.color_start = color_start
         self.color_end = color_end
-        self.glow()
+        #self.glow()
+        self.setToolTip("<b style='color: #FFA500; font-size: 12px;'>Settings</b><br><i style='font-size: 10px;'>Click to configure</i>")
 
     def glow(self):
         glow_effect = QGraphicsDropShadowEffect()
@@ -85,43 +86,31 @@ class IconButton(QPushButton):
         # Draw inner circle
         path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
 
-        # Draw gear teeth
-        tooth_count = 6  # Number of teeth
-        for i in range(tooth_count):
-            # Calculate angle for the tooth positions
-            angle = (i * (360 / tooth_count) + 90) * (math.pi / 180)  # 90 degrees offset to start at 12 o'clock
+        # Draw gear teeth square shape (rectangle), 6 teeth in total, 1 tooth = 60 degrees, 30 degrees for each side,first tooth at 90 degrees
+        for i in range(6):
+            angle = 81 + i * 60
+            x1 = center_x + inner_radius * math.cos(math.radians(angle))
+            y1 = center_y + inner_radius * math.sin(math.radians(angle))
+            x2 = center_x + outer_radius * math.cos(math.radians(angle))
+            y2 = center_y + outer_radius * math.sin(math.radians(angle))
+            x3 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle))
+            y3 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle))
+            x4 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle + tooth_width))
+            y4 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle + tooth_width))
+            x5 = center_x + outer_radius * math.cos(math.radians(angle + tooth_width))
+            y5 = center_y + outer_radius * math.sin(math.radians(angle + tooth_width))
+            x6 = center_x + inner_radius * math.cos(math.radians(angle + tooth_width))
+            y6 = center_y + inner_radius * math.sin(math.radians(angle + tooth_width))
 
-            x_outer = center_x + outer_radius * math.cos(angle)
-            y_outer = center_y + outer_radius * math.sin(angle)
+            path.moveTo(x1, y1)
+            path.lineTo(x2, y2)
+            path.lineTo(x3, y3)
+            path.lineTo(x4, y4)
+            path.lineTo(x5, y5)
+            path.lineTo(x6, y6)
+            path.lineTo(x1, y1)
 
-            # Calculate outer tooth points
-            x_tooth1 = x_outer + tooth_length * math.cos(angle + math.pi / tooth_count / 2)
-            y_tooth1 = y_outer + tooth_length * math.sin(angle + math.pi / tooth_count / 2)
-
-            x_tooth2 = x_outer + tooth_length * math.cos(angle - math.pi / tooth_count / 2)
-            y_tooth2 = y_outer + tooth_length * math.sin(angle - math.pi / tooth_count / 2)
-
-            # Draw the tooth shape
-            tooth_path = QPainterPath()
-            tooth_path.moveTo(x_outer, y_outer)  # Start at the outer edge of the gear
-
-            # Base of the tooth
-            base_offset = tooth_width / 2  # Half width for centering
-            tooth_base1_x = x_outer + base_offset * math.cos(angle - math.pi / tooth_count)
-            tooth_base1_y = y_outer + base_offset * math.sin(angle - math.pi / tooth_count)
-
-            tooth_base2_x = x_outer - base_offset * math.cos(angle - math.pi / tooth_count)
-            tooth_base2_y = y_outer - base_offset * math.sin(angle - math.pi / tooth_count)
-
-            # Create a consistent tooth shape
-            tooth_path.lineTo(tooth_base1_x, tooth_base1_y)  # Left base of the tooth
-            tooth_path.lineTo(x_tooth1, y_tooth1)  # Outer tip of the tooth
-            tooth_path.lineTo(tooth_base2_x, tooth_base2_y)  # Right base of the tooth
-            tooth_path.lineTo(x_outer, y_outer)  # Close the tooth path
-
-            tooth_path.closeSubpath()  # Close the path to create a filled shape
-
-            painter.drawPath(tooth_path)  # Draw the tooth
+        
 
         painter.drawPath(path)
 
