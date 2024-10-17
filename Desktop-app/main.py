@@ -49,7 +49,6 @@ class IconButton(QPushButton):
         self.glow()
 
     def glow(self):
-
         glow_effect = QGraphicsDropShadowEffect()
         glow_effect.setBlurRadius(15)
         glow_effect.setXOffset(0)
@@ -75,10 +74,10 @@ class IconButton(QPushButton):
 
         # Create a gear shape
         center_x, center_y = 19, 19  # Center coordinates
-        inner_radius = 9
-        outer_radius = 13
-        tooth_length = 7  # Length of the teeth extending outside the outer circle
-        tooth_width = 10    # Width of the teeth
+        inner_radius = 8               # Inner radius
+        outer_radius = 12              # Outer radius
+        tooth_length = 5               # Length of the teeth
+        tooth_width = 17               # Width of the teeth
 
         # Draw outer circle
         path.addEllipse(center_x - outer_radius, center_y - outer_radius, outer_radius * 2, outer_radius * 2)
@@ -87,29 +86,32 @@ class IconButton(QPushButton):
         path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
 
         # Draw gear teeth
-        for i in range(7):
-            angle = i * math.pi / 3.5  # 45-degree increments
+        tooth_count = 6  # Number of teeth
+        for i in range(tooth_count):
+            # Calculate angle for the tooth positions
+            angle = (i * (360 / tooth_count) + 90) * (math.pi / 180)  # 90 degrees offset to start at 12 o'clock
+
             x_outer = center_x + outer_radius * math.cos(angle)
             y_outer = center_y + outer_radius * math.sin(angle)
 
-            # Calculate outer tooth points with consistent dimensions
-            x_tooth1 = x_outer + tooth_length * math.cos(angle + math.pi / 8)
-            y_tooth1 = y_outer + tooth_length * math.sin(angle + math.pi / 8)
+            # Calculate outer tooth points
+            x_tooth1 = x_outer + tooth_length * math.cos(angle + math.pi / tooth_count / 2)
+            y_tooth1 = y_outer + tooth_length * math.sin(angle + math.pi / tooth_count / 2)
 
-            x_tooth2 = x_outer + tooth_length * math.cos(angle - math.pi / 8)
-            y_tooth2 = y_outer + tooth_length * math.sin(angle - math.pi / 8)
+            x_tooth2 = x_outer + tooth_length * math.cos(angle - math.pi / tooth_count / 2)
+            y_tooth2 = y_outer + tooth_length * math.sin(angle - math.pi / tooth_count / 2)
 
-            # Draw the tooth shape with consistent width
+            # Draw the tooth shape
             tooth_path = QPainterPath()
             tooth_path.moveTo(x_outer, y_outer)  # Start at the outer edge of the gear
 
-            # Base of the tooth at a consistent width
+            # Base of the tooth
             base_offset = tooth_width / 2  # Half width for centering
-            tooth_base1_x = x_outer + base_offset * math.cos(angle - math.pi / 4)
-            tooth_base1_y = y_outer + base_offset * math.sin(angle - math.pi / 4)
+            tooth_base1_x = x_outer + base_offset * math.cos(angle - math.pi / tooth_count)
+            tooth_base1_y = y_outer + base_offset * math.sin(angle - math.pi / tooth_count)
 
-            tooth_base2_x = x_outer - base_offset * math.cos(angle - math.pi / 4)
-            tooth_base2_y = y_outer - base_offset * math.sin(angle - math.pi / 4)
+            tooth_base2_x = x_outer - base_offset * math.cos(angle - math.pi / tooth_count)
+            tooth_base2_y = y_outer - base_offset * math.sin(angle - math.pi / tooth_count)
 
             # Create a consistent tooth shape
             tooth_path.lineTo(tooth_base1_x, tooth_base1_y)  # Left base of the tooth
@@ -122,9 +124,6 @@ class IconButton(QPushButton):
             painter.drawPath(tooth_path)  # Draw the tooth
 
         painter.drawPath(path)
-
-
-
 
 
 
