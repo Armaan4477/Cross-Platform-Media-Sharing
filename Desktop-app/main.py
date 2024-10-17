@@ -84,7 +84,7 @@ class MainApp(QWidget):
 
         main_layout.addWidget(header)
 
-        # Continue with the rest of your layout...
+        # Add some vertical space before the WiFi Animation Widget
         main_layout.addSpacing(50)
 
         # Wifi Animation Widget
@@ -93,32 +93,44 @@ class MainApp(QWidget):
 
         # Buttons Layout
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(30)
-        button_layout.setContentsMargins(50, 50, 50, 50)
+        button_layout.setSpacing(10)  # Reduced spacing between Send and Receive buttons
+        button_layout.setContentsMargins(40, 0, 40, 0)
 
+        # Send File Button
         self.send_button = QPushButton('Send File')
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         button_layout.addWidget(self.send_button)
 
+        # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         button_layout.addWidget(self.receive_button)
 
-        self.preferences_button = QPushButton('Preferences')
-        self.style_button(self.preferences_button)
-        self.preferences_button.clicked.connect(self.preferences_handler)
-        button_layout.addWidget(self.preferences_button)
+        # Add the first button layout to the main layout
+        main_layout.addLayout(button_layout)
 
+        # Add some vertical space above the Credits button layout
+        main_layout.addSpacing(15)  # Moves buttons up and adds spacing between buttons and Credits
+
+        # Add a separate layout for the Credits button
+        credits_layout = QHBoxLayout()
+        credits_layout.setContentsMargins(0, 0, 10, 20)  # Space below Credits button
+        credits_layout.addStretch()  # Center the Credits button horizontally
+
+        # Credits Button
         self.credits_button = QPushButton('Credits')
         self.style_button(self.credits_button)
         self.credits_button.clicked.connect(self.show_credits)
-        button_layout.addWidget(self.credits_button)
+        credits_layout.addWidget(self.credits_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addLayout(button_layout)
+        credits_layout.addStretch()
+        main_layout.addLayout(credits_layout)
+
         self.setLayout(main_layout)
         logger.info("Started Main App")
+
 
 
     def style_button(self, button):
