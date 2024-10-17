@@ -2,14 +2,13 @@ import json
 import platform
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
-    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit,
-    QHBoxLayout, QFrame
+    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit
 )
-from PyQt6.QtGui import QScreen, QFont, QColor
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from PyQt6.QtGui import QScreen
 import os
 import socket
 import struct
+from PyQt6.QtCore import QThread, pyqtSignal
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import encrypt_file
 from time import sleep
@@ -31,13 +30,16 @@ class FileSender(QThread):
         self.receiver_data = receiver_data
 
     def initialize_connection(self):
+        # Close all previous sockets
         try:
             self.client_skt.close()
         except AttributeError:
             pass
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # Bind the socket to SENDER_DATA port
             self.client_skt.bind(('', SENDER_DATA))
+            # Connect to the receiver on RECEIVER_DATA port
             self.client_skt.connect((self.ip_address, RECEIVER_DATA))
         except ConnectionRefusedError:
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
@@ -50,11 +52,15 @@ class FileSender(QThread):
     def run(self):
         metadata_file_path = None
         self.metadata_created = False
+        metadata_file_path = None
         if not self.initialize_connection():
             return
         
+        # Reload config on each file transfer session
         self.config = get_config()
+
         self.encryption_flag = self.config['encryption']
+        # logger.debug("Encryption flag: %s", self.encryption_flag)
 
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
@@ -65,6 +71,7 @@ class FileSender(QThread):
                     self.send_file(metadata_file_path)
                 self.send_file(file_path, encrypted_transfer=self.encryption_flag)
         
+        # Delete metadata file
         if self.metadata_created and metadata_file_path:
             os.remove(metadata_file_path)
             
@@ -75,7 +82,7 @@ class FileSender(QThread):
         sleep(0.5)
         self.client_skt.close()
 
-    def create_metadata(self, folder_path=None, file_paths=None):
+    def create_metadata(self, folder_path=None,file_paths=None):
         if folder_path:
             metadata = []
             for root, dirs, files in os.walk(folder_path):
@@ -92,7 +99,7 @@ class FileSender(QThread):
                     relative_path = os.path.relpath(dir_path, folder_path)
                     metadata.append({
                         'path': relative_path + '/',
-                        'size': 0
+                        'size': 0  # Size is 0 for directories
                     })
             metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
             metadata_json = json.dumps(metadata)
@@ -122,8 +129,10 @@ class FileSender(QThread):
         if not self.metadata_created:
             metadata_file_path = self.create_metadata(folder_path=folder_path)
             metadata = json.loads(open(metadata_file_path).read())
+            # Send metadata file
             self.send_file(metadata_file_path)
 
+        # Send all files
         for file_info in metadata:
             relative_file_path = file_info['path']
             file_path = os.path.join(folder_path, relative_file_path)
@@ -132,20 +141,28 @@ class FileSender(QThread):
                     if self.encryption_flag:
                         relative_file_path += ".crypt"
                     self.send_file(file_path, relative_file_path=relative_file_path, encrypted_transfer=self.encryption_flag)
+                else:
+                    # Handle directory creation (if needed, in receiver)
+                    pass
 
+        # Clean up metadata file
         os.remove(metadata_file_path)
 
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
+        # if self.metadata_created:
+        #     self.createmetadata(file_path=file_path)
 
+        # Encrypt the file if encrypted_transfer argument is present
         if encrypted_transfer:
             logger.debug("Encrypted transfer with password: %s", self.password)
+
             file_path = encrypt_file(file_path, self.password)
 
         sent_size = 0
         file_size = os.path.getsize(file_path)
         if relative_file_path is None:
-            relative_file_path = os.path.basename(file_path)
+            relative_file_path = os.path.basename(file_path)  # Default to the base name if relative path isn't provided
         file_name_size = len(relative_file_path.encode())
         logger.debug("Sending %s, %s", relative_file_path, file_size)
 
@@ -154,6 +171,7 @@ class FileSender(QThread):
         self.client_skt.send(encryption_flag.encode())
         logger.debug("Sent encryption flag: %s", encryption_flag)
 
+        # Send the relative file path size and the path
         self.client_skt.send(struct.pack('<Q', file_name_size))
         self.client_skt.send(relative_file_path.encode('utf-8'))
         self.client_skt.send(struct.pack('<Q', file_size))
@@ -170,174 +188,94 @@ class FileSender(QThread):
 
         return True
 
+class Receiver(QListWidgetItem):
+    def __init__(self, name, ip_address):
+        super().__init__(f"{name} ({ip_address})")
+        self._name = name
+        self._ip_address = ip_address
+    
+    @property
+    def name(self):
+        return self._name
+    
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.updateText()
+    
+    @property
+    def ip_address(self):
+        return self._ip_address
+    
+    @ip_address.setter
+    def ip_address(self, value):
+        self._ip_address = value
+        self.updateText()
+    
+    def updateText(self):
+        self.setText(f"{self._name} ({self._ip_address})")
+
 class SendApp(QWidget):
     config = get_config()
 
-    def __init__(self, ip_address, device_name, receiver_data):
-        super().__init__()
+    def __init__(self,ip_address,device_name,receiver_data):
         self.ip_address = ip_address
         self.device_name = device_name
         self.receiver_data = receiver_data
-        self.file_paths = []
+        super().__init__()
         self.initUI()
 
     def initUI(self):
         self.config = get_config()
         logger.debug("Encryption : %s", self.config['encryption'])
-        self.setWindowTitle('DataDash: Send File')
-        self.setFixedSize(960, 540)  # Updated to 16:9 ratio
+        self.setWindowTitle('Send File')
+        self.setGeometry(100, 100, 400, 300)
         self.center_window()
-        self.set_background()
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout()
 
-        # Header
-        header = QFrame()
-        header.setFixedHeight(70)
-        header.setStyleSheet("background-color: #333; padding: 0px;")
-        header_layout = QHBoxLayout(header)
-
-        title_label = QLabel("DataDash: Send File")
-        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: white;")
-        header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        main_layout.addWidget(header)
-
-        # Content area
-        content_layout = QVBoxLayout()
-        content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
-
-        # File selection buttons
-        button_layout = QHBoxLayout()
-        self.file_button = self.create_styled_button('Select Files')
+        file_selection_layout = QVBoxLayout()
+        self.file_button = QPushButton('Select Files', self)
         self.file_button.clicked.connect(self.selectFile)
-        button_layout.addWidget(self.file_button)
+        file_selection_layout.addWidget(self.file_button)
 
-        self.folder_button = self.create_styled_button('Select Folder')
+        #Create a button for folder selection
+        self.folder_button = QPushButton('Select Folder', self)
         self.folder_button.clicked.connect(self.selectFolder)
-        button_layout.addWidget(self.folder_button)
+        file_selection_layout.addWidget(self.folder_button)
 
-        content_layout.addLayout(button_layout)
+        self.file_paths = []
 
-        # File path display
-        self.file_path_display = QTextEdit()
+        self.file_path_display = QTextEdit(self)
         self.file_path_display.setReadOnly(True)
-        self.file_path_display.setStyleSheet("""
-            QTextEdit {
-                background-color: #2f3642;
-                color: white;
-                border: 1px solid #4b5562;
-                border-radius: 5px;
-                padding: 5px;
-            }
-        """)
-        content_layout.addWidget(self.file_path_display)
+        file_selection_layout.addWidget(self.file_path_display)
 
-        # Password input (if encryption is enabled)
+        layout.addLayout(file_selection_layout)
+
         if self.config['encryption']:
-            password_layout = QHBoxLayout()
-            self.password_label = QLabel('Encryption Password:')
-            self.password_label.setStyleSheet("color: white; font-size: 14px;")
-            password_layout.addWidget(self.password_label)
+            self.password_label = QLabel('Encryption Password:', self)
+            layout.addWidget(self.password_label)
 
-            self.password_input = QLineEdit()
+            self.password_input = QLineEdit(self)
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-            self.password_input.setStyleSheet("""
-                QLineEdit {
-                    background-color: #2f3642;
-                    color: white;
-                    border: 1px solid #4b5562;
-                    border-radius: 5px;
-                    padding: 5px;
-                }
-            """)
-            password_layout.addWidget(self.password_input)
-            content_layout.addLayout(password_layout)
+            layout.addWidget(self.password_input)
 
-        # Send button
-        self.send_button = self.create_styled_button('Send Files')
+        self.send_button = QPushButton('Send Files', self)
         self.send_button.setEnabled(False)
         self.send_button.clicked.connect(self.sendSelectedFiles)
-        content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.send_button)
 
-        # Progress bar
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                background-color: #2f3642;
-                color: white;
-                border: 1px solid #4b5562;
-                border-radius: 5px;
-                text-align: center;
-            }
-            QProgressBar::chunk {
-                background-color: #4CAF50;
-            }
-        """)
-        content_layout.addWidget(self.progress_bar)
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
 
-        # Status label
-        self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: white; font-size: 14px;")
-        content_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.label = QLabel("", self)
+        layout.addWidget(self.label)
 
-        main_layout.addLayout(content_layout)
-        self.setLayout(main_layout)
-
-    def create_styled_button(self, text):
-        button = QPushButton(text)
-        button.setFixedSize(150, 50)
-        button.setFont(QFont("Arial", 14))
-        button.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #2f3642,
-                    stop: 1 #4b5562
-                );
-                color: white;
-                border-radius: 25px;
-                border: 1px solid rgba(0, 0, 0, 0.5);
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #3c4450,
-                    stop: 1 #5a6476
-                );
-            }
-            QPushButton:pressed {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #232933,
-                    stop: 1 #414b58
-                );
-            }
-            QPushButton:disabled {
-                background: #666;
-                color: #aaa;
-            }
-        """)
-        return button
-
-    def set_background(self):
-        self.setStyleSheet("""
-            QWidget {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,
-                    stop: 1 #505050
-                );
-            }
-        """)
+        self.setLayout(layout)
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 960, 540  # Updated to 16:9 ratio
+        window_width, window_height = 800, 600
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -357,25 +295,31 @@ class SendApp(QWidget):
             self.file_path_display.clear()
             self.file_path_display.append(folder_path)
             self.file_paths = [folder_path]
+            print(self.file_paths)
             self.checkReadyToSend()
 
     def checkReadyToSend(self):
         if self.file_paths:
             self.send_button.setEnabled(True)
 
-    
-
     def sendSelectedFiles(self):
+        selected_item = self.device_name
         password = None
+
+        if not selected_item:
+            QMessageBox.critical(None, "Selection Error", "Please select a device to send the file.")
+            return
+        ip_address = self.ip_address
+        print(self.file_paths)
 
         if self.config['encryption']:
             password = self.password_input.text()
-            if not password:
+            if not self.password_input.text():
                 QMessageBox.critical(None, "Password Error", "Please enter a password.")
                 return
 
         self.send_button.setEnabled(False)
-        self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
+        self.file_sender = FileSender(ip_address, self.file_paths, password, self.receiver_data)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
@@ -383,14 +327,14 @@ class SendApp(QWidget):
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
         if value >= 100:
-            self.status_label.setText("File transfer completed!")
+            self.label.setText("File transfer completed!")
 
     def fileSent(self, file_path):
-        self.status_label.setText(f"File sent: {file_path}")
+        self.label.setText(f"File sent: {file_path}")
 
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    send_app = SendApp("127.0.0.1", "Test Device", None)
+    send_app = SendApp()
     send_app.show()
     sys.exit(app.exec())
