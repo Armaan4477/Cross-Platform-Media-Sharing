@@ -47,7 +47,7 @@ class IconButton(QPushButton):
         self.color_start = color_start
         self.color_end = color_end
         #self.glow()
-        self.setToolTip("<b style='color: #FFA500; font-size: 12px;'>Settings</b><br><i style='font-size: 10px;'>Click to configure</i>")
+        self.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Settings</b><br><i style='font-size: 12px;'>Click to configure</i>")
 
     def glow(self):
         glow_effect = QGraphicsDropShadowEffect()
