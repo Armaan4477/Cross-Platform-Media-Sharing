@@ -83,20 +83,20 @@ class IconButton(QPushButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        # Set the gradient brush for the circles
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0, QColor(*self.color_start))
         gradient.setColorAt(1, QColor(*self.color_end))
 
+        # Draw the circles first
         painter.setBrush(gradient)
         painter.setPen(QPen(QColor(0, 0, 0, 0)))  # Set pen to transparent
 
-        # Draw a settings (gear) icon
-        path = QPainterPath()
-        
         # Create a gear shape
         center_x, center_y = 19, 19  # Center coordinates
-        inner_radius = 8
-        outer_radius = 12
+        inner_radius = 12
+        outer_radius = 16
+        tooth_length = 4  # Length of the teeth extending outside the outer circle
 
         # Draw outer circle
         path.addEllipse(center_x - outer_radius, center_y - outer_radius, outer_radius * 2, outer_radius * 2)
@@ -105,17 +105,26 @@ class IconButton(QPushButton):
         path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
 
         # Draw gear teeth
-        path.moveTo(center_x + inner_radius, center_y)
         for i in range(8):
-            angle = i * math.pi / 4
-            x = center_x + inner_radius * math.cos(angle)
-            y = center_y + inner_radius * math.sin(angle)
-            path.lineTo(x, y)
+            angle = i * math.pi / 4  # 45-degree increments
+            x_inner = center_x + inner_radius * math.cos(angle)
+            y_inner = center_y + inner_radius * math.sin(angle)
 
-            angle += math.pi / 8
-            x = center_x + outer_radius * math.cos(angle)
-            y = center_y + outer_radius * math.sin(angle)
-            path.lineTo(x, y)
+            # Calculate outer tooth points
+            x_outer1 = center_x + outer_radius * math.cos(angle) + tooth_length * math.cos(angle + math.pi / 8)
+            y_outer1 = center_y + outer_radius * math.sin(angle) + tooth_length * math.sin(angle + math.pi / 8)
+
+            x_outer2 = center_x + outer_radius * math.cos(angle + math.pi / 4) + tooth_length * math.cos(angle + math.pi / 4 + math.pi / 8)
+            y_outer2 = center_y + outer_radius * math.sin(angle + math.pi / 4) + tooth_length * math.sin(angle + math.pi / 4 + math.pi / 8)
+
+            # Draw the tooth shape
+            tooth_path = QPainterPath()
+            tooth_path.moveTo(x_inner, y_inner)
+            tooth_path.lineTo(x_outer1, y_outer1)
+            tooth_path.lineTo(x_outer2, y_outer2)
+            tooth_path.closeSubpath()  # Close the path to create a filled shape
+
+            painter.drawPath(tooth_path)  # Draw the tooth
 
 
 
