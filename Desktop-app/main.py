@@ -105,17 +105,19 @@ class IconButton(QPushButton):
         path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
 
         # Draw gear teeth
-        num_teeth = 12
-        for i in range(num_teeth):
-            angle = (i * 360 / num_teeth) * (3.14 / 180)  # Convert degrees to radians
-            outer_x = center_x + outer_radius * math.cos(angle)
-            outer_y = center_y + outer_radius * math.sin(angle)
-            inner_x = center_x + inner_radius * math.cos(angle)
-            inner_y = center_y + inner_radius * math.sin(angle)
+        path.moveTo(center_x + inner_radius, center_y)
+        for i in range(8):
+            angle = i * math.pi / 4
+            x = center_x + inner_radius * math.cos(angle)
+            y = center_y + inner_radius * math.sin(angle)
+            path.lineTo(x, y)
 
-            # Draw teeth (lines from outer to inner)
-            path.moveTo(outer_x, outer_y)
-            path.lineTo(inner_x, inner_y)
+            angle += math.pi / 8
+            x = center_x + outer_radius * math.cos(angle)
+            y = center_y + outer_radius * math.sin(angle)
+            path.lineTo(x, y)
+
+
 
         painter.drawPath(path)
 
