@@ -10,6 +10,7 @@ from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
 from constant import logger, get_config
+from PyQt6.QtSvg import QSvgRenderer
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -37,6 +38,25 @@ class WifiAnimationWidget(QWidget):
             painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
             painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
                             radius * 2, radius * 2, 0, 180 * 16)
+            
+class SvgButton(QPushButton):  # Inherit from QPushButton
+    def __init__(self, icon_path, color=(111, 119, 129), parent=None):  # Default color
+        super().__init__(parent)
+        self.renderer = QSvgRenderer(icon_path)
+        self.setFixedSize(38, 38)  # Set the size of the button
+        self.color = color  # Store the color
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # Set the brush color for the SVG
+        painter.setBrush(QColor(*self.color))  # Use the stored color
+        painter.setPen(QPen())  # No outline
+
+        # Render the SVG icon with the specified color
+        self.renderer.render(painter)
+
 
 class MainApp(QWidget):
     def __init__(self):
@@ -59,16 +79,14 @@ class MainApp(QWidget):
         header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
 
-        # Define the relative path for the icon
+         # Define the relative path for the icon
         icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings-icon.svg")
 
-        # Settings Button with SVG icon
-        self.settings_button = QPushButton()
-        self.settings_button.setIcon(QIcon(icon_path))
-        self.settings_button.setIconSize(QSize(32, 32))
-        self.settings_button.setStyleSheet("border: none;")
-        self.settings_button.clicked.connect(self.openSettings)
-        header_layout.addWidget(self.settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Create and add the SvgButton instead of using QIcon
+        svg_icon = SvgButton(icon_path)
+        svg_icon.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
+        header_layout.addWidget(svg_icon, alignment=Qt.AlignmentFlag.AlignLeft)
+
 
         # Add a stretch after the settings button
         header_layout.addStretch()
