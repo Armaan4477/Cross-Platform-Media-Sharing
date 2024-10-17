@@ -176,14 +176,14 @@ class MainApp(QWidget):
         self.send_button = QPushButton('Send File')
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
-        self.send_button.setToolTip("Send a file to another device")
+        self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
         button_layout.addWidget(self.send_button)
 
         # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
-        self.receive_button.setToolTip("Receive a file from another device")
+        self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
         button_layout.addWidget(self.receive_button)
 
         # Add the first button layout to the main layout
