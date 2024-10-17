@@ -138,12 +138,11 @@ class PreferencesApp(QWidget):
                 caret-color: #00FF00;  /* Green cursor color */
             }
             QLineEdit:focus {
-                border: 2px solid #006400;  /* Dark green border on focus */
+                border: 2px solid #333333;  /* Dark grey border on focus */
                 caret-color: #00FF00;  /* Green cursor color on focus */
                 background-color: rgba(255, 255, 255, 0.1); /* Slightly opaque background on focus */
             }
         """)
-
 
 
 
