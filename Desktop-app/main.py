@@ -74,7 +74,7 @@ class IconButton(QPushButton):
 
         # Create a gear shape
         center_x, center_y = 19, 19  # Center coordinates
-        inner_radius = 8               # Inner radius
+        inner_radius = 7               # Inner radius
         outer_radius = 12              # Outer radius
         tooth_length = 5               # Length of the teeth
         tooth_width = 17               # Width of the teeth
