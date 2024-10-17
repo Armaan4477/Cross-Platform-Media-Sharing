@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath
 from PyQt6.QtCore import Qt, QTimer, QSize
 import sys
 import os
@@ -11,6 +11,7 @@ from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
 from constant import logger, get_config
 from PyQt6.QtSvg import QSvgRenderer
+import math
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -39,21 +40,19 @@ class WifiAnimationWidget(QWidget):
             painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
                             radius * 2, radius * 2, 0, 180 * 16)
             
-class SvgButton(QPushButton):  # Inherit from QPushButton
-    def __init__(self, icon_path, color_start=(111, 119, 129), color_end=(75, 85, 98), parent=None):  # Default colors
+class IconButton(QPushButton):
+    def __init__(self, color_start=(111, 119, 129), color_end=(75, 85, 98), parent=None):
         super().__init__(parent)
-        self.renderer = QSvgRenderer(icon_path)
-        self.setFixedSize(38, 38)  # Set the size of the button
-        self.color_start = color_start  # Store the start color
-        self.color_end = color_end  # Store the end color
-        self.initStyle()  # Initialize the button style
+        self.setFixedSize(38, 38)
+        self.color_start = color_start
+        self.color_end = color_end
+        self.initStyle()
 
     def initStyle(self):
-        # Set up the button's style to match the other buttons
         self.setStyleSheet("""
             QPushButton {
-                background: transparent;  /* No background */
-                border: none;  /* No border */
+                background: transparent;  
+                border: none;  
             }
             QPushButton:hover {
                 background: qlineargradient(
@@ -61,7 +60,7 @@ class SvgButton(QPushButton):  # Inherit from QPushButton
                     stop: 0 rgba(60, 68, 80, 255),
                     stop: 1 rgba(90, 100, 118, 255)
                 );
-                border-radius: 19px;  /* Match the button's rounded edges */
+                border-radius: 19px;  
             }
             QPushButton:pressed {
                 background: qlineargradient(
@@ -69,11 +68,10 @@ class SvgButton(QPushButton):  # Inherit from QPushButton
                     stop: 0 rgba(35, 41, 51, 255),
                     stop: 1 rgba(65, 75, 88, 255)
                 );
-                border-radius: 19px;  /* Match the button's rounded edges */
+                border-radius: 19px;  
             }
         """)
 
-        # Add glow effect
         glow_effect = QGraphicsDropShadowEffect()
         glow_effect.setBlurRadius(15)
         glow_effect.setXOffset(0)
@@ -85,17 +83,44 @@ class SvgButton(QPushButton):  # Inherit from QPushButton
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Create a linear gradient from top to bottom
         gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0, QColor(*self.color_start))  # Start color
-        gradient.setColorAt(1, QColor(*self.color_end))  # End color
+        gradient.setColorAt(0, QColor(*self.color_start))
+        gradient.setColorAt(1, QColor(*self.color_end))
 
-        # Set the brush to the gradient
         painter.setBrush(gradient)
-        painter.setPen(QPen())  # No outline
+        painter.setPen(QPen(QColor(0, 0, 0, 0)))  # Set pen to transparent
 
-        # Render the SVG icon with the specified gradient color
-        self.renderer.render(painter)
+        # Draw a settings (gear) icon
+        path = QPainterPath()
+        
+        # Create a gear shape
+        center_x, center_y = 19, 19  # Center coordinates
+        inner_radius = 8
+        outer_radius = 12
+
+        # Draw outer circle
+        path.addEllipse(center_x - outer_radius, center_y - outer_radius, outer_radius * 2, outer_radius * 2)
+
+        # Draw inner circle
+        path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
+
+        # Draw gear teeth
+        num_teeth = 12
+        for i in range(num_teeth):
+            angle = (i * 360 / num_teeth) * (3.14 / 180)  # Convert degrees to radians
+            outer_x = center_x + outer_radius * math.cos(angle)
+            outer_y = center_y + outer_radius * math.sin(angle)
+            inner_x = center_x + inner_radius * math.cos(angle)
+            inner_y = center_y + inner_radius * math.sin(angle)
+
+            # Draw teeth (lines from outer to inner)
+            path.moveTo(outer_x, outer_y)
+            path.lineTo(inner_x, inner_y)
+
+        painter.drawPath(path)
+
+
+
 
 
 class MainApp(QWidget):
@@ -122,10 +147,10 @@ class MainApp(QWidget):
          # Define the relative path for the icon
         icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings-icon.svg")
 
-        # Create and add the SvgButton instead of using QIcon
-        svg_icon = SvgButton(icon_path)
-        svg_icon.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
-        header_layout.addWidget(svg_icon, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Create and add the IconButton instead of using SvgButton
+        icon_button = IconButton(color_start=(255, 0, 0), color_end=(0, 0, 255))  # Example colors
+        icon_button.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
+        header_layout.addWidget(icon_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
 
         # Add a stretch after the settings button
