@@ -16,7 +16,7 @@ class PreferencesApp(QWidget):
         self.setFixedSize(500, 400)
 
     def initUI(self):
-        self.setWindowTitle('Preferences')
+        self.setWindowTitle('Settings')
         self.setGeometry(100, 100, 500, 400)  # Adjusted window size for larger elements
         self.center_window()
         self.set_background()
