@@ -172,8 +172,14 @@ class MainApp(QWidget):
         button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
         button_layout.setContentsMargins(30, 0, 30, 0)
 
+        icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
+        icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
+
+
         # Send File Button
         self.send_button = QPushButton('Send File')
+        self.send_button.setIcon(QIcon(icon_path_send))
+        self.send_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
@@ -181,6 +187,8 @@ class MainApp(QWidget):
 
         # Receive File Button
         self.receive_button = QPushButton('Receive File')
+        self.receive_button.setIcon(QIcon(icon_path_receive))
+        self.receive_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
