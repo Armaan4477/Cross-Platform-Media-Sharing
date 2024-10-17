@@ -466,7 +466,51 @@ class PreferencesApp(QWidget):
         <b>Credits:</b> View credits for the application.
         """)
         help_dialog.setIcon(QMessageBox.Icon.Information)
+
+        # Apply consistent styling with a gradient background and transparent text area
+        help_dialog.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;  /* Transparent text background */
+                font-size: 16px;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
         help_dialog.exec()
+
 
 
 if __name__ == '__main__':
