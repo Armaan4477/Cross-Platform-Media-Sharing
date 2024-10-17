@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
-                             QLabel, QFrame, QGraphicsDropShadowEffect)
+                             QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
 from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath
 from PyQt6.QtCore import Qt, QTimer, QSize
 import sys
@@ -275,12 +275,18 @@ class MainApp(QWidget):
             logger.info("Created folder to receive files")
 
     def sendFile(self):
+        # Give user a warning to be on the same network as the receiver 
+        # before starting the file transfer
+        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
         logger.info("Started Send File App")
         self.hide()
         self.broadcast_app = Broadcast()
         self.broadcast_app.show()
 
     def receiveFile(self):
+        # Give user a warning to be on the same network as the receiver 
+        # before starting the file transfer
+        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
         logger.info("Started Receive File App")
         self.hide()
         self.receive_app = ReceiveApp()

@@ -13,6 +13,10 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import android.content.Context;
+import android.app.AlertDialog;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,13 +30,32 @@ public class MainActivity extends AppCompatActivity {
         Button btnSend = findViewById(R.id.btn_send);
         Button btnReceive = findViewById(R.id.btn_receive);
         ImageButton btnPreferences = findViewById(R.id.btn_preferences);
+        Button btnCredits = findViewById(R.id.btn_credits);
 
         btnSend.setOnClickListener(v -> {
+            // Give a warning if the device is not connected to a network
+            if (!isNetworkConnected()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Warning")
+                        .setMessage("Please connect to a network before sending files.")
+                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                        .show();
+                return;
+            }
             Intent intent = new Intent(MainActivity.this, DiscoverDevicesActivity.class);
             startActivity(intent);
         });
 
         btnReceive.setOnClickListener(v -> {
+            // Give a warning if the device is not connected to a network
+            if (!isNetworkConnected()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Warning")
+                        .setMessage("Please connect to a network before receiving files.")
+                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                        .show();
+                return;
+            }
             Intent intent = new Intent(MainActivity.this, WaitingToReceiveActivity.class);
             startActivity(intent);
         });
@@ -41,6 +64,17 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
+
+        btnCredits.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CreditsActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        return networkInfo != null && networkInfo.isConnected();
     }
 
     private void createConfigFileIfNotExists() {
