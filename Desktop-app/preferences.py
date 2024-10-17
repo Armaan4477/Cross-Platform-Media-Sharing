@@ -191,7 +191,7 @@ class PreferencesApp(QWidget):
                     stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
                 );
                 color: white;
-                border-radius: 25px;
+                border-radius: 12px;
                 border: 1px solid rgba(0, 0, 0, 0.5);
                 padding: 6px;
             }
