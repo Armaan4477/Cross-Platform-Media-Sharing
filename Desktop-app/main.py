@@ -16,14 +16,14 @@ import math
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(300, 250)
+        self.setFixedSize(550, 500)
         self.signal_strength = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_signal)
         self.timer.start(35)
 
     def update_signal(self):
-        self.signal_strength = (self.signal_strength + 1) % 100
+        self.signal_strength = (self.signal_strength + 1.5) % 145
         self.update()
 
     def paintEvent(self, event):
@@ -120,11 +120,11 @@ class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.setFixedSize(700, 500)
+        self.setFixedSize(700, 480)
 
     def initUI(self):
         self.setWindowTitle('DataDash')
-        self.setGeometry(100, 100, 700, 500)
+        self.setGeometry(100, 100, 700, 480)
         self.center_window()
         self.set_background()
 
@@ -161,7 +161,7 @@ class MainApp(QWidget):
         main_layout.addWidget(header)
 
         # Add some vertical space before the WiFi Animation Widget
-        main_layout.addSpacing(50)
+        main_layout.addSpacing(105)
 
         # Wifi Animation Widget
         wifi_widget = WifiAnimationWidget()
@@ -169,40 +169,42 @@ class MainApp(QWidget):
 
         # Buttons Layout
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)  # Reduced spacing between Send and Receive buttons
-        button_layout.setContentsMargins(40, 0, 40, 0)
+        button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
+        button_layout.setContentsMargins(30, 0, 30, 0)
 
         # Send File Button
         self.send_button = QPushButton('Send File')
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
+        self.toolTip = "Send a file to another device"
         button_layout.addWidget(self.send_button)
 
         # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
+        self.toolTip = "Receive a file from another device"
         button_layout.addWidget(self.receive_button)
 
         # Add the first button layout to the main layout
         main_layout.addLayout(button_layout)
 
         # Add some vertical space above the Credits button layout
-        main_layout.addSpacing(15)  # Moves buttons up and adds spacing between buttons and Credits
+        main_layout.addSpacing(20)  # Moves buttons up and adds spacing between buttons and Credits
 
-        # Add a separate layout for the Credits button
-        credits_layout = QHBoxLayout()
-        credits_layout.setContentsMargins(0, 0, 10, 20)  # Space below Credits button
-        credits_layout.addStretch()  # Center the Credits button horizontally
+        # # Add a separate layout for the Credits button
+        # credits_layout = QHBoxLayout()
+        # credits_layout.setContentsMargins(0, 0, 10, 20)  # Space below Credits button
+        # credits_layout.addStretch()  # Center the Credits button horizontally
 
-        # Credits Button
-        self.credits_button = QPushButton('Credits')
-        self.style_button(self.credits_button)
-        self.credits_button.clicked.connect(self.show_credits)
-        credits_layout.addWidget(self.credits_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        # # Credits Button
+        # self.credits_button = QPushButton('Credits')
+        # self.style_button(self.credits_button)
+        # self.credits_button.clicked.connect(self.show_credits)
+        # credits_layout.addWidget(self.credits_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        credits_layout.addStretch()
-        main_layout.addLayout(credits_layout)
+        # credits_layout.addStretch()
+        # main_layout.addLayout(credits_layout)
 
         self.setLayout(main_layout)
         logger.info("Started Main App")
@@ -262,7 +264,7 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 700, 500
+        window_width, window_height = 700, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)

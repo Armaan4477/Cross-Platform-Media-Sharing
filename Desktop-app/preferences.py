@@ -7,6 +7,8 @@ import sys
 import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+from credits_dialog import CreditsDialog
+from constant import logger
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -89,12 +91,19 @@ class PreferencesApp(QWidget):
         self.style_button(self.main_menu_button)
         buttons_layout.addWidget(self.main_menu_button)
 
-        self.submit_button = QPushButton('Submit', self)
-        self.submit_button.setFont(QFont("Arial", 12))
-        self.submit_button.setFixedSize(150, 50)
-        self.submit_button.clicked.connect(self.submitPreferences)
-        self.style_button(self.submit_button)
-        buttons_layout.addWidget(self.submit_button)
+        # self.submit_button = QPushButton('Submit', self)
+        # self.submit_button.setFont(QFont("Arial", 12))
+        # self.submit_button.setFixedSize(150, 50)
+        # self.submit_button.clicked.connect(self.submitPreferences)
+        # self.style_button(self.submit_button)
+        # buttons_layout.addWidget(self.submit_button)
+
+        # # Credits Button
+        self.credits_button = QPushButton('Credits')
+        self.credits_button.setFont(QFont("Arial", 12))
+        self.style_button(self.credits_button)
+        self.credits_button.clicked.connect(self.show_credits)
+        buttons_layout.addWidget(self.credits_button)
 
         layout.addLayout(buttons_layout)
 
@@ -394,6 +403,11 @@ class PreferencesApp(QWidget):
             "encryption": self.encryption_toggle.isChecked(),
         }
         return current_preferences != self.original_preferences
+    
+    def show_credits(self):
+        logger.info("Opened Credits Dialog")
+        credits_dialog = CreditsDialog()
+        credits_dialog.exec()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
