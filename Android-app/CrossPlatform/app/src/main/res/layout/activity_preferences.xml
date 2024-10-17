@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@drawable/dialog_background">
 
     <!-- Device Name Label -->
     <TextView
@@ -12,6 +13,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Device Name"
+        android:textSize="32sp"
+        android:textColor="@android:color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -21,17 +24,21 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Enter Device Name"
+        android:textColorHint="#D4D4D4"
+        android:textColor="@android:color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/device_name_label"
         app:layout_constraintWidth_percent="1.0" />
 
     <!-- Reset Device Name Button -->
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/device_name_reset_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Reset"
+        android:background="@drawable/button_gradient"
+        android:textColor="@android:color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/device_name_input" />
 
@@ -42,6 +49,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Save to Path"
+        android:textSize="32sp"
+        android:textColor="@android:color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/device_name_reset_button" />
 
@@ -51,6 +60,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Select Directory"
+        android:textColorHint="#D4D4D4"
+        android:textColor="@android:color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/save_to_path_label"
@@ -66,16 +77,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/save_to_path_input">
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/save_to_path_picker_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@drawable/button_gradient"
+            android:textColor="@android:color/white"
             android:text="Pick Directory" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/save_to_path_reset_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@drawable/button_gradient"
+            android:textColor="@android:color/white"
             android:layout_marginStart="8dp"
             android:text="Reset" />
     </LinearLayout>
@@ -94,21 +109,25 @@
 
     </LinearLayout>
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/main_menu_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Main Menu"
+        android:background="@drawable/button_gradient"
+        android:textColor="@android:color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp" />
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/submit_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Submit"
+        android:background="@drawable/button_gradient"
+        android:textColor="@android:color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginEnd="16dp"
