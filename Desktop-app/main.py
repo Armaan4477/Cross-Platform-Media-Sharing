@@ -41,7 +41,7 @@ class WifiAnimationWidget(QWidget):
                             radius * 2, radius * 2, 0, 180 * 16)
             
 class IconButton(QPushButton):
-    def __init__(self, color_start=(47, 54, 66), color_end=(75, 85, 98), parent=None):
+    def __init__(self, color_start=(77, 84, 96), color_end=(105, 115, 128), parent=None):
         super().__init__(parent)
         self.setFixedSize(38, 38)
         self.color_start = color_start
