@@ -60,7 +60,7 @@ class MainApp(QWidget):
         header_layout = QHBoxLayout(header)
 
         # Define the relative path for the icon
-        icon_path = os.path.join(os.path.dirname(__file__), "icons", "setting_icon.svg")
+        icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings-icon.svg")
 
         # Settings Button with SVG icon
         self.settings_button = QPushButton()
@@ -70,14 +70,21 @@ class MainApp(QWidget):
         self.settings_button.clicked.connect(self.openSettings)
         header_layout.addWidget(self.settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
+        # Add a stretch after the settings button
+        header_layout.addStretch()
+
         # Title label
         title_label = QLabel("DataDash: CrossPlatform Data Sharing")
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        # Add another stretch after the title to balance the layout
+        header_layout.addStretch()
+
         main_layout.addWidget(header)
 
+        # Continue with the rest of your layout...
         main_layout.addSpacing(50)
 
         # Wifi Animation Widget
@@ -112,6 +119,7 @@ class MainApp(QWidget):
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
         logger.info("Started Main App")
+
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
