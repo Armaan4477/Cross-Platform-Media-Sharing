@@ -7,6 +7,8 @@ import sys
 import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+from credits_dialog import CreditsDialog
+from constant import logger
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -17,14 +19,11 @@ class PreferencesApp(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Settings')
-        self.setGeometry(100, 100, 500, 400)  # Adjusted window size for larger elements
+        self.setGeometry(100, 100, 500, 400)
         self.center_window()
         self.set_background()
 
         layout = QVBoxLayout()
-        #layout.setSpacing(0)  # Set the spacing between widgets to 0
-        #layout.setContentsMargins(0, 0, 0, 0)  # Set the margins to 0
-
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
@@ -32,18 +31,23 @@ class PreferencesApp(QWidget):
         self.style_label(self.device_name_label)
         layout.addWidget(self.device_name_label)
 
+        # Horizontal layout for device name input and reset button
+        device_name_layout = QHBoxLayout()
+
         self.device_name_input = QLineEdit(self)
         self.device_name_input.setFont(QFont("Arial", 16))
         self.device_name_input.setFixedHeight(30)
         self.style_input(self.device_name_input)
-        layout.addWidget(self.device_name_input)
+        device_name_layout.addWidget(self.device_name_input)
 
         self.device_name_reset_button = QPushButton('Reset', self)
         self.device_name_reset_button.setFont(QFont("Arial", 12))
         self.device_name_reset_button.setFixedSize(120, 40)
         self.device_name_reset_button.clicked.connect(self.resetDeviceName)
         self.style_button(self.device_name_reset_button)
-        layout.addWidget(self.device_name_reset_button)
+        device_name_layout.addWidget(self.device_name_reset_button)
+
+        layout.addLayout(device_name_layout)
 
         # Save to Path
         self.save_to_path_label = QLabel('Save to Path:', self)
@@ -71,6 +75,7 @@ class PreferencesApp(QWidget):
         self.save_to_path_reset_button.clicked.connect(self.resetSavePath)
         self.style_button(self.save_to_path_reset_button)
         path_layout.addWidget(self.save_to_path_reset_button)
+        
         layout.addLayout(path_layout)
 
         # Encryption Toggle
@@ -89,17 +94,18 @@ class PreferencesApp(QWidget):
         self.style_button(self.main_menu_button)
         buttons_layout.addWidget(self.main_menu_button)
 
-        self.submit_button = QPushButton('Submit', self)
-        self.submit_button.setFont(QFont("Arial", 12))
-        self.submit_button.setFixedSize(150, 50)
-        self.submit_button.clicked.connect(self.submitPreferences)
-        self.style_button(self.submit_button)
-        buttons_layout.addWidget(self.submit_button)
+        # Credits Button
+        self.credits_button = QPushButton('Credits')
+        self.credits_button.setFont(QFont("Arial", 12))
+        self.style_button(self.credits_button)
+        self.credits_button.clicked.connect(self.show_credits)
+        buttons_layout.addWidget(self.credits_button)
 
         layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
         self.loadPreferences()
+
 
     def style_label(self, label):
         label.setStyleSheet("""
@@ -394,6 +400,11 @@ class PreferencesApp(QWidget):
             "encryption": self.encryption_toggle.isChecked(),
         }
         return current_preferences != self.original_preferences
+    
+    def show_credits(self):
+        logger.info("Opened Credits Dialog")
+        credits_dialog = CreditsDialog()
+        credits_dialog.exec()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
