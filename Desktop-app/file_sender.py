@@ -282,6 +282,7 @@ class SendApp(QWidget):
         # Status label
         self.status_label = QLabel("")
         self.status_label.setStyleSheet("color: white; font-size: 14px;")
+        self.style_label(self.status_label)
         content_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         main_layout.addLayout(content_layout)
@@ -335,6 +336,12 @@ class SendApp(QWidget):
             }
         """)
 
+    def style_label(self, label):
+        label.setStyleSheet("""
+            color: #FFFFFF;
+            background-color: transparent;  /* Set the background to transparent */
+        """)
+
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 960, 540  # Updated to 16:9 ratio
@@ -384,6 +391,8 @@ class SendApp(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.status_label.setText("File transfer completed!")
+            self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
+
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
