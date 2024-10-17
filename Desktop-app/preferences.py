@@ -127,14 +127,21 @@ class PreferencesApp(QWidget):
         """)
 
 
-
     def style_input(self, input_field):
         input_field.setStyleSheet("""
-            color: #FFFFFF;
-            background-color: transparent;  /* Set the background to transparent */
-            border: 1px solid #444;  /* Retain the border for input fields */
-            border-radius: 4px;
-            padding: 5px;
+            QLineEdit {
+                color: #FFFFFF;
+                background-color: transparent;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 5px;
+                caret-color: #00FF00;  /* Green cursor color */
+            }
+            QLineEdit:focus {
+                border: 2px solid #006400;  /* Dark green border on focus */
+                caret-color: #00FF00;  /* Green cursor color on focus */
+                background-color: rgba(255, 255, 255, 0.1); /* Slightly opaque background on focus */
+            }
         """)
 
 
