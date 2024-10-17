@@ -1,16 +1,15 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
-                             QLabel, QFrame)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen
-from PyQt6.QtCore import Qt, QTimer
+                             QLabel, QFrame, QGraphicsDropShadowEffect)
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon
+from PyQt6.QtCore import Qt, QTimer, QSize
+import sys
+import os
 from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
-import sys
-import os
 from constant import logger, get_config
-from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -32,12 +31,10 @@ class WifiAnimationWidget(QWidget):
         center = self.rect().center()
         max_radius = min(self.width(), self.height()) // 2
 
-        # Draw WiFi signals moving downwards (flipped)
         for i in range(3):
             radius = max_radius * (i + 1) // 3
             opacity = min(1, self.signal_strength / 100 * 3 - i)
             painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
-            # Adjust the y-coordinate to flip the drawing
             painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
                             radius * 2, radius * 2, 0, 180 * 16)
 
@@ -58,17 +55,30 @@ class MainApp(QWidget):
 
         # Header
         header = QFrame()
-        header.setFixedHeight(70) 
+        header.setFixedHeight(70)
         header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
+
+        # Define the relative path for the icon
+        icon_path = os.path.join(os.path.dirname(__file__), "icons", "setting_icon.svg")
+
+        # Settings Button with SVG icon
+        self.settings_button = QPushButton()
+        self.settings_button.setIcon(QIcon(icon_path))
+        self.settings_button.setIconSize(QSize(32, 32))
+        self.settings_button.setStyleSheet("border: none;")
+        self.settings_button.clicked.connect(self.openSettings)
+        header_layout.addWidget(self.settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        # Title label
         title_label = QLabel("DataDash: CrossPlatform Data Sharing")
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
         main_layout.addWidget(header)
 
-        # Add some vertical space before the WiFi Animation Widget
-        main_layout.addSpacing(50)  # Adjust the spacing as needed
+        main_layout.addSpacing(50)
 
         # Wifi Animation Widget
         wifi_widget = WifiAnimationWidget()
@@ -79,25 +89,21 @@ class MainApp(QWidget):
         button_layout.setSpacing(30)
         button_layout.setContentsMargins(50, 50, 50, 50)
 
-        # Send File Button
         self.send_button = QPushButton('Send File')
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         button_layout.addWidget(self.send_button)
 
-        # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         button_layout.addWidget(self.receive_button)
 
-        # Preferences Button
         self.preferences_button = QPushButton('Preferences')
         self.style_button(self.preferences_button)
         self.preferences_button.clicked.connect(self.preferences_handler)
         button_layout.addWidget(self.preferences_button)
 
-        # Credits Button
         self.credits_button = QPushButton('Credits')
         self.style_button(self.credits_button)
         self.credits_button.clicked.connect(self.show_credits)
@@ -107,7 +113,6 @@ class MainApp(QWidget):
         self.setLayout(main_layout)
         logger.info("Started Main App")
 
-
     def style_button(self, button):
         button.setFixedSize(150, 50)
         button.setFont(QFont("Arial", 15))
@@ -115,8 +120,8 @@ class MainApp(QWidget):
             QPushButton {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
-                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
                 );
                 color: white;
                 border-radius: 25px;
@@ -128,41 +133,36 @@ class MainApp(QWidget):
             QPushButton:hover {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),   /* Lightened Dark Color */
-                    stop: 1 rgba(90, 100, 118, 255)  /* Lightened Light Color */
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
                 );
             }
             QPushButton:pressed {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),   /* Darker on press */
-                    stop: 1 rgba(65, 75, 88, 255)    /* Darker on press */
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
                 );
             }
         """)
 
-        # Adding a constant glow effect to the button
         glow_effect = QGraphicsDropShadowEffect()
-        glow_effect.setBlurRadius(15)  # Adjust the blur radius for a softer glow
-        glow_effect.setXOffset(0)       # Center the glow horizontally
-        glow_effect.setYOffset(0)       # Center the glow vertically
-        glow_effect.setColor(QColor(255, 255, 255, 100))  # Soft white glow with some transparency
+        glow_effect.setBlurRadius(15)
+        glow_effect.setXOffset(0)
+        glow_effect.setYOffset(0)
+        glow_effect.setColor(QColor(255, 255, 255, 100))
         button.setGraphicsEffect(glow_effect)
 
-
     def set_background(self):
-        # Set a more prominent gradient background
         self.setStyleSheet("""
             QWidget {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,  /* Start color- light gray */
-                    stop: 1 #505050   /* End color-dark gray */
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
                 );
             }
         """)
-
-
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
@@ -170,8 +170,6 @@ class MainApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-
-        self.setGeometry(x, y, window_width, window_height)  # Set the geometry
 
         dest = get_config()["save_to_directory"]
         if not os.path.exists(dest):
@@ -200,6 +198,10 @@ class MainApp(QWidget):
         logger.info("Opened Credits Dialog")
         credits_dialog = CreditsDialog()
         credits_dialog.exec()
+
+    def openSettings(self):
+        logger.info("Settings button clicked")
+        self.preferences_handler()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
