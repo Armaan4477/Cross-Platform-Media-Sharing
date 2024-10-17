@@ -459,7 +459,7 @@ class PreferencesApp(QWidget):
         <br><br>
         <b>Save to Path:</b> Choose a directory to save your files. You can also reset it to the default path.
         <br><br>
-        <b>Encryption:</b> Enable or disable encryption for saved files.
+        <b>Encryption:</b> Enable or disable AES256 encryption for files being sent.
         <br><br>
         <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
         <br><br>
