@@ -252,11 +252,13 @@ class PreferencesApp(QWidget):
 
     def loadPreferences(self):
         config = get_config()
+        self.version = config["version"]
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.encryption_toggle.setChecked(config["encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.original_preferences = config.copy()
+        logger.info("Loaded preferences: %s", self.version)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -313,6 +315,7 @@ class PreferencesApp(QWidget):
             return
 
         preferences = {
+            "version": self.version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
             "encryption": encryption,
@@ -448,16 +451,10 @@ class PreferencesApp(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
-    def loadPreferences(self):
-        config = get_config()
-        self.device_name_input.setText(config["device_name"])
-        self.save_to_path_input.setText(config["save_to_directory"])
-        self.encryption_toggle.setChecked(config["encryption"])
-        self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
-        self.original_preferences = config.copy()
 
     def changes_made(self):
         current_preferences = {
+            "version": self.version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
