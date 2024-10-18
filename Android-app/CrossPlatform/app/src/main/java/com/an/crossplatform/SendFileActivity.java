@@ -478,6 +478,7 @@ public class SendFileActivity extends AppCompatActivity {
 
     @SuppressLint("StaticFieldLeak")
     private void sendFile(String filePath, String relativePath) {
+        progressBar_send.setVisibility(ProgressBar.VISIBLE);
         boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
 
         if (filePath == null) {
