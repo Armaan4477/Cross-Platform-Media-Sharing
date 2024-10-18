@@ -21,7 +21,7 @@ logger = logging.getLogger('FileSharing: ')
 logger.setLevel(logging.DEBUG)
 
 config_file = ".config.json"
-current_version = "1.0"  # Set the current version of the configuration
+current_version = "1.1"  # Set the current version of the configuration
 
 def get_default_path():
     if platform.system() == 'Windows':
