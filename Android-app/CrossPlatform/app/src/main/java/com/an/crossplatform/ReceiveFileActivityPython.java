@@ -126,6 +126,12 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.d("ReceiveFilesTask", "Updating progress: " + progressValue);
                 progressBar.setProgress(progressValue);
             }
+            if (progressBar.getProgress() == 100) {
+                txt_waiting.setText("File transfer completed");
+                progressBar.setVisibility(ProgressBar.INVISIBLE);
+                waitingAnimation.setVisibility(LottieAnimationView.VISIBLE);
+                waitingAnimation.playAnimation();
+            }
         }
 
         @Override
