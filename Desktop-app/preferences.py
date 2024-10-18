@@ -477,6 +477,8 @@ class PreferencesApp(QWidget):
         <br><br>
         <b>Encryption:</b> Enable or disable AES256 encryption for files being sent.
         <br><br>
+        <b>Show Warnings:</b> Enable or disable warning messages before sending or receiving files.
+        <br><br>
         <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
         <br><br>
         <b>Credits:</b> View credits for the application.
