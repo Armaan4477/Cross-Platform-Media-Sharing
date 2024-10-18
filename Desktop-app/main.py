@@ -261,9 +261,7 @@ class MainApp(QWidget):
     def sendFile(self):
         send_dialog = QMessageBox(self)
         send_dialog.setWindowTitle("Note")
-        send_dialog.setText("""
-            <b>Make sure both devices are on the same network</b><br><br>
-            Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+        send_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
         """)
         send_dialog.setIcon(QMessageBox.Icon.Warning)
 
@@ -325,9 +323,7 @@ class MainApp(QWidget):
     def receiveFile(self):
         receive_dialog = QMessageBox(self)
         receive_dialog.setWindowTitle("Note")
-        receive_dialog.setText("""
-            <b>Make sure both devices are on the same network</b><br><br>
-            Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+        receive_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
         """)
         receive_dialog.setIcon(QMessageBox.Icon.Warning)
 
