@@ -182,6 +182,16 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         continue;
                     }
 
+                    String originalName = fileName.substring(0, fileName.lastIndexOf('.'));
+                    String extension = fileName.substring(fileName.lastIndexOf('.'));
+                    int i = 1;
+
+                    // Check if the file exists in the receiving directory
+                    while (new File(destinationFolder, fileName).exists()) {
+                        fileName = originalName + " (Copy " + i + ")" + extension;
+                        i++;
+                    }
+
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
                         byte[] buffer = new byte[8192]; // Increased buffer size for faster transfer
                         long receivedSize = 0;

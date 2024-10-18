@@ -49,6 +49,7 @@
         <activity android:name=".SendFileActivityPython" />
         <activity android:name=".FileAdapter" />
         <activity android:name=".ReceiveFileActivityPython" />
+        <activity android:name=".CreditsActivity" />
     </application>
 
 </manifest>

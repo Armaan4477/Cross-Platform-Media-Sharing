@@ -15,11 +15,11 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
-        self.setFixedSize(500, 400)
+        self.setFixedSize(500, 450)  # Adjusted height to accommodate new toggle
 
     def initUI(self):
         self.setWindowTitle('Settings')
-        self.setGeometry(100, 100, 500, 400)
+        self.setGeometry(100, 100, 500, 450)  # Adjusted height to accommodate new toggle
         self.center_window()
         self.set_background()
 
@@ -38,6 +38,7 @@ class PreferencesApp(QWidget):
 
         help_button_layout.addWidget(self.help_button)
         layout.addLayout(help_button_layout)
+
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
         self.device_name_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
@@ -88,7 +89,7 @@ class PreferencesApp(QWidget):
         self.save_to_path_reset_button.clicked.connect(self.resetSavePath)
         self.style_button(self.save_to_path_reset_button)
         path_layout.addWidget(self.save_to_path_reset_button)
-        
+
         layout.addLayout(path_layout)
 
         # Encryption Toggle
@@ -96,6 +97,12 @@ class PreferencesApp(QWidget):
         self.encryption_toggle.setFont(QFont("Arial", 18))
         self.style_checkbox(self.encryption_toggle)
         layout.addWidget(self.encryption_toggle)
+
+        # Show Warning Toggle
+        self.show_warning_toggle = QCheckBox('Show Warnings', self)
+        self.show_warning_toggle.setFont(QFont("Arial", 18))
+        self.style_checkbox(self.show_warning_toggle)
+        layout.addWidget(self.show_warning_toggle)
 
         # Submit and Main Menu buttons
         buttons_layout = QHBoxLayout()
@@ -119,13 +126,11 @@ class PreferencesApp(QWidget):
         self.setLayout(layout)
         self.loadPreferences()
 
-
     def style_label(self, label):
         label.setStyleSheet("""
             color: #FFFFFF;
             background-color: transparent;  /* Set the background to transparent */
         """)
-
 
     def style_input(self, input_field):
         input_field.setStyleSheet("""
@@ -144,15 +149,12 @@ class PreferencesApp(QWidget):
             }
         """)
 
-
-
     def style_checkbox(self, checkbox):
         checkbox.setGraphicsEffect(self.create_glow_effect())
         checkbox.setStyleSheet("""
         color: #FFFFFF;
         background-color: transparent;  /* Set the background to transparent */
         """)
-
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
@@ -248,11 +250,21 @@ class PreferencesApp(QWidget):
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
+    def loadPreferences(self):
+        config = get_config()
+        self.version = config["version"]
+        self.device_name_input.setText(config["device_name"])
+        self.save_to_path_input.setText(config["save_to_directory"])
+        self.encryption_toggle.setChecked(config["encryption"])
+        self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
+        self.original_preferences = config.copy()
+        logger.info("Loaded preferences: %s", self.version)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
         save_to_path = self.save_to_path_input.text()
         encryption = self.encryption_toggle.isChecked()
+        show_warning = self.show_warning_toggle.isChecked()  # Get show_warning toggle state
 
         if not device_name:
             msg_box = QMessageBox(self)
@@ -303,9 +315,11 @@ class PreferencesApp(QWidget):
             return
 
         preferences = {
+            "version": self.version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
-            "encryption": encryption
+            "encryption": encryption,
+            "show_warning": show_warning  # Save show_warning state
         }
 
         write_config(preferences)
@@ -437,18 +451,14 @@ class PreferencesApp(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
-    def loadPreferences(self):
-        config = get_config()
-        self.device_name_input.setText(config["device_name"])
-        self.save_to_path_input.setText(config["save_to_directory"])
-        self.encryption_toggle.setChecked(config["encryption"])
-        self.original_preferences = config.copy()
 
     def changes_made(self):
         current_preferences = {
+            "version": self.version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
+            "show_warning": self.show_warning_toggle.isChecked()  # Get show_warning toggle state
         }
         return current_preferences != self.original_preferences
     
@@ -466,6 +476,8 @@ class PreferencesApp(QWidget):
         <b>Save to Path:</b> Choose a directory to save your files. You can also reset it to the default path.
         <br><br>
         <b>Encryption:</b> Enable or disable AES256 encryption for files being sent.
+        <br><br>
+        <b>Show Warnings:</b> Enable or disable warning messages before sending or receiving files.
         <br><br>
         <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
         <br><br>
