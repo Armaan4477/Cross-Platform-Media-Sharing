@@ -109,6 +109,8 @@ class ReceiveWorkerJava(QThread):
                 file_size = struct.unpack('<Q', file_size_data)[0]
                 logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
 
+                logger.debug("Reached 1")
+
                 received_size = 0
 
                 # Check if it's metadata
@@ -123,13 +125,15 @@ class ReceiveWorkerJava(QThread):
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
-                    # Check if file exists in the receiving directory
-                    original_name, extension = os.path.splitext(file_name)
-                    i = 1
-                    while os.path.exists(os.path.join(self.destination_folder, file_name)):
-                        file_name = f"{original_name} (Copy {i}){extension}"
-                        i += 1
-                    # Determine the correct path using metadata
+                    logger.debug("Reached 2")
+                    # # Check if file exists in the receiving directory
+                    # original_name, extension = os.path.splitext(file_name)
+                    # i = 1
+                    # while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                    #     file_name = f"{original_name} (Copy {i}){extension}"
+                    #     i += 1
+                    # # Determine the correct path using metadata
+                    logger.debug("Reached 3")
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
                         file_path = os.path.join(self.destination_folder, relative_path)
@@ -145,6 +149,7 @@ class ReceiveWorkerJava(QThread):
                     # Ensure that the directory exists for the file
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
                     logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+                    logger.debug("Reached 4")
 
                     # Check for encrypted transfer
                     if encrypted_transfer:

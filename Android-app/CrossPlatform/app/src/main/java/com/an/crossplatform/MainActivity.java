@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
         Button btnSend = findViewById(R.id.btn_send);
         Button btnReceive = findViewById(R.id.btn_receive);
         ImageButton btnPreferences = findViewById(R.id.btn_preferences);
-        Button btnCredits = findViewById(R.id.btn_credits);
 
         btnSend.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
@@ -62,11 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
         btnPreferences.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
-            startActivity(intent);
-        });
-
-        btnCredits.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CreditsActivity.class);
             startActivity(intent);
         });
     }
