@@ -267,6 +267,10 @@ class MainApp(QWidget):
         """)
         send_dialog.setIcon(QMessageBox.Icon.Warning)
 
+        # Add buttons
+        proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+
         # Apply consistent styling with a gradient background and transparent text area
         send_dialog.setStyleSheet("""
             QMessageBox {
@@ -309,11 +313,14 @@ class MainApp(QWidget):
                 );
             }
         """)
+
+        # Execute dialog and handle response
         send_dialog.exec()
-        logger.info("Started Send File App")
-        self.hide()
-        self.broadcast_app = Broadcast()
-        self.broadcast_app.show()
+        if send_dialog.clickedButton() == proceed_button:
+            logger.info("Started Send File App")
+            self.hide()
+            self.broadcast_app = Broadcast()
+            self.broadcast_app.show()
 
     def receiveFile(self):
         receive_dialog = QMessageBox(self)
@@ -323,6 +330,10 @@ class MainApp(QWidget):
             Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
         """)
         receive_dialog.setIcon(QMessageBox.Icon.Warning)
+
+        # Add buttons
+        proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
         # Apply consistent styling with a gradient background and transparent text area
         receive_dialog.setStyleSheet("""
@@ -366,11 +377,15 @@ class MainApp(QWidget):
                 );
             }
         """)
+
+        # Execute dialog and handle response
         receive_dialog.exec()
-        logger.info("Started Receive File App")
-        self.hide()
-        self.receive_app = ReceiveApp()
-        self.receive_app.show()
+        if receive_dialog.clickedButton() == proceed_button:
+            logger.info("Started Receive File App")
+            self.hide()
+            self.receive_app = ReceiveApp()
+            self.receive_app.show()
+
 
 
     def preferences_handler(self):
