@@ -180,6 +180,7 @@ class SendApp(QWidget):
         self.receiver_data = receiver_data
         self.file_paths = []
         self.initUI()
+        self.progress_bar.setVisible(False)
 
     def initUI(self):
         self.config = get_config()
@@ -259,7 +260,7 @@ class SendApp(QWidget):
 
         # Send button
         self.send_button = self.create_styled_button('Send Files')
-        self.send_button.setEnabled(False)
+        self.send_button.setVisible(False)
         self.send_button.clicked.connect(self.sendSelectedFiles)
         content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -376,7 +377,7 @@ class SendApp(QWidget):
 
     def checkReadyToSend(self):
         if self.file_paths:
-            self.send_button.setEnabled(True)
+            self.send_button.setVisible(True)
 
     
 
@@ -389,8 +390,9 @@ class SendApp(QWidget):
                 QMessageBox.critical(None, "Password Error", "Please enter a password.")
                 return
 
-        self.send_button.setEnabled(False)
+        self.send_button.setVisible(False)
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
+        self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
