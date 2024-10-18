@@ -129,7 +129,7 @@ class ReceiveWorkerPython(QThread):
                     original_name, extension = os.path.splitext(file_name)
                     i = 1
                     while os.path.exists(os.path.join(self.destination_folder, file_name)):
-                        file_name = f"{original_name} (Copy {i}){extension}"
+                        file_name = f"{original_name} ({i}){extension}"
                         i += 1
                     # Determine the correct path using metadata
                     if self.metadata:
