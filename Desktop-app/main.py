@@ -259,128 +259,143 @@ class MainApp(QWidget):
             logger.info("Created folder to receive files")
 
     def sendFile(self):
-        send_dialog = QMessageBox(self)
-        send_dialog.setWindowTitle("Note")
-        send_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
-        """)
-        send_dialog.setIcon(QMessageBox.Icon.Warning)
+        # Check if warnings should be shown
+        if get_config()["show_warning"]:
+            send_dialog = QMessageBox(self)
+            send_dialog.setWindowTitle("Note")
+            send_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+            """)
+            send_dialog.setIcon(QMessageBox.Icon.Warning)
 
-        # Add buttons
-        proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
-        cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+            # Add buttons
+            proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+            cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-        # Apply consistent styling with a gradient background and transparent text area
-        send_dialog.setStyleSheet("""
-            QMessageBox {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,
-                    stop: 1 #505050
-                );
-                color: #FFFFFF;
-                font-size: 16px;
-            }
-            QLabel {
-                background-color: transparent;  /* Transparent text background */
-                font-size: 16px;
-            }
-            QPushButton {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255),
-                    stop: 1 rgba(75, 85, 98, 255)
-                );
-                color: white;
-                border-radius: 10px;
-                border: 1px solid rgba(0, 0, 0, 0.5);
-                padding: 4px;
-                font-size: 16px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),
-                    stop: 1 rgba(90, 100, 118, 255)
-                );
-            }
-            QPushButton:pressed {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),
-                    stop: 1 rgba(65, 75, 88, 255)
-                );
-            }
-        """)
+            # Apply consistent styling with a gradient background and transparent text area
+            send_dialog.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent;  /* Transparent text background */
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
 
-        # Execute dialog and handle response
-        send_dialog.exec()
-        if send_dialog.clickedButton() == proceed_button:
-            logger.info("Started Send File App")
+            # Execute dialog and handle response
+            send_dialog.exec()
+            if send_dialog.clickedButton() == proceed_button:
+                logger.info("Started Send File App")
+                self.hide()
+                self.broadcast_app = Broadcast()
+                self.broadcast_app.show()
+        else:
+            logger.info("Started Send File App without warning")
             self.hide()
             self.broadcast_app = Broadcast()
             self.broadcast_app.show()
 
     def receiveFile(self):
-        receive_dialog = QMessageBox(self)
-        receive_dialog.setWindowTitle("Note")
-        receive_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
-        """)
-        receive_dialog.setIcon(QMessageBox.Icon.Warning)
+        # Check if warnings should be shown
+        if get_config()["show_warning"]:
+            receive_dialog = QMessageBox(self)
+            receive_dialog.setWindowTitle("Note")
+            receive_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+            """)
+            receive_dialog.setIcon(QMessageBox.Icon.Warning)
 
-        # Add buttons
-        proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
-        cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+            # Add buttons
+            proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+            cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-        # Apply consistent styling with a gradient background and transparent text area
-        receive_dialog.setStyleSheet("""
-            QMessageBox {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,
-                    stop: 1 #505050
-                );
-                color: #FFFFFF;
-                font-size: 16px;
-            }
-            QLabel {
-                background-color: transparent;  /* Transparent text background */
-                font-size: 16px;
-            }
-            QPushButton {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255),
-                    stop: 1 rgba(75, 85, 98, 255)
-                );
-                color: white;
-                border-radius: 10px;
-                border: 1px solid rgba(0, 0, 0, 0.5);
-                padding: 4px;
-                font-size: 16px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),
-                    stop: 1 rgba(90, 100, 118, 255)
-                );
-            }
-            QPushButton:pressed {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),
-                    stop: 1 rgba(65, 75, 88, 255)
-                );
-            }
-        """)
+            # Apply consistent styling with a gradient background and transparent text area
+            receive_dialog.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent;  /* Transparent text background */
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
 
-        # Execute dialog and handle response
-        receive_dialog.exec()
-        if receive_dialog.clickedButton() == proceed_button:
-            logger.info("Started Receive File App")
+            # Execute dialog and handle response
+            receive_dialog.exec()
+            if receive_dialog.clickedButton() == proceed_button:
+                logger.info("Started Receive File App")
+                self.hide()
+                self.receive_app = ReceiveApp()
+                self.receive_app.show()
+        else:
+            logger.info("Started Receive File App without warning")
             self.hide()
             self.receive_app = ReceiveApp()
             self.receive_app.show()
+
 
 
 
