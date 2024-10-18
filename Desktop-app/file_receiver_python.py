@@ -16,6 +16,7 @@ RECEIVER_DATA = 58000
 class ReceiveWorkerPython(QThread):
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
+    close_connection_signal = pyqtSignal() 
     password = None
 
     def __init__(self, client_ip):
@@ -28,6 +29,7 @@ class ReceiveWorkerPython(QThread):
         self.destination_folder = None
         self.store_client_ip = client_ip
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
+        self.close_connection_signal.connect(self.close_connection)
 
     def initialize_connection(self):
         # Close all previous server_sockets
@@ -284,18 +286,13 @@ class ReceiveAppP(QWidget):
         self.close_button.clicked.connect(self.close)
         layout.addWidget(self.close_button)
 
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        layout.addWidget(self.transfer_more_button)
-
-        self.progress_bar = QProgressBar(self)
-        layout.addWidget(self.progress_bar)
-
         self.open_dir_button = QPushButton("Open Receiving Directory", self)
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
+
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
 
         self.setLayout(layout)
 
@@ -321,21 +318,6 @@ class ReceiveAppP(QWidget):
             self.open_dir_button.setVisible(True)  # Show the button when file is received
              # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
-            self.transfer_more_button.setEnabled(True)
-
-    def transferMoreFiles(self):
-        from file_receiver import ReceiveApp
-        # Go back to main menu and close all other sockets and threads
-        self.close()
-        self.file_receiver.close_connection()
-        # Close all sockets and threads
-        self.file_receiver.terminate()
-        self.file_receiver.wait()
-        self.file_receiver.deleteLater()
-        self.file_receiver = None
-        self.receive_app = ReceiveApp()
-        self.receive_app.show()
-        self.broadcasting = True
 
 
     def decryptor_init(self, value):

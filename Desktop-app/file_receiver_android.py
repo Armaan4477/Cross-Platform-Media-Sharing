@@ -286,18 +286,13 @@ class ReceiveAppPJava(QWidget):
         self.close_button.clicked.connect(self.close)
         layout.addWidget(self.close_button)
 
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        layout.addWidget(self.transfer_more_button)
-
-        self.progress_bar = QProgressBar(self)
-        layout.addWidget(self.progress_bar)
-
         self.open_dir_button = QPushButton("Open Receiving Directory", self)
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
+
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
 
         self.setLayout(layout)
 
@@ -323,21 +318,6 @@ class ReceiveAppPJava(QWidget):
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
             self.transfer_more_button.setEnabled(True)
-
-    def transferMoreFiles(self):
-        from file_receiver import ReceiveApp
-        # Go back to main menu and close all other sockets and threads
-        self.close()
-        self.file_receiver.close_connection()
-        # Close all sockets and threads
-        self.file_receiver.terminate()
-        self.file_receiver.wait()
-        self.file_receiver.deleteLater()
-        self.file_receiver = None
-        self.file_receover_window = ReceiveApp()
-        self.file_receover_window.show()
-
-        self.open_dir_button.setVisible(True)  # Show the button when file is received
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)

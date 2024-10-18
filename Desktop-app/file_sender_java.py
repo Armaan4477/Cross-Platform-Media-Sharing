@@ -337,12 +337,6 @@ class SendAppJava(QWidget):
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
 
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.setVisible(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        content_layout.addWidget(self.transfer_more_button)
-
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
 
@@ -460,16 +454,8 @@ class SendAppJava(QWidget):
             
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
-            self.transfer_more_button.setEnabled(True)
             self.close_button.setVisible(True)
-            self.transfer_more_button.setVisible(True)
 
-    def transferMoreFiles(self):
-        from broadcast import Broadcast
-        # Go back to main menu and close all other sockets and threads
-        self.close()
-        self.broadcast_app = Broadcast()
-        self.broadcast_app.show()
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
