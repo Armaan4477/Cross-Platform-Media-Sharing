@@ -125,15 +125,13 @@ class ReceiveWorkerJava(QThread):
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
-                    logger.debug("Reached 2")
-                    # # Check if file exists in the receiving directory
-                    # original_name, extension = os.path.splitext(file_name)
-                    # i = 1
-                    # while os.path.exists(os.path.join(self.destination_folder, file_name)):
-                    #     file_name = f"{original_name} (Copy {i}){extension}"
-                    #     i += 1
-                    # # Determine the correct path using metadata
-                    logger.debug("Reached 3")
+                    # Check if file exists in the receiving directory
+                    original_name, extension = os.path.splitext(file_name)
+                    i = 1
+                    while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                        file_name = f"{original_name} ({i}){extension}"
+                        i += 1
+                    # Determine the correct path using metadata
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
                         file_path = os.path.join(self.destination_folder, relative_path)
