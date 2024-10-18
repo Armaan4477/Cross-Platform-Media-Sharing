@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/dialog_background">
+
+    <ImageButton
+        android:id="@+id/close_button"
+        android:layout_gravity="end"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/button_gradient"
+        app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="20dp"    />
+
+    <TextView
+        android:id="@+id/help_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="@color/white"
+        android:textIsSelectable="true"
+        android:text="Device Name: The name assigned to this device. You can reset it to the system's default.\n\n
+    Save to Path: Choose a directory to save your files. You can also reset it to the default path.\n\n
+    Encryption: Enable or disable AES256 encryption for files being sent.\n\n
+    Show Warnings: Enable or disable warning messages before sending or receiving files.\n\n
+    Main Menu: Go back to the main application window. You will be prompted to save changes if any.\n\n
+    Credits: View credits for the application."
+    android:gravity="center"
+        android:background="@drawable/button_gradient" />
+
+
+</LinearLayout>

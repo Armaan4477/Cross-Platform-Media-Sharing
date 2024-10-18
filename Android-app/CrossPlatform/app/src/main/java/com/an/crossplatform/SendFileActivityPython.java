@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -60,6 +61,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     Socket socket = null;
     DataOutputStream dos = null;
     DataInputStream dis = null;
+    private ProgressBar progressBar_send;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +71,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
         selected_device_ip = getIntent().getStringExtra("selectedDeviceIP");
+        progressBar_send = findViewById(R.id.progressBar_send);
         // Retrieve the OS type from the string with try catch block
         try {
             osType = new JSONObject(receivedJson).getString("os");
@@ -474,6 +477,7 @@ public class SendFileActivityPython extends AppCompatActivity {
 
     @SuppressLint("StaticFieldLeak")
     private void sendFile(String filePath, String relativePath) {
+        progressBar_send.setVisibility(ProgressBar.VISIBLE);
         boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
 
         if (filePath == null) {
@@ -526,8 +530,14 @@ public class SendFileActivityPython extends AppCompatActivity {
             Log.d("SendFileActivity", "File size: " + fileSize);
             Log.d("SendFileActivity", "Final file name: " + finalPathToSend);  // Check file name
 
+            // Initialize the progress bar
+            runOnUiThread(() -> {
+                progressBar_send.setMax(100);
+                progressBar_send.setProgress(0);
+            });
+
             // Initialize the socket connection inside AsyncTask
-            new AsyncTask<Void, Void, Void>() {
+            new AsyncTask<Void, Integer, Void>() {
                 @Override
                 protected Void doInBackground(Void... voids) {
                     try {
@@ -576,6 +586,16 @@ public class SendFileActivityPython extends AppCompatActivity {
                         Log.e("SendFileActivity", "Error sending file", e);
                     }
                     return null;
+                }
+                @Override
+                protected void onProgressUpdate(Integer... values) {
+                    progressBar_send.setProgress(values[0]);
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    // Reset progress bar when done
+                    progressBar_send.setProgress(0);
                 }
             }.execute();
         } catch (IOException e) {
