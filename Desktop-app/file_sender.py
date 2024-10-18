@@ -263,6 +263,18 @@ class SendApp(QWidget):
         self.send_button.clicked.connect(self.sendSelectedFiles)
         content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        # Create 2 buttons for close and Transfer More Files
+        # Keep them disabled until the file transfer is completed
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
+        self.close_button.clicked.connect(self.close)
+        layout.addWidget(self.close_button)
+
+        self.transfer_more_button = QPushButton('Transfer More Files', self)
+        self.transfer_more_button.setEnabled(False)
+        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
+        layout.addWidget(self.transfer_more_button)
+
         # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
@@ -393,6 +405,17 @@ class SendApp(QWidget):
             self.status_label.setText("File transfer completed!")
             self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
 
+            
+            # Enable the close and Transfer More Files buttons
+            self.close_button.setEnabled(True)
+            self.transfer_more_button.setEnabled(True)
+
+    def transferMoreFiles(self):
+        from broadcast import Broadcast
+        # Go back to main menu and close all other sockets and threads
+        self.close()
+        self.broadcast_app = Broadcast()
+        self.broadcast_app.show()
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")

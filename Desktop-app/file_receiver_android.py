@@ -3,7 +3,7 @@ import socket
 import struct
 import json
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QPushButton
 from PyQt6.QtGui import QScreen
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
@@ -123,6 +123,12 @@ class ReceiveWorkerJava(QThread):
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
+                    # Check if file exists in the receiving directory
+                    original_name, extension = os.path.splitext(file_name)
+                    i = 1
+                    while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                        file_name = f"{original_name} (Copy {i}){extension}"
+                        i += 1
                     # Determine the correct path using metadata
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
@@ -235,8 +241,6 @@ class ReceiveWorkerJava(QThread):
 
         return destination_folder
 
-
-
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of a file from the metadata."""
         for file_info in self.metadata:
@@ -275,6 +279,18 @@ class ReceiveAppPJava(QWidget):
         self.label = QLabel("Waiting for file from Android...", self)
         layout.addWidget(self.label)
 
+        # Create 2 buttons for close and Transfer More Files
+        # Keep them disabled until the file transfer is completed
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
+        self.close_button.clicked.connect(self.close)
+        layout.addWidget(self.close_button)
+
+        self.transfer_more_button = QPushButton('Transfer More Files', self)
+        self.transfer_more_button.setEnabled(False)
+        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
+        layout.addWidget(self.transfer_more_button)
+
         self.progress_bar = QProgressBar(self)
         layout.addWidget(self.progress_bar)
 
@@ -304,6 +320,23 @@ class ReceiveAppPJava(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
+            # Enable the close and Transfer More Files buttons
+            self.close_button.setEnabled(True)
+            self.transfer_more_button.setEnabled(True)
+
+    def transferMoreFiles(self):
+        from file_receiver import ReceiveApp
+        # Go back to main menu and close all other sockets and threads
+        self.close()
+        self.file_receiver.close_connection()
+        # Close all sockets and threads
+        self.file_receiver.terminate()
+        self.file_receiver.wait()
+        self.file_receiver.deleteLater()
+        self.file_receiver = None
+        self.file_receover_window = ReceiveApp()
+        self.file_receover_window.show()
+
             self.open_dir_button.setVisible(True)  # Show the button when file is received
 
     def decryptor_init(self, value):

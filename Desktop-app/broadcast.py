@@ -109,6 +109,18 @@ class BroadcastWorker(QThread):
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
 
     def initialize_connection(self, ip_address):
+       # Force close the previous socket if it exists
+        if self.client_socket:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)  # Gracefully shut down
+            except OSError:
+                pass  # Socket might already be closed
+            self.client_socket.close()
+            logger.debug("Previous socket closed")
+
+            # Add a small delay to ensure OS releases the port
+            sleep(0.1)
+
         logger.debug("Initializing connection")
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
