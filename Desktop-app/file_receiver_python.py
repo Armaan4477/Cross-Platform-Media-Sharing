@@ -2,6 +2,8 @@ import os
 import socket
 import struct
 import json
+import subprocess
+import platform
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
 from PyQt6.QtGui import QScreen
@@ -312,16 +314,22 @@ class ReceiveAppP(QWidget):
         config = get_config()
         receiving_dir = config.get("save_to_directory")
         
-        if receiving_dir and os.path.exists(receiving_dir):
+        if receiving_dir:
             try:
-                if os.name == 'nt':  # For Windows
+                current_os = platform.system()
+                
+                if current_os == 'Windows':
                     os.startfile(receiving_dir)
-                elif os.name == 'posix':  # For macOS and Linux
-                    subprocess.call(('open', receiving_dir)) if sys.platform == 'darwin' else subprocess.call(('xdg-open', receiving_dir))
+                elif current_os == 'Linux':
+                    subprocess.Popen(["xdg-open", receiving_dir])
+                elif current_os == 'Darwin':  # macOS
+                    subprocess.Popen(["open", receiving_dir])
+                else:
+                    raise NotImplementedError(f"Unsupported OS: {current_os}")
+            
             except Exception as e:
-                QMessageBox.warning(self, "Error", f"Failed to open directory: {str(e)}")
-        else:
-            QMessageBox.warning(self, "Error", "Receiving directory not found or not configured.")
+                logger.error("Failed to open directory: %s", str(e))
+                
      
 
 if __name__ == '__main__':

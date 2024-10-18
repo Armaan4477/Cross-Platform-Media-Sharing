@@ -3,10 +3,12 @@ import socket
 import struct
 import json
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
 from PyQt6.QtGui import QScreen
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
+import subprocess
+import platform
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -276,6 +278,11 @@ class ReceiveAppPJava(QWidget):
         self.progress_bar = QProgressBar(self)
         layout.addWidget(self.progress_bar)
 
+        self.open_dir_button = QPushButton("Open Receiving Directory", self)
+        self.open_dir_button.clicked.connect(self.open_receiving_directory)
+        self.open_dir_button.setVisible(False)  # Initially hidden
+        layout.addWidget(self.open_dir_button)
+
         self.setLayout(layout)
 
         client_ip = self.client_ip
@@ -297,12 +304,33 @@ class ReceiveAppPJava(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
+            self.open_dir_button.setVisible(True)  # Show the button when file is received
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
         if value:
             self.decryptor = Decryptor(value)
             self.decryptor.show()
+
+    def open_receiving_directory(self):
+        config = get_config()
+        receiving_dir = config.get("save_to_directory")
+        
+        if receiving_dir:
+            try:
+                current_os = platform.system()
+                
+                if current_os == 'Windows':
+                    os.startfile(receiving_dir)
+                elif current_os == 'Linux':
+                    subprocess.Popen(["xdg-open", receiving_dir])
+                elif current_os == 'Darwin':  # macOS
+                    subprocess.Popen(["open", receiving_dir])
+                else:
+                    raise NotImplementedError(f"Unsupported OS: {current_os}")
+            
+            except Exception as e:
+                logger.error("Failed to open directory: %s", str(e))
 
 if __name__ == '__main__':
     import sys
