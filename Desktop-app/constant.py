@@ -58,7 +58,8 @@ if not os.path.exists(config_file):
         "device_name": platform.node(),
         "save_to_directory": file_path,
         "max_filesize": 1000,
-        "encryption": False
+        "encryption": False,
+        "show_warning": True
     }
 
     write_config(default_config, config_file)
