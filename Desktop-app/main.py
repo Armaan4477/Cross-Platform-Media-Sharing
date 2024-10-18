@@ -259,22 +259,119 @@ class MainApp(QWidget):
             logger.info("Created folder to receive files")
 
     def sendFile(self):
-        # Give user a warning to be on the same network as the receiver 
-        # before starting the file transfer
-        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
+        send_dialog = QMessageBox(self)
+        send_dialog.setWindowTitle("Note")
+        send_dialog.setText("""
+            <b>Make sure both devices are on the same network</b><br><br>
+            Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+        """)
+        send_dialog.setIcon(QMessageBox.Icon.Warning)
+
+        # Apply consistent styling with a gradient background and transparent text area
+        send_dialog.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;  /* Transparent text background */
+                font-size: 16px;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        send_dialog.exec()
         logger.info("Started Send File App")
         self.hide()
         self.broadcast_app = Broadcast()
         self.broadcast_app.show()
 
     def receiveFile(self):
-        # Give user a warning to be on the same network as the receiver 
-        # before starting the file transfer
-        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
+        receive_dialog = QMessageBox(self)
+        receive_dialog.setWindowTitle("Note")
+        receive_dialog.setText("""
+            <b>Make sure both devices are on the same network</b><br><br>
+            Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+        """)
+        receive_dialog.setIcon(QMessageBox.Icon.Warning)
+
+        # Apply consistent styling with a gradient background and transparent text area
+        receive_dialog.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;  /* Transparent text background */
+                font-size: 16px;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        receive_dialog.exec()
         logger.info("Started Receive File App")
         self.hide()
         self.receive_app = ReceiveApp()
         self.receive_app.show()
+
 
     def preferences_handler(self):
         logger.info("Started Preferences handler menu")
