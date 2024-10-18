@@ -263,20 +263,6 @@ class SendApp(QWidget):
         self.send_button.clicked.connect(self.sendSelectedFiles)
         content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Create 2 buttons for close and Transfer More Files
-        # Keep them disabled until the file transfer is completed
-        self.close_button = QPushButton('Close', self)
-        self.close_button.setEnabled(False)
-        self.close_button.setEnabled(False)
-        self.close_button.clicked.connect(self.close)
-        content_layout.addWidget(self.close_button)
-
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        content_layout.addWidget(self.transfer_more_button)
-
         # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
@@ -298,6 +284,20 @@ class SendApp(QWidget):
         self.status_label.setStyleSheet("color: white; font-size: 14px;")
         self.style_label(self.status_label)
         content_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+         # Create 2 buttons for close and Transfer More Files
+        # Keep them disabled until the file transfer is completed
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
+        self.close_button.setVisible(False)
+        self.close_button.clicked.connect(self.close)
+        content_layout.addWidget(self.close_button)
+
+        self.transfer_more_button = QPushButton('Transfer More Files', self)
+        self.transfer_more_button.setEnabled(False)
+        self.transfer_more_button.setVisible(False)
+        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
+        content_layout.addWidget(self.transfer_more_button)
 
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
@@ -411,6 +411,8 @@ class SendApp(QWidget):
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
             self.transfer_more_button.setEnabled(True)
+            self.close_button.setVisible(True)
+            self.transfer_more_button.setVisible(True)
 
     def transferMoreFiles(self):
         from broadcast import Broadcast
