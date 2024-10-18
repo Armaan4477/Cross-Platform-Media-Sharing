@@ -21,6 +21,7 @@ logger = logging.getLogger('FileSharing: ')
 logger.setLevel(logging.DEBUG)
 
 config_file = ".config.json"
+current_version = "1.0"  # Define the current version of the config
 
 def get_default_path():
     if platform.system() == 'Windows':
@@ -51,10 +52,12 @@ def get_config(filename=config_file):
     except FileNotFoundError:
         return {}
 
+# Check if the config file exists, and if not, create it
 if not os.path.exists(config_file):
     file_path = get_default_path()
 
     default_config = {
+        "version": current_version,  # Add version number
         "device_name": platform.node(),
         "save_to_directory": file_path,
         "max_filesize": 1000,
@@ -64,6 +67,28 @@ if not os.path.exists(config_file):
 
     write_config(default_config, config_file)
 
+else:
+    # Load the existing configuration
+    config_data = get_config(config_file)
+    
+    # Check if version exists and matches
+    if "version" not in config_data or config_data["version"] != current_version:
+        logger.warning("Configuration version mismatch or missing. Overwriting with default config.")
+        file_path = get_default_path()
+        
+        # Write the new default configuration
+        default_config = {
+            "version": current_version,  # Add version number
+            "device_name": platform.node(),
+            "save_to_directory": file_path,
+            "max_filesize": 1000,
+            "encryption": False,
+            "show_warning": True
+        }
+        
+        write_config(default_config, config_file)
+    else:
+        logger.info("Loaded configuration: %s", config_data)
 
 def get_broadcast():
     try:
