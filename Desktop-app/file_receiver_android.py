@@ -337,7 +337,7 @@ class ReceiveAppPJava(QWidget):
         self.file_receover_window = ReceiveApp()
         self.file_receover_window.show()
 
-            self.open_dir_button.setVisible(True)  # Show the button when file is received
+        self.open_dir_button.setVisible(True)  # Show the button when file is received
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
