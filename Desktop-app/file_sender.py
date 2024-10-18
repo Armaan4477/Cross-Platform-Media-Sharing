@@ -267,10 +267,12 @@ class SendApp(QWidget):
         # Keep them disabled until the file transfer is completed
         self.close_button = QPushButton('Close', self)
         self.close_button.setEnabled(False)
+        self.close_button.setEnabled(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
 
         self.transfer_more_button = QPushButton('Transfer More Files', self)
+        self.transfer_more_button.setEnabled(False)
         self.transfer_more_button.setEnabled(False)
         self.transfer_more_button.clicked.connect(self.transferMoreFiles)
         content_layout.addWidget(self.transfer_more_button)
