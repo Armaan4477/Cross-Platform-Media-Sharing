@@ -23,19 +23,13 @@ class CreditsDialog(QDialog):
         title_coder.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
         layout.addWidget(title_coder, 0, 0, 1, 3)  # Span across 3 columns
 
-        # # Table Headers for Coder/Debugger
-        # layout.addWidget(QLabel("<b>Name</b>"), 1, 0)
-        # layout.addWidget(QLabel("<b>GitHub</b>"), 1, 1)
-        # layout.addWidget(QLabel("<b>LinkedIn</b>"), 1, 2)
+         # Samay's row
+        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 2, 0)  # Increased font size
+        samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
+        layout.addWidget(samay_github, 2, 1)
 
-        # Coder/Debugger - Alphabetical Order (Armaan, Nishal, Samay, Urmi, Yash, Adwait)
-        # Armaan's row
-        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 5, 0)  # Increased font size
-        armaan_github = self.create_link_button("GitHub", "https://github.com/Armaan4477")
-        layout.addWidget(armaan_github, 5, 1)
-
-        armaan_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/armaan-nakhuda-756492235/")
-        layout.addWidget(armaan_linkedin, 5, 2)
+        samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
+        layout.addWidget(samay_linkedin, 2, 2)
 
         # Nishal's row
         layout.addWidget(QLabel("Nishal Poojary", font=QFont("Arial", 18)), 3, 0)  # Increased font size
@@ -45,21 +39,21 @@ class CreditsDialog(QDialog):
         nishal_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/nishal-poojary-159530290")
         layout.addWidget(nishal_linkedin, 3, 2)
 
-        # Samay's row
-        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 2, 0)  # Increased font size
-        samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
-        layout.addWidget(samay_github, 2, 1)
-
-        samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
-        layout.addWidget(samay_linkedin, 2, 2)
-
-        # Urmi's row
+         # Urmi's row
         layout.addWidget(QLabel("Urmi Joshi", font=QFont("Arial", 18)), 4, 0)  # Increased font size
         urmi_github = self.create_link_button("GitHub", "https://github.com/ura-dev04")
         layout.addWidget(urmi_github, 4, 1)
 
         urmi_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/urmi-joshi-6697a7320/")
         layout.addWidget(urmi_linkedin, 4, 2)
+
+        # Armaan's row
+        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 5, 0)  # Increased font size
+        armaan_github = self.create_link_button("GitHub", "https://github.com/Armaan4477")
+        layout.addWidget(armaan_github, 5, 1)
+
+        armaan_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/armaan-nakhuda-756492235/")
+        layout.addWidget(armaan_linkedin, 5, 2)
 
         # Yash's row
         layout.addWidget(QLabel("Yash Patil", font=QFont("Arial", 18)), 6, 0)  # Increased font size
@@ -77,19 +71,22 @@ class CreditsDialog(QDialog):
         adwait_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/adwait-patil-56a1682a9/")
         layout.addWidget(adwait_linkedin, 7, 2)
 
+        # Vedashree's row
+        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 8, 0)  # Increased font size
+        vedashree_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
+        layout.addWidget(vedashree_github, 8, 1)
+
+        vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
+        layout.addWidget(vedashree_linkedin, 8, 2)
+
         # Add extra space before the Project Documentation section
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding), 8, 0, 1, 3)
+        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding), 9, 0, 1, 3)
 
         # Title 2: Project Documentation
         title_docs = QLabel("Project Documentation")
         title_docs.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_docs.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
         layout.addWidget(title_docs, 9, 0, 1, 3)  # Span across 3 columns
-
-        # # Table Headers for Project Documentation
-        # layout.addWidget(QLabel("<b>Name</b>"), 10, 0)
-        # layout.addWidget(QLabel("<b>GitHub</b>"), 10, 1)
-        # layout.addWidget(QLabel("<b>LinkedIn</b>"), 10, 2)
 
         # Samay's row
         layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 11, 0)  # Increased font size
