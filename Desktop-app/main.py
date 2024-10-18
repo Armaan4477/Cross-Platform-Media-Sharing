@@ -110,21 +110,17 @@ class IconButton(QPushButton):
             path.lineTo(x6, y6)
             path.lineTo(x1, y1)
 
-        
-
         painter.drawPath(path)
-
-
 
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.setFixedSize(700, 480)
+        self.setFixedSize(853, 480) 
 
     def initUI(self):
         self.setWindowTitle('DataDash')
-        self.setGeometry(100, 100, 700, 480)
+        self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.set_background()
 
@@ -137,14 +133,10 @@ class MainApp(QWidget):
         header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
 
-         # Define the relative path for the icon
-        icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings-icon.svg")
-
         # Create and add the IconButton instead of using SvgButton
         icon_button = IconButton()  # Example colors
         icon_button.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
         header_layout.addWidget(icon_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
 
         # Add a stretch after the settings button
         header_layout.addStretch()
@@ -167,6 +159,10 @@ class MainApp(QWidget):
         wifi_widget = WifiAnimationWidget()
         main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
+        icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
+
+
         # Buttons Layout
         button_layout = QHBoxLayout()
         button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
@@ -174,6 +170,8 @@ class MainApp(QWidget):
 
         # Send File Button
         self.send_button = QPushButton('Send File')
+        self.send_button.setIcon(QIcon(icon_path_send))
+        self.send_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
@@ -181,6 +179,8 @@ class MainApp(QWidget):
 
         # Receive File Button
         self.receive_button = QPushButton('Receive File')
+        self.receive_button.setIcon(QIcon(icon_path_receive))
+        self.receive_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
@@ -192,24 +192,8 @@ class MainApp(QWidget):
         # Add some vertical space above the Credits button layout
         main_layout.addSpacing(20)  # Moves buttons up and adds spacing between buttons and Credits
 
-        # # Add a separate layout for the Credits button
-        # credits_layout = QHBoxLayout()
-        # credits_layout.setContentsMargins(0, 0, 10, 20)  # Space below Credits button
-        # credits_layout.addStretch()  # Center the Credits button horizontally
-
-        # # Credits Button
-        # self.credits_button = QPushButton('Credits')
-        # self.style_button(self.credits_button)
-        # self.credits_button.clicked.connect(self.show_credits)
-        # credits_layout.addWidget(self.credits_button, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        # credits_layout.addStretch()
-        # main_layout.addLayout(credits_layout)
-
         self.setLayout(main_layout)
         logger.info("Started Main App")
-
-
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
@@ -264,7 +248,7 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 700, 480
+        window_width, window_height = 853, 480  # Changed from 700 to 853 for 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -275,22 +259,145 @@ class MainApp(QWidget):
             logger.info("Created folder to receive files")
 
     def sendFile(self):
-        # Give user a warning to be on the same network as the receiver 
-        # before starting the file transfer
-        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
-        logger.info("Started Send File App")
-        self.hide()
-        self.broadcast_app = Broadcast()
-        self.broadcast_app.show()
+        # Check if warnings should be shown
+        if get_config()["show_warning"]:
+            send_dialog = QMessageBox(self)
+            send_dialog.setWindowTitle("Note")
+            send_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+            """)
+            send_dialog.setIcon(QMessageBox.Icon.Warning)
+
+            # Add buttons
+            proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+            cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+
+            # Apply consistent styling with a gradient background and transparent text area
+            send_dialog.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent;  /* Transparent text background */
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+
+            # Execute dialog and handle response
+            send_dialog.exec()
+            if send_dialog.clickedButton() == proceed_button:
+                logger.info("Started Send File App")
+                self.hide()
+                self.broadcast_app = Broadcast()
+                self.broadcast_app.show()
+        else:
+            logger.info("Started Send File App without warning")
+            self.hide()
+            self.broadcast_app = Broadcast()
+            self.broadcast_app.show()
 
     def receiveFile(self):
-        # Give user a warning to be on the same network as the receiver 
-        # before starting the file transfer
-        QMessageBox.warning(self, "Note", "Make sure both devices are on the same network before starting the transfer.")
-        logger.info("Started Receive File App")
-        self.hide()
-        self.receive_app = ReceiveApp()
-        self.receive_app.show()
+        # Check if warnings should be shown
+        if get_config()["show_warning"]:
+            receive_dialog = QMessageBox(self)
+            receive_dialog.setWindowTitle("Note")
+            receive_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
+            """)
+            receive_dialog.setIcon(QMessageBox.Icon.Warning)
+
+            # Add buttons
+            proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
+            cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+
+            # Apply consistent styling with a gradient background and transparent text area
+            receive_dialog.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent;  /* Transparent text background */
+                    font-size: 16px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+
+            # Execute dialog and handle response
+            receive_dialog.exec()
+            if receive_dialog.clickedButton() == proceed_button:
+                logger.info("Started Receive File App")
+                self.hide()
+                self.receive_app = ReceiveApp()
+                self.receive_app.show()
+        else:
+            logger.info("Started Receive File App without warning")
+            self.hide()
+            self.receive_app = ReceiveApp()
+            self.receive_app.show()
+
+
+
 
     def preferences_handler(self):
         logger.info("Started Preferences handler menu")
@@ -311,4 +418,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     main = MainApp()
     main.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec()) 

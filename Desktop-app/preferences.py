@@ -15,15 +15,29 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
-        self.setFixedSize(500, 400)
+        self.setFixedSize(500, 450)  # Adjusted height to accommodate new toggle
 
     def initUI(self):
         self.setWindowTitle('Settings')
-        self.setGeometry(100, 100, 500, 400)
+        self.setGeometry(100, 100, 500, 450)  # Adjusted height to accommodate new toggle
         self.center_window()
         self.set_background()
 
         layout = QVBoxLayout()
+
+        # Help button layout at the top right
+        help_button_layout = QHBoxLayout()
+        help_button_layout.addStretch()  # Adds a spacer that pushes the button to the right
+        
+        # Create the Help button
+        self.help_button = QPushButton('Help', self)
+        self.help_button.setFont(QFont("Arial", 10))
+        self.help_button.setFixedSize(80, 30)
+        self.style_help_button(self.help_button)
+        self.help_button.clicked.connect(self.show_help_dialog)
+
+        help_button_layout.addWidget(self.help_button)
+        layout.addLayout(help_button_layout)
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
@@ -75,7 +89,7 @@ class PreferencesApp(QWidget):
         self.save_to_path_reset_button.clicked.connect(self.resetSavePath)
         self.style_button(self.save_to_path_reset_button)
         path_layout.addWidget(self.save_to_path_reset_button)
-        
+
         layout.addLayout(path_layout)
 
         # Encryption Toggle
@@ -83,6 +97,12 @@ class PreferencesApp(QWidget):
         self.encryption_toggle.setFont(QFont("Arial", 18))
         self.style_checkbox(self.encryption_toggle)
         layout.addWidget(self.encryption_toggle)
+
+        # Show Warning Toggle
+        self.show_warning_toggle = QCheckBox('Show Warnings', self)
+        self.show_warning_toggle.setFont(QFont("Arial", 18))
+        self.style_checkbox(self.show_warning_toggle)
+        layout.addWidget(self.show_warning_toggle)
 
         # Submit and Main Menu buttons
         buttons_layout = QHBoxLayout()
@@ -106,26 +126,28 @@ class PreferencesApp(QWidget):
         self.setLayout(layout)
         self.loadPreferences()
 
-
     def style_label(self, label):
         label.setStyleSheet("""
             color: #FFFFFF;
             background-color: transparent;  /* Set the background to transparent */
         """)
 
-
-
     def style_input(self, input_field):
         input_field.setStyleSheet("""
-            color: #FFFFFF;
-            background-color: transparent;  /* Set the background to transparent */
-            border: 1px solid #444;  /* Retain the border for input fields */
-            border-radius: 4px;
-            padding: 5px;
+            QLineEdit {
+                color: #FFFFFF;
+                background-color: transparent;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 5px;
+                caret-color: #00FF00;  /* Green cursor color */
+            }
+            QLineEdit:focus {
+                border: 2px solid #333333;  /* Dark grey border on focus */
+                caret-color: #00FF00;  /* Green cursor color on focus */
+                background-color: rgba(255, 255, 255, 0.1); /* Slightly opaque background on focus */
+            }
         """)
-
-
-
 
     def style_checkbox(self, checkbox):
         checkbox.setGraphicsEffect(self.create_glow_effect())
@@ -133,7 +155,6 @@ class PreferencesApp(QWidget):
         color: #FFFFFF;
         background-color: transparent;  /* Set the background to transparent */
         """)
-
 
     def style_button(self, button):
         button.setFixedSize(150, 50)
@@ -147,6 +168,38 @@ class PreferencesApp(QWidget):
                 );
                 color: white;
                 border-radius: 25px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        button.setGraphicsEffect(self.create_glow_effect())
+
+    def style_help_button(self, button):
+        button.setFixedSize(60, 30)
+        button.setFont(QFont("Arial", 12))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                );
+                color: white;
+                border-radius: 12px;
                 border: 1px solid rgba(0, 0, 0, 0.5);
                 padding: 6px;
             }
@@ -197,11 +250,21 @@ class PreferencesApp(QWidget):
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
+    def loadPreferences(self):
+        config = get_config()
+        self.version = config["version"]
+        self.device_name_input.setText(config["device_name"])
+        self.save_to_path_input.setText(config["save_to_directory"])
+        self.encryption_toggle.setChecked(config["encryption"])
+        self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
+        self.original_preferences = config.copy()
+        logger.info("Loaded preferences: %s", self.version)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
         save_to_path = self.save_to_path_input.text()
         encryption = self.encryption_toggle.isChecked()
+        show_warning = self.show_warning_toggle.isChecked()  # Get show_warning toggle state
 
         if not device_name:
             msg_box = QMessageBox(self)
@@ -252,9 +315,11 @@ class PreferencesApp(QWidget):
             return
 
         preferences = {
+            "version": self.version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
-            "encryption": encryption
+            "encryption": encryption,
+            "show_warning": show_warning  # Save show_warning state
         }
 
         write_config(preferences)
@@ -386,18 +451,14 @@ class PreferencesApp(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
-    def loadPreferences(self):
-        config = get_config()
-        self.device_name_input.setText(config["device_name"])
-        self.save_to_path_input.setText(config["save_to_directory"])
-        self.encryption_toggle.setChecked(config["encryption"])
-        self.original_preferences = config.copy()
 
     def changes_made(self):
         current_preferences = {
+            "version": self.version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
+            "show_warning": self.show_warning_toggle.isChecked()  # Get show_warning toggle state
         }
         return current_preferences != self.original_preferences
     
@@ -405,6 +466,70 @@ class PreferencesApp(QWidget):
         logger.info("Opened Credits Dialog")
         credits_dialog = CreditsDialog()
         credits_dialog.exec()
+
+    def show_help_dialog(self):
+        help_dialog = QMessageBox(self)
+        help_dialog.setWindowTitle("Help")
+        help_dialog.setText("""
+        <b>Device Name:</b> The name assigned to this device. You can reset it to the system's default.
+        <br><br>
+        <b>Save to Path:</b> Choose a directory to save your files. You can also reset it to the default path.
+        <br><br>
+        <b>Encryption:</b> Enable or disable AES256 encryption for files being sent.
+        <br><br>
+        <b>Show Warnings:</b> Enable or disable warning messages before sending or receiving files.
+        <br><br>
+        <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
+        <br><br>
+        <b>Credits:</b> View credits for the application.
+        """)
+        help_dialog.setIcon(QMessageBox.Icon.Information)
+
+        # Apply consistent styling with a gradient background and transparent text area
+        help_dialog.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;  /* Transparent text background */
+                font-size: 16px;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        help_dialog.exec()
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
