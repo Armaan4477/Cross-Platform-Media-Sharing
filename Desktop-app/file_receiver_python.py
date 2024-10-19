@@ -209,14 +209,19 @@ class ReceiveWorkerPython(QThread):
         if not top_level_folder:
             raise ValueError("Base folder name not found in metadata")
 
-        # Define the destination folder path
+        # Define the destination folder path and ensure it is unique
         destination_folder = os.path.join(default_dir, top_level_folder)
+        destination_folder = self._get_unique_folder_name(destination_folder)
         logger.debug("Destination folder: %s", destination_folder)
 
         # Create the destination folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
             logger.debug("Created base folder: %s", destination_folder)
+
+        # Track created folders to avoid duplicates
+        created_folders = set()
+        created_folders.add(destination_folder)
 
         # Process each file info in metadata (excluding the last entry)
         for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
@@ -230,16 +235,32 @@ class ReceiveWorkerPython(QThread):
                 # Create the full folder path
                 full_folder_path = os.path.join(destination_folder, folder_path)
                 
-                # Create the directory if it does not exist
-                if not os.path.exists(full_folder_path):
-                    os.makedirs(full_folder_path)
-                    logger.debug("Created folder: %s", full_folder_path)
+                # Ensure the folder is unique and not a duplicate
+                if full_folder_path not in created_folders:
+                    full_folder_path = self._get_unique_folder_name(full_folder_path)
+                    
+                    # Create the directory if it does not exist
+                    if not os.path.exists(full_folder_path):
+                        os.makedirs(full_folder_path)
+                        logger.debug("Created folder: %s", full_folder_path)
+
+                    # Add the folder to the set of created folders
+                    created_folders.add(full_folder_path)
                 else:
                     logger.debug("Folder already exists: %s", full_folder_path)
 
         return destination_folder
 
 
+    def _get_unique_folder_name(self, folder_path):
+        """Append a unique (i) to folder name if it already exists."""
+        base_folder_path = folder_path
+        i = 1
+        # Check for existence and modify name with incrementing (i)
+        while os.path.exists(folder_path):
+            folder_path = f"{base_folder_path} ({i})"
+            i += 1
+        return folder_path
 
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of a file from the metadata."""

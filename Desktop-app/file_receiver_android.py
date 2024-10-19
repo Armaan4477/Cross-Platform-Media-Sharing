@@ -120,17 +120,26 @@ class ReceiveWorkerJava(QThread):
                     ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
                     if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
                         self.destination_folder = self.create_folder_structure(self.metadata)
+                        logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                     else:
                         ## If not, set the destination folder to the default directory
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
-                    # Check if file exists in the receiving directory
-                    original_name, extension = os.path.splitext(file_name)
-                    i = 1
-                    while os.path.exists(os.path.join(self.destination_folder, file_name)):
-                        file_name = f"{original_name} ({i}){extension}"
-                        i += 1
+                    try:
+                        if self.destination_folder is None:
+                            self.destination_folder = get_config()["save_to_directory"]
+                        # Check if file exists in the receiving directory
+                        original_name, extension = os.path.splitext(file_name)
+                        logger.debug("Original name: %s, Extension: %s", original_name, extension)
+                        i = 1
+                        while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                            file_name = f"{original_name} ({i}){extension}"
+                            logger.debug("File name already exists. Trying new name: %s", file_name)
+                            i += 1
+                    except Exception as e:
+                        logger.error("Error while checking file existence: %s", str(e))
+                        pass
                     # Determine the correct path using metadata
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
@@ -210,18 +219,29 @@ class ReceiveWorkerJava(QThread):
         top_level_folder = metadata[-1].get('base_folder_name', '')
         if not top_level_folder:
             raise ValueError("Base folder name not found in metadata")
+        
         if "primary" in top_level_folder:
-            top_level_folder = top_level_folder.replace("primary:", "")
+            top_level_folder = top_level_folder.replace("primary%3A", "")
+            top_level_folder = top_level_folder.replace("%2F", "")
+        
         top_level_folder = top_level_folder.split('/')[-1]
 
-        # Define the destination folder path
+        # Define the initial destination folder path
         destination_folder = os.path.join(default_dir, top_level_folder)
+
+        # Check if the destination folder already exists, and if it does, add a "(i)" suffix
+        destination_folder = self._get_unique_folder_name(destination_folder)
+
         logger.debug("Destination folder: %s", destination_folder)
 
         # Create the destination folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
             logger.debug("Created base folder: %s", destination_folder)
+
+        # Track created folders to avoid duplicates
+        created_folders = set()
+        created_folders.add(destination_folder)
 
         # Process each file info in metadata (excluding the last entry)
         for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
@@ -235,14 +255,30 @@ class ReceiveWorkerJava(QThread):
                 # Create the full folder path
                 full_folder_path = os.path.join(destination_folder, folder_path)
                 
-                # Create the directory if it does not exist
-                if not os.path.exists(full_folder_path):
-                    os.makedirs(full_folder_path)
-                    logger.debug("Created folder: %s", full_folder_path)
-                else:
-                    logger.debug("Folder already exists: %s", full_folder_path)
+                # Check if the folder has already been created
+                if full_folder_path not in created_folders:
+                    # Ensure that the directory does not override existing data by getting a unique folder name
+                    unique_folder_path = self._get_unique_folder_name(full_folder_path)
+                    
+                    # Create the directory if it does not exist
+                    if not os.path.exists(unique_folder_path):
+                        os.makedirs(unique_folder_path)
+                        logger.debug("Created folder: %s", unique_folder_path)
+
+                    # Add the folder to the set of created folders
+                    created_folders.add(unique_folder_path)
 
         return destination_folder
+
+    def _get_unique_folder_name(self, folder_path):
+        """Append a unique (i) to folder name if it already exists."""
+        base_folder_path = folder_path
+        i = 1
+        while os.path.exists(folder_path):
+            folder_path = f"{base_folder_path} ({i})"
+            i += 1
+        return folder_path
+
 
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of a file from the metadata."""
@@ -320,7 +356,6 @@ class ReceiveAppPJava(QWidget):
             self.label.setText("File received successfully!")
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
-            self.transfer_more_button.setEnabled(True)
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
