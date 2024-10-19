@@ -13,7 +13,7 @@
         android:layout_gravity="end"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
-        android:background="@drawable/button_gradient"
+        android:background="@drawable/state_list_drawable"
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
 
     <View

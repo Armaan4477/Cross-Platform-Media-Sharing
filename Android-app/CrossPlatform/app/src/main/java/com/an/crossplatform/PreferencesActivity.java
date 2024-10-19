@@ -48,6 +48,7 @@ public class PreferencesActivity extends AppCompatActivity {
         Button resetSavePathButton = findViewById(R.id.save_to_path_reset_button);
         Button submitButton = findViewById(R.id.submit_button);
         Button mainMenuButton = findViewById(R.id.main_menu_button);
+        Button btnCredits = findViewById(R.id.btn_credits);
 
         // Load saved preferences from internal storage
         loadPreferences();
@@ -58,6 +59,10 @@ public class PreferencesActivity extends AppCompatActivity {
         submitButton.setOnClickListener(v -> submitPreferences());
         mainMenuButton.setOnClickListener(v -> goToMainMenu());
         imageButton.setOnClickListener(v -> openHelpMenu());
+        btnCredits.setOnClickListener(v -> {
+            Intent intent = new Intent(PreferencesActivity.this, CreditsActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void loadPreferences() {

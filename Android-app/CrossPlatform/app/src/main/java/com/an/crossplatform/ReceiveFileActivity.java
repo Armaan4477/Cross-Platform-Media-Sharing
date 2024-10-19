@@ -9,6 +9,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.airbnb.lottie.LottieAnimationView;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,6 +41,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private String saveToDirectory;
     private ProgressBar progressBar;
     private TextView txt_waiting;
+    private LottieAnimationView animationView;
+    private LottieAnimationView waitingAnimation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_waiting_to_receive);
         progressBar = findViewById(R.id.fileProgressBar);
         txt_waiting = findViewById(R.id.txt_waiting);
+        animationView = findViewById(R.id.transfer_animation);
+        waitingAnimation = findViewById(R.id.waiting_animation);
 
         senderJson = getIntent().getStringExtra("receivedJson");
         senderIp = getIntent().getStringExtra("senderIp");
@@ -106,6 +112,15 @@ public class ReceiveFileActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onPreExecute() {
+            // Show animation when sending starts
+            progressBar.setVisibility(ProgressBar.VISIBLE);
+            waitingAnimation.setVisibility(LottieAnimationView.INVISIBLE);
+            animationView.setVisibility(LottieAnimationView.VISIBLE);
+            animationView.playAnimation();
+        }
+
+        @Override
         protected void onProgressUpdate(Integer... values) {
             progressBar.setProgress(values[0]);
         }
@@ -114,6 +129,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             txt_waiting.setText("File transfer completed");
             progressBar.setProgress(0);
+            progressBar.setVisibility(ProgressBar.INVISIBLE);
+            animationView.setVisibility(LottieAnimationView.INVISIBLE);
         }
 
         private void receiveFiles() {
