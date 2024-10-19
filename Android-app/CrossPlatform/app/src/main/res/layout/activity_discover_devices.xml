@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Discover"
-        android:background="@drawable/button_gradient"
+        android:background="@drawable/state_list_drawable"
         android:textColor="@android:color/white"
         android:layout_marginBottom="20dp" />
 
@@ -27,7 +27,7 @@
         android:id="@+id/btn_connect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/button_gradient"
+        android:background="@drawable/state_list_drawable"
         android:textColor="@android:color/white"
         android:text="Connect"
         />

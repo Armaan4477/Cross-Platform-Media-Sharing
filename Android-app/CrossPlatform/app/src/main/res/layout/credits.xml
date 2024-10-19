@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/armaan_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -52,7 +52,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/armaan_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/nishal_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -83,7 +83,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/nishal_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -106,7 +106,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/samay_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -114,7 +114,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/samay_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -137,7 +137,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/urmi_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -145,7 +145,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/urmi_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -168,7 +168,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/yash_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/yash_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -199,7 +199,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/adwait_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -207,7 +207,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/adwait_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
     </LinearLayout>
@@ -254,7 +254,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/samay_github_button_doc"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -262,7 +262,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/samay_linkedin_button_doc"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -288,7 +288,7 @@
                 android:layout_height="wrap_content"
                 android:text="GitHub"
                 android:id="@+id/vedashree_github_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
 
             <androidx.appcompat.widget.AppCompatButton
@@ -296,7 +296,7 @@
                 android:layout_height="wrap_content"
                 android:text="LinkedIn"
                 android:id="@+id/vedashree_linkedin_button"
-                android:background="@drawable/button_gradient"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
@@ -313,7 +313,7 @@
             android:layout_height="wrap_content"
             android:text="Close"
             android:onClick="closeDialog"
-            android:background="@drawable/button_gradient"
+            android:background="@drawable/state_list_drawable"
             android:textColor="@android:color/white"
             android:layout_gravity="center" />
     </LinearLayout>
