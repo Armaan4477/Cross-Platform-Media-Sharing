@@ -30,7 +30,7 @@ def get_config_file_path():
     elif platform.system() == 'Linux':
         cache_dir = os.path.join(os.path.expanduser('~'), '.cache', 'DataDash')
     elif platform.system() == 'Darwin':  # macOS
-        cache_dir = os.path.join(os.path.expanduser('~/Library/Caches'), 'DataDash')
+        cache_dir = os.path.join(os.path.expanduser('~/Library/Application Support'), 'DataDash')
     else:
         logger.error("Unsupported OS!")
         return None
