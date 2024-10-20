@@ -17,13 +17,16 @@ from file_sender_java import SendAppJava
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
 
-class CircularDeviceButton(QPushButton):
+class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
-        super().__init__(device_name[0], parent)
+        super().__init__(parent)
         self.device_name = device_name
         self.device_ip = device_ip
-        self.setFixedSize(42, 42)  # Increased size for better visibility
-        self.setStyleSheet("""
+
+        # Create a QPushButton for the device (initials or first letter)
+        self.button = QPushButton(device_name[0], self)
+        self.button.setFixedSize(42, 42)  # Button size
+        self.button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
@@ -52,6 +55,29 @@ class CircularDeviceButton(QPushButton):
                 );
             }
         """)
+
+        # Create a QLabel for the full device name below the button
+        self.device_label = QLabel(device_name, self)
+        self.device_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 14px;
+                font-weight: normal;
+            }
+        """)
+        self.device_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Set up the layout: button above and label below
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.device_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Reduce the spacing and margins between the button and label
+        layout.setSpacing(2)  # Set small spacing between button and label
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
+        self.setLayout(layout)
+
+
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
@@ -255,12 +281,13 @@ class Broadcast(QWidget):
 
         for i, device in enumerate(self.devices):
             angle = i * (2 * math.pi / len(self.devices))
-            x = 250 + 160 * math.cos(angle) - 30  # Adjusted for larger CircularDeviceButton
-            y = 250 + 160 * math.sin(angle) - 30  # Adjusted for larger CircularDeviceButton
-            button = CircularDeviceButton(device['name'], device['ip'], self.device_area)
-            button.move(int(x), int(y))
-            button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
-            button.show()
+            x = 250 + 160 * math.cos(angle) - 30  # Adjusted for larger button
+            y = 250 + 160 * math.sin(angle) - 30  # Adjusted for larger button
+            button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
+            button_with_label.move(int(x), int(y))
+            button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
+            button_with_label.show()
+
 
     def connect_to_device(self, device):
         confirm_dialog = QMessageBox(self)
