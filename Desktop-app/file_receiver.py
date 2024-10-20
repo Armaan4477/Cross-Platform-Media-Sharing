@@ -34,6 +34,13 @@ class FileReceiver(QThread):
         self.receiver_worker = None
 
     def run(self):
+        # Clear all connections on the about to be used ports 
+        try:
+            self.server_socket.shutdown(socket.SHUT_RDWR)
+            self.server_socket.close()
+        except AttributeError:
+            pass
+
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('0.0.0.0', RECEIVER_JSON))
         self.server_socket.listen(5)  # Listen for multiple connections
@@ -42,7 +49,7 @@ class FileReceiver(QThread):
             self.client_socket, addr = self.server_socket.accept()
             self.store_client_ip()
             self.handle_device_type()
-            # self.client_socket.close()  # Close the connection after receiving files
+            self.client_socket.close()  # Close the connection after receiving files
 
     def store_client_ip(self):
         """Extract and store the IP address of the connected client."""

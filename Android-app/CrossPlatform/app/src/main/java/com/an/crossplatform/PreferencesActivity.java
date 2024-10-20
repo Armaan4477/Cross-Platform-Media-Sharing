@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -21,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import android.widget.ImageButton;
 
 public class PreferencesActivity extends AppCompatActivity {
 
@@ -30,6 +32,7 @@ public class PreferencesActivity extends AppCompatActivity {
 
     private static final String CONFIG_FOLDER_NAME = "config";
     private static final String CONFIG_FILE_NAME = "config.json";  // Config file stored in internal storage
+    private ImageButton imageButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,12 +41,14 @@ public class PreferencesActivity extends AppCompatActivity {
 
         deviceNameInput = findViewById(R.id.device_name_input);
         saveToPathInput = findViewById(R.id.save_to_path_input);
+        imageButton = findViewById(R.id.imageButton);
 
         Button resetDeviceNameButton = findViewById(R.id.device_name_reset_button);
         Button saveToPathPickerButton = findViewById(R.id.save_to_path_picker_button);
         Button resetSavePathButton = findViewById(R.id.save_to_path_reset_button);
         Button submitButton = findViewById(R.id.submit_button);
         Button mainMenuButton = findViewById(R.id.main_menu_button);
+        Button btnCredits = findViewById(R.id.btn_credits);
 
         // Load saved preferences from internal storage
         loadPreferences();
@@ -53,6 +58,11 @@ public class PreferencesActivity extends AppCompatActivity {
         resetSavePathButton.setOnClickListener(v -> resetSavePath());
         submitButton.setOnClickListener(v -> submitPreferences());
         mainMenuButton.setOnClickListener(v -> goToMainMenu());
+        imageButton.setOnClickListener(v -> openHelpMenu());
+        btnCredits.setOnClickListener(v -> {
+            Intent intent = new Intent(PreferencesActivity.this, CreditsActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void loadPreferences() {
@@ -200,5 +210,12 @@ public class PreferencesActivity extends AppCompatActivity {
         Intent mainIntent = new Intent(PreferencesActivity.this, MainActivity.class);
         startActivity(mainIntent);
         finish();
+    }
+
+    private void openHelpMenu() {
+        // Open the help dialog
+        HelpDialog helpDialog = new HelpDialog(this);
+        helpDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        helpDialog.show();
     }
 }

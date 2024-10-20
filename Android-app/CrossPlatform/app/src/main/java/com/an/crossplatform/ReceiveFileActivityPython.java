@@ -9,6 +9,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.airbnb.lottie.LottieAnimationView;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,6 +41,8 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private String saveToDirectory;
     private ProgressBar progressBar;
     private TextView txt_waiting;
+    private LottieAnimationView animationView;
+    private LottieAnimationView waitingAnimation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,8 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         setContentView(R.layout.activity_waiting_to_receive);
         progressBar = findViewById(R.id.fileProgressBar);
         txt_waiting = findViewById(R.id.txt_waiting);
+        animationView = findViewById(R.id.transfer_animation);
+        waitingAnimation = findViewById(R.id.waiting_animation);
 
         senderJson = getIntent().getStringExtra("receivedJson");
         senderIp = getIntent().getStringExtra("senderIp");
@@ -120,12 +126,29 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.d("ReceiveFilesTask", "Updating progress: " + progressValue);
                 progressBar.setProgress(progressValue);
             }
+            if (progressBar.getProgress() == 100) {
+                txt_waiting.setText("File transfer completed");
+                progressBar.setVisibility(ProgressBar.INVISIBLE);
+                waitingAnimation.setVisibility(LottieAnimationView.VISIBLE);
+                waitingAnimation.playAnimation();
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+            // Show animation when sending starts
+            progressBar.setVisibility(ProgressBar.VISIBLE);
+            waitingAnimation.setVisibility(LottieAnimationView.INVISIBLE);
+            animationView.setVisibility(LottieAnimationView.VISIBLE);
+            animationView.playAnimation();
         }
 
         @Override
         protected void onPostExecute(Void result) {
             txt_waiting.setText("File transfer completed");
             progressBar.setProgress(0);
+            progressBar.setVisibility(ProgressBar.INVISIBLE);
+            animationView.setVisibility(LottieAnimationView.INVISIBLE);
         }
 
         private void receiveFiles() {
@@ -133,11 +156,20 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             try {
                 File configFile = new File(getFilesDir(), "config/config.json");
                 saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+                Log.d("ReceiveFileActivityPython", "Save directory: " + saveToDirectory);
 
                 String actualPath = saveToDirectory.replace("/tree/primary:", "")
                         .replace("Download", Environment.DIRECTORY_DOWNLOADS)
                         .replace("/", File.separator);
-                actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
+
+                // Check if the path is the default storage path
+                if (actualPath.equals("/storage/emulated/0")) {
+                    // Set to the Downloads directory if it's the default path
+                    actualPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
+                } else {
+                    // Otherwise, append the external storage path
+                    actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
+                }
 
                 File directory = new File(actualPath);
                 if (!directory.exists() && !directory.mkdirs()) {
@@ -204,6 +236,16 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
                         Log.e("ReceiveFileActivityPython", "Failed to create directory: " + parentDir.getPath());
                         continue;
+                    }
+
+                    String originalName = fileName.substring(0, fileName.lastIndexOf('.'));
+                    String extension = fileName.substring(fileName.lastIndexOf('.'));
+                    int i = 1;
+
+                    // Check if the file exists in the receiving directory
+                    while (new File(destinationFolder, fileName).exists()) {
+                        fileName = originalName + " (Copy " + i + ")" + extension;
+                        i++;
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {

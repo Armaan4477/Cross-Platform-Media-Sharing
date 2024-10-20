@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -39,6 +40,9 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.Looper;
+
+import com.airbnb.lottie.LottieAnimationView;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
@@ -60,6 +64,8 @@ public class SendFileActivityPython extends AppCompatActivity {
     Socket socket = null;
     DataOutputStream dos = null;
     DataInputStream dis = null;
+    private ProgressBar progressBar_send;
+    private LottieAnimationView animationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +75,9 @@ public class SendFileActivityPython extends AppCompatActivity {
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
         selected_device_ip = getIntent().getStringExtra("selectedDeviceIP");
+        progressBar_send = findViewById(R.id.progressBar_send);
+        animationView = findViewById(R.id.transfer_animation);
+
         // Retrieve the OS type from the string with try catch block
         try {
             osType = new JSONObject(receivedJson).getString("os");
@@ -461,9 +470,17 @@ public class SendFileActivityPython extends AppCompatActivity {
         }
 
         @Override
+        protected void onPreExecute() {
+            // Show animation when sending starts
+            progressBar_send.setVisibility(ProgressBar.VISIBLE);
+            animationView.setVisibility(LottieAnimationView.VISIBLE);
+            animationView.playAnimation();
+        }
+
+        @Override
         protected void onPostExecute(Void result) {
-            // Update UI or notify user when sending is completed
-            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+//            // Update UI or notify user when sending is completed
+//            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -526,8 +543,17 @@ public class SendFileActivityPython extends AppCompatActivity {
             Log.d("SendFileActivity", "File size: " + fileSize);
             Log.d("SendFileActivity", "Final file name: " + finalPathToSend);  // Check file name
 
+            // Initialize the progress bar
+            runOnUiThread(() -> {
+                progressBar_send.setMax(100);
+                progressBar_send.setProgress(0);
+                progressBar_send.setVisibility(ProgressBar.VISIBLE);  // Ensure the progress bar is visible
+                animationView.setVisibility(LottieAnimationView.VISIBLE);  // Ensure the animation view is visible
+                animationView.playAnimation();  // Start the animation
+            });
+
             // Initialize the socket connection inside AsyncTask
-            new AsyncTask<Void, Void, Void>() {
+            new AsyncTask<Void, Integer, Void>() {
                 @Override
                 protected Void doInBackground(Void... voids) {
                     try {
@@ -568,6 +594,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                             sentSize += bytesRead;
                             int progress = (int) (sentSize * 100 / fileSize);
                             Log.d("SendFileActivity", "Progress: " + progress + "%");
+                            publishProgress(progress);  // Call publishProgress to trigger onProgressUpdate
                         }
                         dos.flush();
 
@@ -576,6 +603,19 @@ public class SendFileActivityPython extends AppCompatActivity {
                         Log.e("SendFileActivity", "Error sending file", e);
                     }
                     return null;
+                }
+                @Override
+                protected void onProgressUpdate(Integer... values) {
+                    progressBar_send.setProgress(values[0]);
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    // Reset progress bar when done
+                    progressBar_send.setProgress(0);
+                    progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                    animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                    Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
                 }
             }.execute();
         } catch (IOException e) {

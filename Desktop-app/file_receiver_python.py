@@ -2,6 +2,8 @@ import os
 import socket
 import struct
 import json
+import subprocess
+import platform
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
 from PyQt6.QtGui import QScreen
@@ -14,6 +16,7 @@ RECEIVER_DATA = 58000
 class ReceiveWorkerPython(QThread):
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
+    close_connection_signal = pyqtSignal() 
     password = None
 
     def __init__(self, client_ip):
@@ -26,6 +29,7 @@ class ReceiveWorkerPython(QThread):
         self.destination_folder = None
         self.store_client_ip = client_ip
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
+        self.close_connection_signal.connect(self.close_connection)
 
     def initialize_connection(self):
         # Close all previous server_sockets
@@ -121,6 +125,12 @@ class ReceiveWorkerPython(QThread):
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
+                    # Check if file exists in the receiving directory
+                    original_name, extension = os.path.splitext(file_name)
+                    i = 1
+                    while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                        file_name = f"{original_name} ({i}){extension}"
+                        i += 1
                     # Determine the correct path using metadata
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
@@ -160,7 +170,6 @@ class ReceiveWorkerPython(QThread):
                 logger.error("Error during file reception: %s", str(e))
                 break
 
-        self.broadcasting = True  # Resume broadcasting
         logger.debug("File reception completed.")
 
 
@@ -200,14 +209,19 @@ class ReceiveWorkerPython(QThread):
         if not top_level_folder:
             raise ValueError("Base folder name not found in metadata")
 
-        # Define the destination folder path
+        # Define the destination folder path and ensure it is unique
         destination_folder = os.path.join(default_dir, top_level_folder)
+        destination_folder = self._get_unique_folder_name(destination_folder)
         logger.debug("Destination folder: %s", destination_folder)
 
         # Create the destination folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
             logger.debug("Created base folder: %s", destination_folder)
+
+        # Track created folders to avoid duplicates
+        created_folders = set()
+        created_folders.add(destination_folder)
 
         # Process each file info in metadata (excluding the last entry)
         for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
@@ -221,16 +235,32 @@ class ReceiveWorkerPython(QThread):
                 # Create the full folder path
                 full_folder_path = os.path.join(destination_folder, folder_path)
                 
-                # Create the directory if it does not exist
-                if not os.path.exists(full_folder_path):
-                    os.makedirs(full_folder_path)
-                    logger.debug("Created folder: %s", full_folder_path)
+                # Ensure the folder is unique and not a duplicate
+                if full_folder_path not in created_folders:
+                    full_folder_path = self._get_unique_folder_name(full_folder_path)
+                    
+                    # Create the directory if it does not exist
+                    if not os.path.exists(full_folder_path):
+                        os.makedirs(full_folder_path)
+                        logger.debug("Created folder: %s", full_folder_path)
+
+                    # Add the folder to the set of created folders
+                    created_folders.add(full_folder_path)
                 else:
                     logger.debug("Folder already exists: %s", full_folder_path)
 
         return destination_folder
 
 
+    def _get_unique_folder_name(self, folder_path):
+        """Append a unique (i) to folder name if it already exists."""
+        base_folder_path = folder_path
+        i = 1
+        # Check for existence and modify name with incrementing (i)
+        while os.path.exists(folder_path):
+            folder_path = f"{base_folder_path} ({i})"
+            i += 1
+        return folder_path
 
     def get_relative_path_from_metadata(self, file_name):
         """Get the relative path of a file from the metadata."""
@@ -270,13 +300,20 @@ class ReceiveAppP(QWidget):
         self.label = QLabel("Waiting for file...", self)
         layout.addWidget(self.label)
 
-        self.progress_bar = QProgressBar(self)
-        layout.addWidget(self.progress_bar)
+        # Create 2 buttons for close and Transfer More Files
+        # Keep them disabled until the file transfer is completed
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
+        self.close_button.clicked.connect(self.close)
+        layout.addWidget(self.close_button)
 
         self.open_dir_button = QPushButton("Open Receiving Directory", self)
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
+
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
 
         self.setLayout(layout)
 
@@ -300,6 +337,8 @@ class ReceiveAppP(QWidget):
         if value >= 100:
             self.label.setText("File received successfully!")
             self.open_dir_button.setVisible(True)  # Show the button when file is received
+             # Enable the close and Transfer More Files buttons
+            self.close_button.setEnabled(True)
 
 
     def decryptor_init(self, value):
@@ -312,16 +351,22 @@ class ReceiveAppP(QWidget):
         config = get_config()
         receiving_dir = config.get("save_to_directory")
         
-        if receiving_dir and os.path.exists(receiving_dir):
+        if receiving_dir:
             try:
-                if os.name == 'nt':  # For Windows
+                current_os = platform.system()
+                
+                if current_os == 'Windows':
                     os.startfile(receiving_dir)
-                elif os.name == 'posix':  # For macOS and Linux
-                    subprocess.call(('open', receiving_dir)) if sys.platform == 'darwin' else subprocess.call(('xdg-open', receiving_dir))
+                elif current_os == 'Linux':
+                    subprocess.Popen(["xdg-open", receiving_dir])
+                elif current_os == 'Darwin':  # macOS
+                    subprocess.Popen(["open", receiving_dir])
+                else:
+                    raise NotImplementedError(f"Unsupported OS: {current_os}")
+            
             except Exception as e:
-                QMessageBox.warning(self, "Error", f"Failed to open directory: {str(e)}")
-        else:
-            QMessageBox.warning(self, "Error", "Receiving directory not found or not configured.")
+                logger.error("Failed to open directory: %s", str(e))
+                
      
 
 if __name__ == '__main__':

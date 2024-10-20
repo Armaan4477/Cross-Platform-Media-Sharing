@@ -1,55 +1,77 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SendFileActivity">
+    android:background="@drawable/dialog_background"
+    android:padding="20dp"
+    tools:context=".MainActivity">
 
-    <!-- Select Files Button -->
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_select_file"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@drawable/state_list_drawable"
+        android:padding="12dp"
         android:text="Select Files"
-        app:layout_constraintBottom_toTopOf="@+id/btn_select_folder"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:cornerRadius="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.8" />
 
-    <!-- Select Folder Button -->
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_select_folder"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/state_list_drawable"
+        android:padding="12dp"
         android:text="Select Folder"
-        app:layout_constraintBottom_toTopOf="@+id/recycler_view"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:cornerRadius="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_select_file" />
+        app:layout_constraintTop_toBottomOf="@id/btn_select_file"
+        app:layout_constraintWidth_percent="0.8" />
 
-    <!-- RecyclerView for displaying selected files/folders -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="1dp"
-        app:layout_constraintBottom_toTopOf="@+id/progressBar_send"
+        android:layout_marginTop="12dp"
+        app:layout_constraintBottom_toTopOf="@id/list_items"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_select_folder" />
+        app:layout_constraintTop_toBottomOf="@id/btn_select_folder" />
 
-    <!-- Send Button -->
-    <Button
-        android:id="@+id/btn_send"
+    <ListView
+        android:id="@+id/list_items"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="0dp"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/transfer_animation"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.4"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar_send" />
+        app:layout_constraintTop_toBottomOf="@id/recycler_view" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/transfer_animation"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginBottom="12dp"
+        android:visibility="invisible"
+        app:lottie_fileName="transfer.json"
+        app:lottie_loop="true"
+        app:lottie_autoPlay="true"
+        app:layout_constraintBottom_toTopOf="@id/progressBar_send"
+        app:layout_constraintTop_toBottomOf="@id/list_items" />
 
     <ProgressBar
         android:id="@+id/progressBar_send"
@@ -57,10 +79,26 @@
         android:layout_width="0dp"
         android:layout_height="20dp"
         android:layout_marginBottom="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_send"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/btn_send"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/recycler_view" />
+        app:layout_constraintTop_toBottomOf="@id/transfer_animation"
+        app:layout_constraintVertical_bias="0.5" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_send"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/state_list_drawable"
+        android:padding="12dp"
+        android:text="Send"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:cornerRadius="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="0.8" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -45,6 +45,8 @@ import java.util.concurrent.Executors;
 import java.util.Arrays;
 import android.widget.ProgressBar;
 
+import com.airbnb.lottie.LottieAnimationView;
+
 public class SendFileActivity extends AppCompatActivity {
 
     private String receivedJson;
@@ -63,12 +65,14 @@ public class SendFileActivity extends AppCompatActivity {
     DataOutputStream dos = null;
     DataInputStream dis = null;
     private ProgressBar progressBar_send;
+    private LottieAnimationView animationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
         progressBar_send = findViewById(R.id.progressBar_send);
+        animationView = findViewById(R.id.transfer_animation);
 
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
@@ -465,9 +469,18 @@ public class SendFileActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onPreExecute() {
+            // Show animation when sending starts
+            progressBar_send.setVisibility(ProgressBar.VISIBLE);
+            animationView.setVisibility(LottieAnimationView.VISIBLE);
+            animationView.playAnimation();
+        }
+
+        @Override
         protected void onPostExecute(Void result) {
             // Update UI or notify user when sending is completed
-            Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+//            if
+//            Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -534,6 +547,9 @@ public class SendFileActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 progressBar_send.setMax(100);
                 progressBar_send.setProgress(0);
+                progressBar_send.setVisibility(ProgressBar.VISIBLE);  // Ensure the progress bar is visible
+                animationView.setVisibility(LottieAnimationView.VISIBLE);  // Ensure the animation view is visible
+                animationView.playAnimation();  // Start the animation
             });
 
             // Initialize the socket connection inside AsyncTask
@@ -579,6 +595,7 @@ public class SendFileActivity extends AppCompatActivity {
                             int progress = (int) (sentSize * 100 / fileSize);
                             publishProgress(progress);
                             Log.d("SendFileActivity", "Progress: " + progress + "%");
+                            publishProgress(progress);  // Call publishProgress to trigger onProgressUpdate
                         }
                         dos.flush();
 
@@ -596,8 +613,10 @@ public class SendFileActivity extends AppCompatActivity {
 
                 @Override
                 protected void onPostExecute(Void aVoid) {
-                    // Reset progress bar when done
                     progressBar_send.setProgress(0);
+                    progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                    animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                    Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
                 }
             }.execute();
         } catch (IOException e) {

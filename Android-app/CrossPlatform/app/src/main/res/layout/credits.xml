@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/dialog_background">
+
+    <!-- Title: Coder/Debugger -->
+    <TextView
+        android:id="@+id/title_coder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Coder/Debugger"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="10dp"
+        android:textColor="@android:color/white" />
+
+    <!-- Coder/Debugger Entries -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Entries for Coder/Debugger -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Armaan Nakhuda"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/armaan_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/armaan_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Nishal Poojary"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/nishal_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/nishal_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Samay Pandey"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/samay_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/samay_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Urmi Joshi"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/urmi_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/urmi_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Yash Patil"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/yash_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/yash_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Adwait Patil"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/adwait_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/adwait_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Spacer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="40dp" />
+
+    <!-- Title: Project Documentation -->
+    <TextView
+        android:id="@+id/title_docs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Project Documentation"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="10dp"
+        android:textColor="@android:color/white" />
+
+    <!-- Project Documentation Entries -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Samay Pandey"
+                android:textSize="18sp"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/samay_github_button_doc"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/samay_linkedin_button_doc"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp"
+            android:gravity="top"> <!-- Ensure top alignment of child views -->
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Vedashree Gaikwad"
+                android:textSize="18sp"
+                android:textColor="@android:color/white"
+                android:maxLines="2"
+                android:layout_gravity="top" /> <!-- Align text to the top -->
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GitHub"
+                android:id="@+id/vedashree_github_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LinkedIn"
+                android:id="@+id/vedashree_linkedin_button"
+                android:background="@drawable/state_list_drawable"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="20dp" />
+
+        <!-- Close Button -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/close_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Close"
+            android:onClick="closeDialog"
+            android:background="@drawable/state_list_drawable"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center" />
+    </LinearLayout>
+
+    <!-- Spacer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="40dp" />
+</LinearLayout >

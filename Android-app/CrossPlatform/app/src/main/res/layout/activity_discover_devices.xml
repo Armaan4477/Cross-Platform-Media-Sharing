@@ -3,26 +3,32 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@drawable/dialog_background"
+    android:padding="20dp">
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_discover"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Discover"
+        android:background="@drawable/state_list_drawable"
+        android:textColor="@android:color/white"
         android:layout_marginBottom="20dp" />
 
     <ListView
         android:id="@+id/list_devices"
         android:layout_width="match_parent"
+        android:divider="@android:color/darker_gray"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginBottom="20dp"/>
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_connect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/state_list_drawable"
+        android:textColor="@android:color/white"
         android:text="Connect"
         />
 </LinearLayout>

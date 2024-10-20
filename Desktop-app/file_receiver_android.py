@@ -3,10 +3,12 @@ import socket
 import struct
 import json
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QPushButton
 from PyQt6.QtGui import QScreen
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
+import subprocess
+import platform
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -107,6 +109,8 @@ class ReceiveWorkerJava(QThread):
                 file_size = struct.unpack('<Q', file_size_data)[0]
                 logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
 
+                logger.debug("Reached 1")
+
                 received_size = 0
 
                 # Check if it's metadata
@@ -116,11 +120,26 @@ class ReceiveWorkerJava(QThread):
                     ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
                     if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
                         self.destination_folder = self.create_folder_structure(self.metadata)
+                        logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                     else:
                         ## If not, set the destination folder to the default directory
                         self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
+                    try:
+                        if self.destination_folder is None:
+                            self.destination_folder = get_config()["save_to_directory"]
+                        # Check if file exists in the receiving directory
+                        original_name, extension = os.path.splitext(file_name)
+                        logger.debug("Original name: %s, Extension: %s", original_name, extension)
+                        i = 1
+                        while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                            file_name = f"{original_name} ({i}){extension}"
+                            logger.debug("File name already exists. Trying new name: %s", file_name)
+                            i += 1
+                    except Exception as e:
+                        logger.error("Error while checking file existence: %s", str(e))
+                        pass
                     # Determine the correct path using metadata
                     if self.metadata:
                         relative_path = self.get_relative_path_from_metadata(file_name)
@@ -137,6 +156,7 @@ class ReceiveWorkerJava(QThread):
                     # Ensure that the directory exists for the file
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
                     logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+                    logger.debug("Reached 4")
 
                     # Check for encrypted transfer
                     if encrypted_transfer:
@@ -199,18 +219,29 @@ class ReceiveWorkerJava(QThread):
         top_level_folder = metadata[-1].get('base_folder_name', '')
         if not top_level_folder:
             raise ValueError("Base folder name not found in metadata")
+        
         if "primary" in top_level_folder:
-            top_level_folder = top_level_folder.replace("primary:", "")
+            top_level_folder = top_level_folder.replace("primary%3A", "")
+            top_level_folder = top_level_folder.replace("%2F", "")
+        
         top_level_folder = top_level_folder.split('/')[-1]
 
-        # Define the destination folder path
+        # Define the initial destination folder path
         destination_folder = os.path.join(default_dir, top_level_folder)
+
+        # Check if the destination folder already exists, and if it does, add a "(i)" suffix
+        destination_folder = self._get_unique_folder_name(destination_folder)
+
         logger.debug("Destination folder: %s", destination_folder)
 
         # Create the destination folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
             logger.debug("Created base folder: %s", destination_folder)
+
+        # Track created folders to avoid duplicates
+        created_folders = set()
+        created_folders.add(destination_folder)
 
         # Process each file info in metadata (excluding the last entry)
         for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
@@ -224,15 +255,29 @@ class ReceiveWorkerJava(QThread):
                 # Create the full folder path
                 full_folder_path = os.path.join(destination_folder, folder_path)
                 
-                # Create the directory if it does not exist
-                if not os.path.exists(full_folder_path):
-                    os.makedirs(full_folder_path)
-                    logger.debug("Created folder: %s", full_folder_path)
-                else:
-                    logger.debug("Folder already exists: %s", full_folder_path)
+                # Check if the folder has already been created
+                if full_folder_path not in created_folders:
+                    # Ensure that the directory does not override existing data by getting a unique folder name
+                    unique_folder_path = self._get_unique_folder_name(full_folder_path)
+                    
+                    # Create the directory if it does not exist
+                    if not os.path.exists(unique_folder_path):
+                        os.makedirs(unique_folder_path)
+                        logger.debug("Created folder: %s", unique_folder_path)
+
+                    # Add the folder to the set of created folders
+                    created_folders.add(unique_folder_path)
 
         return destination_folder
 
+    def _get_unique_folder_name(self, folder_path):
+        """Append a unique (i) to folder name if it already exists."""
+        base_folder_path = folder_path
+        i = 1
+        while os.path.exists(folder_path):
+            folder_path = f"{base_folder_path} ({i})"
+            i += 1
+        return folder_path
 
 
     def get_relative_path_from_metadata(self, file_name):
@@ -273,6 +318,18 @@ class ReceiveAppPJava(QWidget):
         self.label = QLabel("Waiting for file from Android...", self)
         layout.addWidget(self.label)
 
+        # Create 2 buttons for close and Transfer More Files
+        # Keep them disabled until the file transfer is completed
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
+        self.close_button.clicked.connect(self.close)
+        layout.addWidget(self.close_button)
+
+        self.open_dir_button = QPushButton("Open Receiving Directory", self)
+        self.open_dir_button.clicked.connect(self.open_receiving_directory)
+        self.open_dir_button.setVisible(False)  # Initially hidden
+        layout.addWidget(self.open_dir_button)
+
         self.progress_bar = QProgressBar(self)
         layout.addWidget(self.progress_bar)
 
@@ -297,12 +354,34 @@ class ReceiveAppPJava(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
+            # Enable the close and Transfer More Files buttons
+            self.close_button.setEnabled(True)
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
         if value:
             self.decryptor = Decryptor(value)
             self.decryptor.show()
+
+    def open_receiving_directory(self):
+        config = get_config()
+        receiving_dir = config.get("save_to_directory")
+        
+        if receiving_dir:
+            try:
+                current_os = platform.system()
+                
+                if current_os == 'Windows':
+                    os.startfile(receiving_dir)
+                elif current_os == 'Linux':
+                    subprocess.Popen(["xdg-open", receiving_dir])
+                elif current_os == 'Darwin':  # macOS
+                    subprocess.Popen(["open", receiving_dir])
+                else:
+                    raise NotImplementedError(f"Unsupported OS: {current_os}")
+            
+            except Exception as e:
+                logger.error("Failed to open directory: %s", str(e))
 
 if __name__ == '__main__':
     import sys
