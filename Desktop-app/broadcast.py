@@ -135,8 +135,8 @@ class Broadcast(QWidget):
         self.animation_timer = QTimer(self)
         self.animation_timer.timeout.connect(self.update_animation)
         self.animation_timer.start(50)  # Update every 50ms
-
         self.initUI()
+        self.discover_devices()
 
     def initUI(self):
         main_layout = QVBoxLayout()
