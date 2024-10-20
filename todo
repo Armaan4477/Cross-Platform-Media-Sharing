@@ -1,30 +1,6 @@
-In Progress:
+Python
+1) Receive window UI update(Urmi)
+2) Final Python Fixing(Armaan)
 
-Nishal:
-After sending and receiving is complete
-Loop back around karo as in sender ko option do if he wants to send more files/folders
-If yes wapas back to select file window
-If no then back to main window
-(FYI Receiver ka logic bhe modify karna padega sath mai Varna pura fail hoga)
-
-Urmi:
-Find a logo/Icon for our Project and send it on the group (image should be in png, without a background and high quality.)
-(upload the full quality images in the shared drive, make a new folder there and then tell us on the group so we will check it out)
-
-
-
-Next Task:
-
-Nishal:
-1) Drag and drop file support in send section of the python app
-
-2) Add credits dialog which links to project repo link and github/ Linkedin accounts (Armaan, Samay, Yash, Nishal and Urmi ka naam in Alphabetical order(Vedashree ka naam jayega jab vo kaam karegi kuch coding related to the actual project))
-
-3) When the receiver window shows file received successfully, show the user a button which will take them to the receiving directory.    (ps. you can easily get the receiving directry from the get_config that is imported)
-
-
-Urmi:
-1) If during file/folder receiving there is a file/folder already present with the same name add (1),(2) and so on for the copies that are present. 
-
-2) When sending a folder show the number of total files, number of files completed and number of files remaining.
-(ps. Total files metadata.json mai already ja raha hai incase needed hai)
+Final Documentation and PPT (Vedashree)
+Final Full Testing and checking of Test List (Armaan)
