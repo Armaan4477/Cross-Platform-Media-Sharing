@@ -22,17 +22,34 @@ class CircularDeviceButton(QPushButton):
         super().__init__(device_name[0], parent)
         self.device_name = device_name
         self.device_ip = device_ip
-        self.setFixedSize(60, 60)  # Increased size for better visibility
+        self.setFixedSize(42, 42)  # Increased size for better visibility
         self.setStyleSheet("""
             QPushButton {
-                background-color: #4a90e2;
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
                 color: white;
-                border-radius: 30px;
+                border-radius: 21px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
                 font-weight: bold;
-                font-size: 18px;
+                font-size: 20px;
             }
             QPushButton:hover {
-                background-color: #357abd;
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
             }
         """)
 
@@ -105,7 +122,7 @@ class Broadcast(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Device Discovery')
-        self.setFixedSize(1280, 720)  # Updated to 1280x720 (16:9 ratio)
+        self.setFixedSize(853, 480)  # Updated to 1280x720 (16:9 ratio)
         self.center_window()
 
         self.devices = []
@@ -192,7 +209,7 @@ class Broadcast(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 1280, 720
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -211,12 +228,12 @@ class Broadcast(QWidget):
         painter.setPen(QPen(Qt.GlobalColor.white, 3))  # Increased line width
         center = QPointF(self.width() / 2, self.height() / 2)
         for i in range(4):
-            radius = 250 - i * 50  # Increased size for larger window
+            radius = 160 - i * 45  # Increased size for larger window
             painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
 
     def update_animation(self):
         self.animation_offset += 1
-        if self.animation_offset > 50:  # Adjusted for larger animation
+        if self.animation_offset > 30:  # Adjusted for larger animation
             self.animation_offset = 0
         self.update()
 
@@ -238,8 +255,8 @@ class Broadcast(QWidget):
 
         for i, device in enumerate(self.devices):
             angle = i * (2 * math.pi / len(self.devices))
-            x = 300 + 250 * math.cos(angle) - 30  # Adjusted for larger CircularDeviceButton
-            y = 300 + 250 * math.sin(angle) - 30  # Adjusted for larger CircularDeviceButton
+            x = 250 + 160 * math.cos(angle) - 30  # Adjusted for larger CircularDeviceButton
+            y = 250 + 160 * math.sin(angle) - 30  # Adjusted for larger CircularDeviceButton
             button = CircularDeviceButton(device['name'], device['ip'], self.device_area)
             button.move(int(x), int(y))
             button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
