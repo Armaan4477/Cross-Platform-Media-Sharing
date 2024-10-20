@@ -240,23 +240,6 @@ class Broadcast(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
-    # def paintEvent(self, event):
-    #     painter = QPainter(self)
-    #     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    #     # Draw background gradient
-    #     gradient = QLinearGradient(0, 0, 0, self.height())
-    #     gradient.setColorAt(0, QColor('#b0b0b0'))
-    #     gradient.setColorAt(1, QColor('#505050'))
-    #     painter.fillRect(self.rect(), gradient)
-
-    #     # Draw animated circular rings
-    #     painter.setPen(QPen(Qt.GlobalColor.white, 3))  # Increased line width
-    #     center = QPointF(self.width() / 2, self.height() / 2)
-    #     for i in range(4):
-    #         radius = 250 - i * 50  # Increased size for larger window
-    #         painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
-
     def update_animation(self):
         self.animation_offset += 1
         if self.animation_offset > 60:  # Adjusted for larger animation
@@ -274,21 +257,6 @@ class Broadcast(QWidget):
         self.devices.append(device_info)
         self.update_devices()
 
-    # def update_devices(self):
-    #     for child in self.device_area.children():
-    #         if isinstance(child, CircularDeviceButton):
-    #             child.deleteLater()
-
-    #     for i, device in enumerate(self.devices):
-    #         angle = i * (2 * math.pi / len(self.devices))
-    #         x = 300 + 250 * math.cos(angle) - 30  # Adjusted for larger CircularDeviceButton
-    #         y = 300 + 250 * math.sin(angle) - 30  # Adjusted for larger CircularDeviceButton
-    #         button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
-    #         button_with_label.move(int(x), int(y))
-    #         button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
-    #         button_with_label.show()
-
-
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -303,7 +271,6 @@ class Broadcast(QWidget):
         painter.setPen(QPen(Qt.GlobalColor.white, 3))  # Line width remains the same
         center = QPointF(self.width() / 2, self.height() / 2)
         self.center = center
-        logger.info(f"Center: {center}")
         for i in range(4):
             radius = 90 - i * 25  # Reduced size for the circles
             painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
@@ -315,22 +282,17 @@ class Broadcast(QWidget):
                 child.deleteLater()
 
         # Position the device buttons on the reduced circle size
-        radius = 85  # Smaller circle for the device buttons
+        radius = 87  # Smaller circle for the device buttons
         center_x, center_y = 276, 160  # Adjusted center for the smaller window
-       # center_x = self.center.x()  # Extract x coordinate
-       # center_y = self.center.y()  # Extract y coordinate
-
 
         for i, device in enumerate(self.devices):
             angle = i * (2 * math.pi / len(self.devices))
-            x = center_x + radius * math.cos(angle) - 35  # Adjusted for smaller window
-            y = center_y + radius * math.sin(angle) - 35  # Adjusted for smaller window
+            x = center_x + radius * math.cos(angle) - 34  # Adjusted for smaller window
+            y = center_y + radius * math.sin(angle) - 34  # Adjusted for smaller window
             button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
             button_with_label.move(int(x), int(y))
             button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
             button_with_label.show()
-
-
 
     def connect_to_device(self, device):
         confirm_dialog = QMessageBox(self)
