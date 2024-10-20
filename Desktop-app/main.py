@@ -116,7 +116,7 @@ class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.setFixedSize(1280, 720) 
+        self.setFixedSize(853, 480) 
 
     def initUI(self):
         self.setWindowTitle('DataDash')
