@@ -129,7 +129,7 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void resetSavePath() {
-        saveToPathInput.setText(Environment.getExternalStorageDirectory().getPath());  // Reset to default storage directory
+        saveToPathInput.setText("Download");  // Reset save path to default
     }
 
     private void pickDirectory() {
