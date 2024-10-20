@@ -4,9 +4,10 @@ import struct
 import json
 import subprocess
 import platform
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton
-from PyQt6.QtGui import QScreen
+from PyQt6 import QtCore
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject,QTimer
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QHBoxLayout
+from PyQt6.QtGui import QScreen,QMovie
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 
@@ -266,16 +267,71 @@ class ReceiveAppP(QWidget):
         super().__init__()
         self.client_ip = client_ip
         self.initUI()
+        
+        self.current_text = "Waiting for file..."  # The full text for the label
+        self.displayed_text = ""  # Text that will appear with typewriter effect
+        self.char_index = 0  # Keeps track of the character index for typewriter effect
+
+
 
     def initUI(self):
         self.setWindowTitle('Receive File')
         self.setGeometry(100, 100, 300, 200)
         self.center_window()
+        self.setStyleSheet("""
+                    QWidget {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                    }
+                """)
+
+       # layout = QVBoxLayout()
+       
 
         layout = QVBoxLayout()
+        layout.setSpacing(0)  # Set spacing to 0 to remove gaps between widgets
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
 
-        self.label = QLabel("Waiting for file...", self)
-        layout.addWidget(self.label)
+        
+
+        # Loading label with the movie (GIF)
+        self.loading_label = QLabel(self)
+        self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
+        self.receiving_movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/file2.gif")
+        self.success_movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/mark.gif")  # New success GIF
+        self.receiving_movie.setScaledSize(QtCore.QSize(100, 100))
+        self.success_movie.setScaledSize(QtCore.QSize(100, 100))  # Set size for success GIF
+        self.loading_label.setMovie(self.receiving_movie)
+        self.receiving_movie.start()
+        layout.addWidget(self.loading_label, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter)
+
+
+        # Text label "Waiting for file..." (for typewriter effect)
+        self.label = QLabel("", self)
+        self.label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 28px;
+                background: transparent;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+
+        
+        layout.addWidget(self.label, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+
+        # Create a wrapper widget to hold both labels
+        wrapper = QWidget()
+        wrapper.setLayout(layout)
+
+
+
+        # self.label = QLabel("Waiting for file...", self)
+        # layout.addWidget(self.label)
 
         # Create 2 buttons for close and Transfer More Files
         # Keep them disabled until the file transfer is completed
@@ -289,8 +345,27 @@ class ReceiveAppP(QWidget):
         self.transfer_more_button.clicked.connect(self.transferMoreFiles)
         layout.addWidget(self.transfer_more_button)
 
+        # self.progress_bar = QProgressBar(self)
+        # layout.addWidget(self.progress_bar)
+
+
+        
+
         self.progress_bar = QProgressBar(self)
+        self.progress_bar.setStyleSheet("""
+                QProgressBar {
+                    border: 2px solid rgba(33, 37, 43, 180);
+                    border-radius: 5px;
+                    text-align: center;
+                    background-color: rgba(33, 37, 43, 180);
+                    color: black;
+                }
+                QProgressBar::chunk {
+                    background-color: #3EC70B;
+                }
+            """)
         layout.addWidget(self.progress_bar)
+
 
         self.open_dir_button = QPushButton("Open Receiving Directory", self)
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
@@ -298,6 +373,12 @@ class ReceiveAppP(QWidget):
         layout.addWidget(self.open_dir_button)
 
         self.setLayout(layout)
+
+
+          # Set up typewriter effect timer
+        self.typewriter_timer = QTimer(self)
+        self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
+        self.typewriter_timer.start(100)  # Adjust the speed of typewriter effect by changing the interval
 
         client_ip = self.client_ip
         self.file_receiver = ReceiveWorkerPython(client_ip)
@@ -314,14 +395,34 @@ class ReceiveAppP(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
+    
+    def update_typewriter_effect(self):
+        """Updates the label text one character at a time."""
+        if self.char_index < len(self.current_text):
+            self.displayed_text += self.current_text[self.char_index]
+            self.label.setText(self.displayed_text)
+            self.char_index += 1
+        else:
+            # Stop the timer when the entire text is displayed
+            self.typewriter_timer.stop()
+
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
             self.open_dir_button.setVisible(True)  # Show the button when file is received
              # Enable the close and Transfer More Files buttons
+            self.change_gif_to_success()  # Change GIF to success animation
             self.close_button.setEnabled(True)
             self.transfer_more_button.setEnabled(True)
+    
+    
+
+    def change_gif_to_success(self):
+        self.receiving_movie.stop()
+        self.loading_label.setMovie(self.success_movie)
+        self.success_movie.start()
+
 
     def transferMoreFiles(self):
         from file_receiver import ReceiveApp

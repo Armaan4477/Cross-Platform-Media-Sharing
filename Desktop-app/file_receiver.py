@@ -3,11 +3,12 @@ import platform
 import socket
 import struct
 import threading
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal,QTimer,Qt
+from PyQt6 import QtCore
 from PyQt6.QtWidgets import (
-    QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+    QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
-from PyQt6.QtGui import QScreen
+from PyQt6.QtGui import QScreen, QMovie
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
@@ -103,11 +104,48 @@ class ReceiveApp(QWidget):
         self.setWindowTitle('Receive File')
         self.setGeometry(100, 100, 300, 200)
         self.center_window()
-
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+            }
+        """)
         layout = QVBoxLayout()
 
-        self.label = QLabel("Waiting for Connection...", self)
-        layout.addWidget(self.label)
+        hbox = QHBoxLayout()
+        
+        self.loading_label = QLabel(self)
+        self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
+        self.movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/loading-7528_256.gif")  # Make sure to have this GIF in your project directory
+        self.movie.setScaledSize(QtCore.QSize(45, 45)) 
+        self.loading_label.setMovie(self.movie)
+        self.movie.start()
+        hbox.addWidget(self.loading_label)
+
+        # Label with typewriter effect
+        self.label = QLabel("", self)  # Empty string initially
+        self.label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 28px;
+                background: transparent;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+        hbox.addWidget(self.label)
+        hbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addLayout(hbox)
+        self.setLayout(layout)
+
+
+        #layout = QVBoxLayout()
+
+        # self.label = QLabel("Waiting for Connection...", self)
+        # layout.addWidget(self.label)
 
         self.setLayout(layout)
 
@@ -118,6 +156,23 @@ class ReceiveApp(QWidget):
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
+# Call the method to start typewriter effect
+        self.start_typewriter_effect("Waiting for Connection...")
+
+    def start_typewriter_effect(self, full_text, interval=100):
+        """Starts the typewriter effect to show text character by character."""
+        self.full_text = full_text
+        self.text_index = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_text)
+        self.timer.start(interval)
+
+    def update_text(self):
+        """Updates the label with one more character."""
+        self.text_index += 1
+        self.label.setText(self.full_text[:self.text_index])
+        if self.text_index >= len(self.full_text):
+            self.timer.stop()
 
     def listenForBroadcast(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -135,6 +190,13 @@ class ReceiveApp(QWidget):
                         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
                             response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
                 sleep(1)  # Avoid busy-waiting
+
+    def connection_successful(self):
+        self.movie.stop()
+        self.loading_label.hide()
+        self.label.setText("Connected successfully!")
+        self.label.setStyleSheet("color: #00FF00;")  # Green color for success
+
 
     def show_receive_app_p(self):
         client_ip = self.file_receiver.client_ip
