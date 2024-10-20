@@ -1,5 +1,4 @@
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,51 +7,46 @@
     android:padding="20dp"
     tools:context=".MainActivity">
 
-
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_select_files"
+        android:id="@+id/btn_select_file"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Select Files"
-        android:background="@drawable/button_gradient"
-        android:textColor="@android:color/white"
+        android:background="@drawable/state_list_drawable"
         android:padding="12dp"
+        android:text="Select Files"
+        android:textColor="@android:color/white"
         android:textSize="18sp"
         app:cornerRadius="8dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.8" />
-
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_select_folder"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:background="@drawable/button_gradient"
+        android:background="@drawable/state_list_drawable"
         android:padding="12dp"
         android:text="Select Folder"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         app:cornerRadius="8dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.493"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_select_files"
-        app:layout_constraintWidth_percent="0.8"
-        app:layout_marginTop="16dp" />
+        app:layout_constraintTop_toBottomOf="@id/btn_select_file"
+        app:layout_constraintWidth_percent="0.8" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:layout_marginBottom="1dp"
-        app:layout_constraintBottom_toTopOf="@+id/progressBar_send"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintBottom_toTopOf="@id/list_items"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_select_folder" />
-
+        app:layout_constraintTop_toBottomOf="@id/btn_select_folder" />
 
     <ListView
         android:id="@+id/list_items"
@@ -61,29 +55,23 @@
         android:divider="@android:color/darker_gray"
         android:dividerHeight="1dp"
         android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@id/btn_send"
+        app:layout_constraintBottom_toTopOf="@id/transfer_animation"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.6"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHeight_percent="0.4"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_select_folder"
-        app:layout_constraintVertical_bias="0.376" />
+        app:layout_constraintTop_toBottomOf="@id/recycler_view" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_send"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:textColor="@android:color/white"
-        android:background="@drawable/button_gradient"
-        android:padding="12dp"
-        android:textSize="18dp"
-        app:cornerRadius="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintWidth_percent="0.8"
-        app:layout_marginBottom="16dp" />
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/transfer_animation"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginBottom="12dp"
+        android:visibility="invisible"
+        app:lottie_fileName="transfer.json"
+        app:lottie_loop="true"
+        app:lottie_autoPlay="true"
+        app:layout_constraintBottom_toTopOf="@id/progressBar_send"
+        app:layout_constraintTop_toBottomOf="@id/list_items" />
 
     <ProgressBar
         android:id="@+id/progressBar_send"
@@ -91,11 +79,26 @@
         android:layout_width="0dp"
         android:layout_height="20dp"
         android:layout_marginBottom="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_send"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/btn_send"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/list_items" />
+        app:layout_constraintTop_toBottomOf="@id/transfer_animation"
+        app:layout_constraintVertical_bias="0.5" />
 
-
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_send"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/state_list_drawable"
+        android:padding="12dp"
+        android:text="Send"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:cornerRadius="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="0.8" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -180,6 +180,7 @@ class SendApp(QWidget):
         self.receiver_data = receiver_data
         self.file_paths = []
         self.initUI()
+        self.progress_bar.setVisible(False)
 
     def initUI(self):
         self.config = get_config()
@@ -259,7 +260,7 @@ class SendApp(QWidget):
 
         # Send button
         self.send_button = self.create_styled_button('Send Files')
-        self.send_button.setEnabled(False)
+        self.send_button.setVisible(False)
         self.send_button.clicked.connect(self.sendSelectedFiles)
         content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -292,12 +293,6 @@ class SendApp(QWidget):
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
-
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.setVisible(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        content_layout.addWidget(self.transfer_more_button)
 
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
@@ -382,7 +377,7 @@ class SendApp(QWidget):
 
     def checkReadyToSend(self):
         if self.file_paths:
-            self.send_button.setEnabled(True)
+            self.send_button.setVisible(True)
 
     
 
@@ -395,8 +390,9 @@ class SendApp(QWidget):
                 QMessageBox.critical(None, "Password Error", "Please enter a password.")
                 return
 
-        self.send_button.setEnabled(False)
+        self.send_button.setVisible(False)
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
+        self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
@@ -407,19 +403,10 @@ class SendApp(QWidget):
             self.status_label.setText("File transfer completed!")
             self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
 
-            
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
-            self.transfer_more_button.setEnabled(True)
             self.close_button.setVisible(True)
-            self.transfer_more_button.setVisible(True)
 
-    def transferMoreFiles(self):
-        from broadcast import Broadcast
-        # Go back to main menu and close all other sockets and threads
-        self.close()
-        self.broadcast_app = Broadcast()
-        self.broadcast_app.show()
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")

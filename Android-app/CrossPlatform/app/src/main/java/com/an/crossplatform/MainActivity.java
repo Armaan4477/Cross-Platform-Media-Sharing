@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
         Button btnSend = findViewById(R.id.btn_send);
         Button btnReceive = findViewById(R.id.btn_receive);
         ImageButton btnPreferences = findViewById(R.id.btn_preferences);
-        Button btnCredits = findViewById(R.id.btn_credits);
 
         btnSend.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
@@ -64,11 +63,6 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
-
-        btnCredits.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CreditsActivity.class);
-            startActivity(intent);
-        });
     }
 
     private boolean isNetworkConnected() {
@@ -99,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                     // Change device_name to be the model of the device
                     String deviceName = Build.MODEL;
                     jsonObject.put("device_name", deviceName);
-                    jsonObject.put("saveToPath", "/storage/emulated/0/Download");
+                    jsonObject.put("saveToPath", "Download");
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 

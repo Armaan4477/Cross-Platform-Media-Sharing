@@ -9,3 +9,7 @@ Android-app/CrossPlatform/.idea/deploymentTargetSelector.xml
 /Android-app/CrossPlatform/.idea
 /.vscode
 Android-app/CrossPlatform/.idea/misc.xml
+/Desktop-app/build
+Desktop-app/main.spec
+/Desktop-app/dist
+Desktop-app/DataDash.spec

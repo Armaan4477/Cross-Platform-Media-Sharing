@@ -3,70 +3,97 @@ import json
 import platform
 import socket
 import struct
+import math
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QMessageBox, QPushButton
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+    QMessageBox, QListWidget, QListWidgetItem, QFrame
 )
-from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtGui import QScreen
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
+from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
 from file_sender import SendApp
 from file_sender_java import SendAppJava
-import subprocess
-from time import sleep
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
 
+class CircularDeviceButton(QWidget):
+    def __init__(self, device_name, device_ip, parent=None):
+        super().__init__(parent)
+        self.device_name = device_name
+        self.device_ip = device_ip
+
+        # Create a QPushButton for the device (initials or first letter)
+        self.button = QPushButton(device_name[0], self)
+        self.button.setFixedSize(50, 50)  # Button size
+        self.button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 25px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
+                font-weight: bold;
+                font-size: 20px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+
+        # Create a QLabel for the full device name below the button
+        self.device_label = QLabel(device_name, self)
+        self.device_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 14px;
+                font-weight: normal;
+            }
+        """)
+        self.device_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Set up the layout: button above and label below
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.device_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Reduce the spacing and margins between the button and label
+        layout.setSpacing(2)  # Set small spacing between button and label
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
+        self.setLayout(layout)
+
+
+
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
-    device_connected = pyqtSignal(str, str, dict)  # Signal to emit when a device is connected
-    device_connected_java = pyqtSignal(str, str, dict)  # Signal to emit when a Java device is connected
+    device_connected = pyqtSignal(str, str, dict)
+    device_connected_java = pyqtSignal(str, str, dict)
 
     def __init__(self):
         super().__init__()
         self.socket = None
-        self.broadcast_worker = None
         self.client_socket = None
         self.receiver_data = None
 
     def run(self):
-        receivers = []
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind(('', LISTEN_PORT))
-
-        self.socket.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-
-        self.socket.settimeout(2)
-        try:
-            while True:
-                message, address = self.socket.recvfrom(1024)
-                message = message.decode()
-                if message.startswith('RECEIVER:'):
-                    device_name = message.split(':')[1]
-                    receivers.append({'ip': address[0], 'name': device_name})
-                    self.device_detected.emit({'ip': address[0], 'name': device_name})
-        except socket.timeout:
-            pass
-        finally:
-            self.close_socket()  # Ensure the socket is closed when done
-
-    def close_socket(self):
-        if self.socket:
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
-            self.socket.close()
-            self.socket = None
-
-    def stop(self):
-        self.close_socket()  # Ensure the socket is closed when stopping the thread
-        self.quit()
-        self.wait()
+        self.discover_receivers()
 
     def discover_receivers(self):
-        logger.info("Discovering receivers")
-        logger.info(BROADCAST_ADDRESS)
-        receivers = []
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -81,153 +108,255 @@ class BroadcastWorker(QThread):
                     message = message.decode()
                     if message.startswith('RECEIVER:'):
                         device_name = message.split(':')[1]
-                        receivers.append({'ip': address[0], 'name': device_name})
+                        self.device_detected.emit({'ip': address[0], 'name': device_name})
             except socket.timeout:
                 pass
-        return receivers
 
-    def connect_to_device(self, item):
-        device_name = item.data(256)
-        device_ip = item.data(257)
+    def connect_to_device(self, device_ip, device_name):
+        try:
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.bind(('', SENDER_JSON))
+            self.client_socket.connect((device_ip, RECEIVER_JSON))
 
-        confirm = QMessageBox.question(None, 'Confirm Connection', f"Connect to {device_name}?", 
-                                       QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if confirm == QMessageBox.StandardButton.Yes:
-            logger.info(f"Connecting to {device_name} at {device_ip}")
-            device_type = self.initialize_connection(device_ip)
+            device_data = {
+                'device_type': 'python',
+                'os': platform.system()
+            }
+            device_data_json = json.dumps(device_data)
+            self.client_socket.send(struct.pack('<Q', len(device_data_json)))
+            self.client_socket.send(device_data_json.encode())
 
+            receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
+            receiver_json = self.client_socket.recv(receiver_json_size).decode()
+            self.receiver_data = json.loads(receiver_json)
+
+            device_type = self.receiver_data.get('device_type', 'unknown')
             if device_type == 'python':
-                logger.info(f"Connected with Python device {device_name}")
-                self.cleanup_sockets()  # Clean up before proceeding
-                sleep(1)  # Wait for the receiver to close the socket
-                # Emit signal with device information when a connection is established
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
             elif device_type == 'java':
-                logger.info(f"Connected with Java device {device_name}")
-                self.cleanup_sockets()
-                sleep(1)
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
+            else:
+                raise ValueError("Unsupported device type")
 
-    def initialize_connection(self, ip_address):
-       # Force close the previous socket if it exists
-        if self.client_socket:
-            try:
-                self.client_socket.shutdown(socket.SHUT_RDWR)  # Gracefully shut down
-            except OSError:
-                pass  # Socket might already be closed
-            self.client_socket.close()
-            logger.debug("Previous socket closed")
-
-            # Add a small delay to ensure OS releases the port
-            sleep(0.1)
-
-        logger.debug("Initializing connection")
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.client_socket.bind(('', SENDER_JSON))
-            logger.debug("Binded to port %d", SENDER_JSON)
-            self.client_socket.connect((ip_address, RECEIVER_JSON))
-            logger.debug("Connected to %s", ip_address)
-        except ConnectionRefusedError:
-            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
-            return None
-
-        # Send and receive a JSON file containing device type information
-        device_data = {
-            'device_type': 'python',
-            'os': platform.system()
-        }
-        device_data_json = json.dumps(device_data)
-        self.client_socket.send(struct.pack('<Q', len(device_data_json)))
-        self.client_socket.send(device_data_json.encode())
-
-        # Receive the JSON file from the receiver
-        receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
-        logger.debug("Receiver JSON size: %d", receiver_json_size)
-        receiver_json = self.client_socket.recv(receiver_json_size).decode()
-        self.receiver_data = json.loads(receiver_json)
-        logger.debug("Receiver data: %s", self.receiver_data)
-
-        device_type = self.receiver_data.get('device_type', 'unknown')
-        if device_type in ['python', 'java', 'swift']:
-            logger.debug(f"Receiver is a {device_type} device")
-            return device_type
-        else:
-            QMessageBox.critical(None, "Device Error", "The receiver device is not compatible.")
-            self.cleanup_sockets()  # Clean up if the device is not compatible
-            return None
-
-
-    def cleanup_sockets(self):
-        if self.client_socket:
-            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))  # Force immediate close
-            self.client_socket.close()
-        if self.isRunning():
-            self.stop()
+        except Exception as e:
+            QMessageBox.critical(None, "Connection Error", f"Failed to connect: {str(e)}")
+        finally:
+            if self.client_socket:
+                self.client_socket.close()
 
 class Broadcast(QWidget):
-    device_connected = pyqtSignal(str, str, dict)  # Signal to indicate device connection
-    device_connected_java = pyqtSignal(str, str, dict)  # Signal to indicate Java device connection
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Device Discovery')
-        self.setGeometry(100, 100, 400, 300)
+        self.setFixedSize(853, 480)  # Updated to 1280x720 (16:9 ratio)
         self.center_window()
 
-        layout = QVBoxLayout()
-
-        self.device_list = QListWidget(self)
-        self.device_list.itemClicked.connect(self.connect_to_device)
-        layout.addWidget(self.device_list)
-
-        self.refresh_button = QPushButton('Refresh', self)
-        self.refresh_button.clicked.connect(self.discover_devices)
-        layout.addWidget(self.refresh_button)
-
-        self.setLayout(layout)
-
-        # Initialize BroadcastWorker instance
+        self.devices = []
         self.broadcast_worker = BroadcastWorker()
-        self.broadcast_worker.device_detected.connect(self.add_device_to_list)
-        self.broadcast_worker.device_connected.connect(self.show_send_app)  # Connect the worker's signal to slot
+        self.broadcast_worker.device_detected.connect(self.add_device)
+        self.broadcast_worker.device_connected.connect(self.show_send_app)
         self.broadcast_worker.device_connected_java.connect(self.show_send_app_java)
+
+        self.animation_offset = 0
+        self.animation_timer = QTimer(self)
+        self.animation_timer.timeout.connect(self.update_animation)
+        self.animation_timer.start(50)  # Update every 50ms
+        self.initUI()
         self.discover_devices()
 
-        self.client_socket = None
+    def initUI(self):
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Header
+        header = QFrame()
+        header.setFixedHeight(70)
+        header.setStyleSheet("background-color: #333; padding: 0px;")
+        header_layout = QHBoxLayout(header)
+
+        title_label = QLabel("Device Discovery")
+        title_label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
+        title_label.setStyleSheet("color: white;")
+        header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        main_layout.addWidget(header)
+
+        # Main content area
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        
+        # Circular device display
+        self.device_area = QWidget()
+        self.device_area.setFixedSize(600, 600)  # Increased size for larger window
+        content_layout.addWidget(self.device_area, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Refresh button
+        self.refresh_button = QPushButton('Refresh')
+        self.style_button(self.refresh_button)
+        self.refresh_button.clicked.connect(self.discover_devices)
+        content_layout.addWidget(self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        main_layout.addWidget(content)
+        self.setLayout(main_layout)
+
+    def style_button(self, button):
+        button.setFixedSize(180, 60)  # Increased size for better visibility
+        button.setFont(QFont("Arial", 18))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 30px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 8px;
+                font-weight: bold;
+                font-size: 18px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 400, 300
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
+    def update_animation(self):
+        self.animation_offset += 1
+        if self.animation_offset > 60:  # Adjusted for larger animation
+            self.animation_offset = 0
+        self.update()
+
     def discover_devices(self):
-        self.device_list.clear()
-        receivers = self.broadcast_worker.discover_receivers()  # Correctly call the discover_receivers method from BroadcastWorker instance
-        for receiver in receivers:
-            item = QListWidgetItem(receiver['name'])
-            item.setData(256, receiver['name'])  # Store device name
-            item.setData(257, receiver['ip'])  # Store device IP
-            self.device_list.addItem(item)
+        self.devices.clear()
+        for child in self.device_area.children():
+            if isinstance(child, CircularDeviceButton):
+                child.deleteLater()
+        self.broadcast_worker.start()
 
-    def connect_to_device(self, item):
-        # Ensure you connect through the correct method
-        self.broadcast_worker.connect_to_device(item)
+    def add_device(self, device_info):
+        self.devices.append(device_info)
+        self.update_devices()
 
-    def add_device_to_list(self, device_info):
-        # Add the detected device to the list
-        item = QListWidgetItem(device_info['name'])
-        item.setData(256, device_info['name'])  # Store device name
-        item.setData(257, device_info['ip'])  # Store device IP
-        self.device_list.addItem(item)
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # Draw background gradient
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor('#b0b0b0'))
+        gradient.setColorAt(1, QColor('#505050'))
+        painter.fillRect(self.rect(), gradient)
+
+        # Draw animated circular rings with reduced size for smaller window
+        painter.setPen(QPen(Qt.GlobalColor.white, 3))  # Line width remains the same
+        center = QPointF(self.width() / 2, self.height() / 2)
+        self.center = center
+        for i in range(4):
+            radius = 90 - i * 25  # Reduced size for the circles
+            painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
+
+    def update_devices(self):
+        # Remove previous device buttons
+        for child in self.device_area.children():
+            if isinstance(child, CircularDeviceButton):
+                child.deleteLater()
+
+        # Position the device buttons on the reduced circle size
+        radius = 87  # Smaller circle for the device buttons
+        center_x, center_y = 276, 160  # Adjusted center for the smaller window
+
+        for i, device in enumerate(self.devices):
+            angle = i * (2 * math.pi / len(self.devices))
+            x = center_x + radius * math.cos(angle) - 34  # Adjusted for smaller window
+            y = center_y + radius * math.sin(angle) - 34  # Adjusted for smaller window
+            button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
+            button_with_label.move(int(x), int(y))
+            button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
+            button_with_label.show()
+
+    def connect_to_device(self, device):
+        confirm_dialog = QMessageBox(self)
+        confirm_dialog.setWindowTitle("Confirm Connection")
+        confirm_dialog.setText(f"Connect to {device['name']}?")
+        confirm_dialog.setIcon(QMessageBox.Icon.Question)
+
+        # Add buttons
+        yes_button = confirm_dialog.addButton("Yes", QMessageBox.ButtonRole.YesRole)
+        no_button = confirm_dialog.addButton("No", QMessageBox.ButtonRole.NoRole)
+
+        # Apply consistent styling
+        confirm_dialog.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 18px;
+            }
+            QLabel {
+                background-color: transparent;
+                font-size: 18px;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 15px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 8px;
+                font-size: 18px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+
+        confirm_dialog.exec()
+
+        if confirm_dialog.clickedButton() == yes_button:
+            self.broadcast_worker.connect_to_device(device['ip'], device['name'])
 
     def show_send_app(self, device_ip, device_name, receiver_data):
         self.hide()
-        self.send_app = SendApp(device_ip, device_name, receiver_data)  # Pass parameters to SendApp
+        self.send_app = SendApp(device_ip, device_name, receiver_data)
         self.send_app.show()
-    
+
     def show_send_app_java(self, device_ip, device_name, receiver_data):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
@@ -237,4 +366,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     broadcast_app = Broadcast()
     broadcast_app.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec())    

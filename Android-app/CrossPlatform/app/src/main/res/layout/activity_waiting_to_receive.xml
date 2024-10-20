@@ -7,6 +7,21 @@
     android:background="@drawable/dialog_background"
     android:padding="20dp">
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/waiting_animation"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="visible"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="waiting.json"
+        app:lottie_loop="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/txt_waiting"
+        app:layout_constraintWidth_percent="0.8"
+        app:layout_constraintHeight_percent="0.5" />
+
     <TextView
         android:id="@+id/txt_waiting"
         android:layout_width="0dp"
@@ -15,24 +30,47 @@
         android:text="Waiting to receive file..."
         android:textColor="@color/white"
         android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/waiting_animation"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/transfer_animation"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/fileProgressBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="transfer.json"
+        app:lottie_loop="true"
+        android:layout_marginBottom="20dp"/>
 
     <ProgressBar
         android:id="@+id/fileProgressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
-        android:layout_height="10dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="29dp"
-        android:progress="0"
+        android:layout_height="20dp"
         android:max="100"
+        android:progress="0"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/openFolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open Folder"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@drawable/state_list_drawable"
+        android:visibility="invisible"
+        android:layout_marginBottom="40dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

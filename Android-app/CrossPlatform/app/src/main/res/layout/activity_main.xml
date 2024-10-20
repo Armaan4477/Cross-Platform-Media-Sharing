@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="@drawable/gradient_background"> <!-- Reference to the gradient drawable -->
+    android:background="@drawable/gradient_background">
 
     <androidx.appcompat.widget.Toolbar
         android:layout_width="match_parent"
@@ -15,10 +15,10 @@
         android:background="#333">
 
         <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:src="@drawable/setting_icon"
-            android:background="@color/primary"
+            android:background="#333"
             android:id="@+id/btn_preferences"
             android:layout_gravity="start"
             android:layout_marginEnd="16dp" />
@@ -28,12 +28,11 @@
             android:layout_height="wrap_content"
             android:text="DataDash: CrossPlatform Data Sharing"
             android:textColor="@color/white"
-            android:textSize="20dp"
+            android:textSize="24dp"
             android:textStyle="bold"
             android:layout_gravity="center" />
     </androidx.appcompat.widget.Toolbar>
 
-    <!-- Lottie Animation View -->
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/lottie_animation"
         android:layout_width="wrap_content"
@@ -44,14 +43,13 @@
         app:lottie_speed="0.75"
         app:lottie_autoPlay="true" />
 
-    <!-- New LinearLayout for buttons in a V shape -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="150dp"
         android:orientation="vertical"
         android:layout_alignParentBottom="true"
         android:gravity="center"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="32dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -62,34 +60,34 @@
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_send"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:padding="16dp"
-                android:background="@drawable/button_gradient"
+                android:layout_height="wrap_content"
+                android:padding="20dp"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
-                android:text="Send" />
+                android:textAlignment="viewStart"
+                android:text="Send"
+                android:drawableStart="@drawable/send"
+                android:drawablePadding="10dp"
+                android:gravity="center_vertical"
+                tools:ignore="RtlCompat" />
 
             <View
-                android:layout_width="120dp"
+                android:layout_width="80dp"
                 android:layout_height="match_parent" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_receive"
                 android:layout_width="wrap_content"
-                android:layout_height="50dp"
-                android:padding="16dp"
-                android:background="@drawable/button_gradient"
+                android:layout_height="wrap_content"
+                android:padding="20dp"
+                android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
-                android:text="Receive" />
+                android:text="Receive"
+                android:drawableStart="@drawable/receive"
+            android:drawablePadding="10dp"
+            android:gravity="center_vertical"
+            />
         </LinearLayout>
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_credits"
-            android:layout_width="wrap_content"
-            android:layout_height="50dp"
-            android:padding="16dp"
-            android:background="@drawable/button_gradient"
-            android:textColor="@color/white"
-            android:text="Credit" />
     </LinearLayout>
 
 </RelativeLayout>
