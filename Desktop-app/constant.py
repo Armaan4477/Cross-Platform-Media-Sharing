@@ -1,6 +1,5 @@
 import json
 import platform
-from sys import exit
 import os
 import logging
 import socket
@@ -20,8 +19,29 @@ logger = logging.getLogger('FileSharing: ')
 # Set the logger level to debug
 logger.setLevel(logging.DEBUG)
 
-config_file = ".config.json"
+# Define the config file name and current version
+config_file_name = ".config.json"
 current_version = "1.1"  # Set the current version of the configuration
+
+def get_config_file_path():
+    # Get the home directory and create a DataDash folder in the appropriate cache location
+    if platform.system() == 'Windows':
+        cache_dir = os.path.join(os.getenv('APPDATA'), 'DataDash')
+    elif platform.system() == 'Linux':
+        cache_dir = os.path.join(os.path.expanduser('~'), '.cache', 'DataDash')
+    elif platform.system() == 'Darwin':  # macOS
+        cache_dir = os.path.join(os.path.expanduser('~/Library/Caches'), 'DataDash')
+    else:
+        logger.error("Unsupported OS!")
+        return None
+
+    os.makedirs(cache_dir, exist_ok=True)
+    logger.info("Config directory created/ensured: %s", cache_dir)
+    return os.path.join(cache_dir, config_file_name)
+
+config_file = get_config_file_path()
+if config_file is None:
+    exit(1)  # Exit if the config file path is not valid
 
 def get_default_path():
     if platform.system() == 'Windows':
