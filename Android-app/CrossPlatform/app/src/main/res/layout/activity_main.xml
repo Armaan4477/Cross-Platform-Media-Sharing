@@ -60,11 +60,16 @@
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_send"
                 android:layout_width="wrap_content"
-                android:layout_height="70dp"
+                android:layout_height="wrap_content"
                 android:padding="20dp"
                 android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
-                android:text="Send" />
+                android:textAlignment="viewStart"
+                android:text="Send"
+                android:drawableStart="@drawable/send"
+                android:drawablePadding="10dp"
+                android:gravity="center_vertical"
+                tools:ignore="RtlCompat" />
 
             <View
                 android:layout_width="80dp"
@@ -73,11 +78,15 @@
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_receive"
                 android:layout_width="wrap_content"
-                android:layout_height="70dp"
+                android:layout_height="wrap_content"
                 android:padding="20dp"
                 android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
-                android:text="Receive" />
+                android:text="Receive"
+                android:drawableStart="@drawable/receive"
+            android:drawablePadding="10dp"
+            android:gravity="center_vertical"
+            />
         </LinearLayout>
     </LinearLayout>
 
