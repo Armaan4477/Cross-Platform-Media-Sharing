@@ -10,3 +10,6 @@ Android-app/CrossPlatform/.idea/deploymentTargetSelector.xml
 /.vscode
 Android-app/CrossPlatform/.idea/misc.xml
 Desktop-app/cmd mac.txt
+/Desktop-app/build
+Desktop-app/main.spec
+/Desktop-app/dist

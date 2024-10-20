@@ -4,6 +4,7 @@ from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon,
 from PyQt6.QtCore import Qt, QTimer, QSize
 import sys
 import os
+import logging
 from file_receiver import ReceiveApp
 from file_sender import SendApp
 from broadcast import Broadcast
@@ -12,6 +13,21 @@ from credits_dialog import CreditsDialog
 from constant import logger, get_config
 from PyQt6.QtSvg import QSvgRenderer
 import math
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def resource_path(relative_path):
+    """ Get the absolute path to the resource, works for both development and production. """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -159,9 +175,9 @@ class MainApp(QWidget):
         wifi_widget = WifiAnimationWidget()
         main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
-        icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
-
+        # Load icons using the resource_path function
+        icon_path_send = resource_path("icons/send.svg")
+        icon_path_receive = resource_path("icons/receive.svg")
 
         # Buttons Layout
         button_layout = QHBoxLayout()
@@ -411,8 +427,9 @@ class MainApp(QWidget):
         credits_dialog.exec()
 
     def openSettings(self):
-        logger.info("Settings button clicked")
-        self.preferences_handler()
+        logger.info("Opening settings.")
+        settingsApp = PreferencesApp()
+        settingsApp.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
