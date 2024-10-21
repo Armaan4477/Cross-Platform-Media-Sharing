@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // Set the saveToPath to the Android/media folder within external storage
                     // Correctly construct the media directory path
-                    File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/media");
+                    File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
                     // Create the media directory if it doesn't exist
                     if (!mediaDir.exists()) {
