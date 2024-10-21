@@ -290,35 +290,29 @@ class ReceiveAppP(QWidget):
         super().__init__()
         self.client_ip = client_ip
         self.initUI()
+        self.setFixedSize(853, 480)
         
         self.current_text = "Waiting for file..."  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
 
-
-
     def initUI(self):
         self.setWindowTitle('Receive File')
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.setStyleSheet("""
-                    QWidget {
-                        background: qlineargradient(
-                            x1: 0, y1: 0, x2: 1, y2: 1,
-                            stop: 0 #b0b0b0,
-                            stop: 1 #505050
-                        );
-                    }
-                """)
-
-       # layout = QVBoxLayout()
-       
+            QWidget {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+            }
+        """)
 
         layout = QVBoxLayout()
-        layout.setSpacing(0)  # Set spacing to 0 to remove gaps between widgets
-        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
-
-        
+        layout.setSpacing(10)  # Set spacing between widgets
+        layout.setContentsMargins(10, 10, 10, 10)  # Add some margins around the layout
 
         # Loading label with the movie (GIF)
         self.loading_label = QLabel(self)
@@ -331,7 +325,6 @@ class ReceiveAppP(QWidget):
         self.receiving_movie.start()
         layout.addWidget(self.loading_label, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter)
 
-
         # Text label "Waiting for file..." (for typewriter effect)
         self.label = QLabel("", self)
         self.label.setStyleSheet("""
@@ -343,69 +336,43 @@ class ReceiveAppP(QWidget):
                 font-weight: bold;
             }
         """)
-
-        
         layout.addWidget(self.label, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
-        # Create a wrapper widget to hold both labels
-        wrapper = QWidget()
-        wrapper.setLayout(layout)
-
-
-
-        # self.label = QLabel("Waiting for file...", self)
-        # layout.addWidget(self.label)
-
-        # Create 2 buttons for close and Transfer More Files
-        # Keep them disabled until the file transfer is completed
-        self.close_button = QPushButton('Close', self)
-        self.close_button.setEnabled(False)
-        self.close_button.clicked.connect(self.close)
-        layout.addWidget(self.close_button)
-
-        self.transfer_more_button = QPushButton('Transfer More Files', self)
-        self.transfer_more_button.setEnabled(False)
-        self.transfer_more_button.clicked.connect(self.transferMoreFiles)
-        layout.addWidget(self.transfer_more_button)
-
-        # self.progress_bar = QProgressBar(self)
-        # layout.addWidget(self.progress_bar)
-
-
-        
-
-        self.progress_bar = QProgressBar(self)
+       # Progress bar
+        self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
-                QProgressBar {
-                    border: 2px solid rgba(33, 37, 43, 180);
-                    border-radius: 5px;
-                    text-align: center;
-                    background-color: rgba(33, 37, 43, 180);
-                    color: black;
-                }
-                QProgressBar::chunk {
-                    background-color: #3EC70B;
-                }
-            """)
+            QProgressBar {
+                background-color: #2f3642;
+                color: white;
+                border: 1px solid #4b5562;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+            }
+        """)
         layout.addWidget(self.progress_bar)
 
-
+        # Open directory button
         self.open_dir_button = QPushButton("Open Receiving Directory", self)
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
 
-        self.progress_bar = QProgressBar(self)
-        layout.addWidget(self.progress_bar)
+        self.close_button = QPushButton('Close', self)
+        self.close_button.setVisible(False)
+        self.close_button.clicked.connect(self.close)
+        layout.addWidget(self.close_button)
 
         self.setLayout(layout)
 
-
-          # Set up typewriter effect timer
+        # Set up typewriter effect timer
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
         self.typewriter_timer.start(100)  # Adjust the speed of typewriter effect by changing the interval
 
+        # Start the file receiving process
         client_ip = self.client_ip
         self.file_receiver = ReceiveWorkerPython(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
@@ -416,7 +383,7 @@ class ReceiveAppP(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -437,10 +404,9 @@ class ReceiveAppP(QWidget):
         if value >= 100:
             self.label.setText("File received successfully!")
             self.open_dir_button.setVisible(True)  # Show the button when file is received
-             # Enable the close and Transfer More Files buttons
             self.change_gif_to_success()  # Change GIF to success animation
-            self.close_button.setEnabled(True)
-            self.transfer_more_button.setEnabled(True)
+            self.close_button.setVisible(True)
+
     
     
 
@@ -449,20 +415,6 @@ class ReceiveAppP(QWidget):
         self.loading_label.setMovie(self.success_movie)
         self.success_movie.start()
 
-
-    def transferMoreFiles(self):
-        from file_receiver import ReceiveApp
-        # Go back to main menu and close all other sockets and threads
-        self.close()
-        self.file_receiver.close_connection()
-        # Close all sockets and threads
-        self.file_receiver.terminate()
-        self.file_receiver.wait()
-        self.file_receiver.deleteLater()
-        self.file_receiver = None
-        self.receive_app = ReceiveApp()
-        self.receive_app.show()
-        self.broadcasting = True
 
 
     def decryptor_init(self, value):
