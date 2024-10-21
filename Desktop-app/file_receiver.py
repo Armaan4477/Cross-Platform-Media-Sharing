@@ -3,11 +3,12 @@ import platform
 import socket
 import struct
 import threading
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal,QTimer,Qt
+from PyQt6 import QtCore
 from PyQt6.QtWidgets import (
-    QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication
+    QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
-from PyQt6.QtGui import QScreen
+from PyQt6.QtGui import QScreen, QMovie
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
@@ -98,16 +99,57 @@ class ReceiveApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.setFixedSize(853, 480)
 
     def initUI(self):
         self.setWindowTitle('Receive File')
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 853, 480)
         self.center_window()
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+            }
+        """)
 
+        gif_path = os.path.join(os.path.dirname(__file__), "assets", "loading.gif")
+       
         layout = QVBoxLayout()
 
-        self.label = QLabel("Waiting for Connection...", self)
-        layout.addWidget(self.label)
+        hbox = QHBoxLayout()
+        
+        self.loading_label = QLabel(self)
+        self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
+        self.movie = QMovie(gif_path)  # Use the relative path to load the GIF
+        self.movie.setScaledSize(QtCore.QSize(40, 40)) 
+        self.loading_label.setMovie(self.movie)
+        self.movie.start()
+        hbox.addWidget(self.loading_label)
+
+        # Label with typewriter effect
+        self.label = QLabel("", self)  # Empty string initially
+        self.label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 28px;
+                background: transparent;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+        hbox.addWidget(self.label)
+        hbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addLayout(hbox)
+        self.setLayout(layout)
+
+
+        #layout = QVBoxLayout()
+
+        # self.label = QLabel("Waiting for Connection...", self)
+        # layout.addWidget(self.label)
 
         self.setLayout(layout)
 
@@ -118,6 +160,23 @@ class ReceiveApp(QWidget):
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
+# Call the method to start typewriter effect
+        self.start_typewriter_effect("Waiting for Connection...")
+
+    def start_typewriter_effect(self, full_text, interval=100):
+        """Starts the typewriter effect to show text character by character."""
+        self.full_text = full_text
+        self.text_index = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_text)
+        self.timer.start(interval)
+
+    def update_text(self):
+        """Updates the label with one more character."""
+        self.text_index += 1
+        self.label.setText(self.full_text[:self.text_index])
+        if self.text_index >= len(self.full_text):
+            self.timer.stop()
 
     def listenForBroadcast(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -136,6 +195,13 @@ class ReceiveApp(QWidget):
                             response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
                 sleep(1)  # Avoid busy-waiting
 
+    def connection_successful(self):
+        self.movie.stop()
+        self.loading_label.hide()
+        self.label.setText("Connected successfully!")
+        self.label.setStyleSheet("color: #00FF00;")  # Green color for success
+
+
     def show_receive_app_p(self):
         client_ip = self.file_receiver.client_ip
         """Slot to show the ReceiveAppP window on the main thread."""
@@ -152,7 +218,7 @@ class ReceiveApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)

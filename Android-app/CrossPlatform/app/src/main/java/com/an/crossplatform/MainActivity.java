@@ -3,6 +3,7 @@ package com.an.crossplatform;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -73,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createConfigFileIfNotExists() {
         try {
-            // Use internal storage for folder
+            // Use internal storage for folder (this is for the config file, unchanged)
             File folder = new File(getFilesDir(), "config");
             if (!folder.exists()) {
                 boolean folderCreated = folder.mkdir();
@@ -90,10 +91,31 @@ public class MainActivity extends AppCompatActivity {
                 if (fileCreated) {
                     // Create default JSON content and write to the file
                     JSONObject jsonObject = new JSONObject();
-                    // Change device_name to be the model of the device
-                    String deviceName = Build.MODEL;
+                    String deviceName = Build.MODEL;  // Device name
+
+                    // Set the saveToPath to the Android/media folder within external storage
+                    // Correctly construct the media directory path
+                    File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
+
+                    // Create the media directory if it doesn't exist
+                    if (!mediaDir.exists()) {
+                        boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
+                        if (!dirCreated) {
+                            Log.e("MainActivity", "Failed to create media directory");
+                            return;
+                        }
+                    }
+
+                    // Get the full path to the media folder
+                    String saveToPath = mediaDir.getAbsolutePath();
+
+                    // Remove the "/storage/emulated/0" prefix if it exists
+                    if (saveToPath.startsWith("/storage/emulated/0")) {
+                        saveToPath = saveToPath.replace("/storage/emulated/0", ""); // Remove the prefix
+                    }
+
                     jsonObject.put("device_name", deviceName);
-                    jsonObject.put("saveToPath", "/storage/emulated/0/Download");
+                    jsonObject.put("saveToPath", saveToPath); // Updated saveToPath
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 

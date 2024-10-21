@@ -129,7 +129,26 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void resetSavePath() {
-        saveToPathInput.setText(Environment.getExternalStorageDirectory().getPath());  // Reset to default storage directory
+        // Set the saveToPath to the Android/media folder within external storage
+        // Correctly construct the media directory path
+        File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
+
+        // Create the media directory if it doesn't exist
+        if (!mediaDir.exists()) {
+            boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
+            if (!dirCreated) {
+                Log.e("MainActivity", "Failed to create media directory");
+                return;
+            }
+        }
+        // Get the full path to the media folder
+        String saveToPath = mediaDir.getAbsolutePath();
+
+        // Remove the "/storage/emulated/0" prefix if it exists
+        if (saveToPath.startsWith("/storage/emulated/0")) {
+            saveToPath = saveToPath.replace("/storage/emulated/0", ""); // Remove the prefix
+        }
+        saveToPathInput.setText(saveToPath);  // Reset save path to default
     }
 
     private void pickDirectory() {
