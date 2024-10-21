@@ -61,7 +61,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
         waitingAnimation = findViewById(R.id.waiting_animation);
         openFolder = findViewById(R.id.openFolder);
         txt_path = findViewById(R.id.path);
-        txt_path.setVisibility(TextView.VISIBLE);
 
         senderJson = getIntent().getStringExtra("receivedJson");
         senderIp = getIntent().getStringExtra("senderIp");
@@ -142,6 +141,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             progressBar.setVisibility(ProgressBar.INVISIBLE);
             animationView.setVisibility(LottieAnimationView.INVISIBLE);
             txt_path.setText("Files saved to: " + destinationFolder);
+            txt_path.setVisibility(TextView.VISIBLE);
 //            openFolder.setVisibility(Button.VISIBLE);
 
             openFolder.setOnClickListener(v -> {
