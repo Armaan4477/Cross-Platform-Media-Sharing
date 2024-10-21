@@ -148,7 +148,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 if (folder.exists() && folder.isDirectory()) {
                     try {
                         // Create an intent to view the folder
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
                         Uri folderUri;
 
                         // Use FileProvider if targeting Android 7.0 (API level 24) or higher
@@ -159,20 +159,23 @@ public class ReceiveFileActivity extends AppCompatActivity {
                                     getApplicationContext().getPackageName() + ".provider",
                                     folder
                             );
+                            intent.setDataAndType(folderUri, "*/*");
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         } else {
                             // Use direct file URI for earlier versions
                             folderUri = Uri.fromFile(folder);
+                            intent.setDataAndType(folderUri, "*/*");
                         }
 
-                        // Set the data for the intent
-                        intent.setData(folderUri);
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Grant permission
-                        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION); // Grant permission
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Start in a new task
+                        // Add flags to minimize the current app and open the file manager
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-                        // Use Intent.createChooser to let the user choose an app
-                        Intent chooser = Intent.createChooser(intent, "Open folder with");
-                        startActivity(chooser);
+                        // Start the file manager without expecting a result
+                        startActivity(intent);
+                        // Optionally, call finish() to close the current activity
+                        finish();
                     } catch (IllegalArgumentException e) {
                         Log.e("ReceiveFileActivity", "FileProvider error: " + e.getMessage());
                     }
