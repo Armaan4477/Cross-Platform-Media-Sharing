@@ -99,10 +99,11 @@ class ReceiveApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.setFixedSize(853, 480)
 
     def initUI(self):
         self.setWindowTitle('Receive File')
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.setStyleSheet("""
             QWidget {
@@ -113,14 +114,17 @@ class ReceiveApp(QWidget):
                 );
             }
         """)
+
+        gif_path = os.path.join(os.path.dirname(__file__), "assets", "loading.gif")
+       
         layout = QVBoxLayout()
 
         hbox = QHBoxLayout()
         
         self.loading_label = QLabel(self)
         self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
-        self.movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/loading-7528_256.gif")  # Make sure to have this GIF in your project directory
-        self.movie.setScaledSize(QtCore.QSize(45, 45)) 
+        self.movie = QMovie(gif_path)  # Use the relative path to load the GIF
+        self.movie.setScaledSize(QtCore.QSize(40, 40)) 
         self.loading_label.setMovie(self.movie)
         self.movie.start()
         hbox.addWidget(self.loading_label)
@@ -214,7 +218,7 @@ class ReceiveApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
