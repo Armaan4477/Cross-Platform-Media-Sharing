@@ -116,14 +116,12 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         socket.send(sendPacket);
                         Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
 
-                        // Start a new thread to handle the TCP connection while still listening for discover messages
-                        // Close all previous sockets before starting a new one
-                        try {
-                            if (socket != null && !socket.isClosed()) socket.close();
-                        } catch (Exception e) {
-                            Log.e("WaitingToReceive", "Error closing socket", e);
-                        }
-                        new Thread(() -> establishTcpConnection(senderAddress)).start();
+                        // Start a new thread to handle the TCP connection
+                        new Thread(() -> {
+                            // Set the flag to indicate TCP connection is being established
+                            tcpConnectionEstablished = true;
+                            establishTcpConnection(senderAddress);
+                        }).start();
                     }
                 }
             } catch (Exception e) {
