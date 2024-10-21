@@ -4,3 +4,4 @@
 4) Encryption to enter password message box not updated with new GUI
 5) Copy number code doesnt work for encrypted files, but works for encrypted folders
 6) Android Send folder with 2 same file names is causing overwrite
+7) Android send folder name issue
