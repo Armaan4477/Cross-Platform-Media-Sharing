@@ -7,7 +7,7 @@ import platform
 from PyQt6 import QtCore
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject,QTimer
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QHBoxLayout
-from PyQt6.QtGui import QScreen,QMovie
+from PyQt6.QtGui import QScreen,QMovie,QFont
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 
@@ -377,17 +377,55 @@ class ReceiveAppP(QWidget):
         layout.addWidget(self.progress_bar)
 
         # Open directory button
-        self.open_dir_button = QPushButton("Open Receiving Directory", self)
+        self.open_dir_button = self.create_styled_button('Open Receiving Directory')
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
 
-        self.close_button = QPushButton('Close', self)
+        # Keep them disabled until the file transfer is completed
+        self.close_button = self.create_styled_button('Close')  # Apply styling here
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         layout.addWidget(self.close_button)
 
         self.setLayout(layout)
+
+    def create_styled_button(self, text):
+        button = QPushButton(text)
+        button.setFixedHeight(25)
+        button.setFont(QFont("Arial", 14))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #2f3642,
+                    stop: 1 #4b5562
+                );
+                color: white;
+                border-radius: 8px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #3c4450,
+                    stop: 1 #5a6476
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #232933,
+                    stop: 1 #414b58
+                );
+            }
+            QPushButton:disabled {
+                background: #666;
+                color: #aaa;
+            }
+        """)
+        return button
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
