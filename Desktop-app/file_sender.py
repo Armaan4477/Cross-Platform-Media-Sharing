@@ -209,7 +209,7 @@ class SendApp(QWidget):
         # Content area
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
+        content_layout.setSpacing(15)
 
         # File selection buttons
         button_layout = QHBoxLayout()
@@ -282,14 +282,11 @@ class SendApp(QWidget):
 
         # Status label
         self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: white; font-size: 14px;")
         self.style_label(self.status_label)
         content_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-         # Create 2 buttons for close and Transfer More Files
         # Keep them disabled until the file transfer is completed
-        self.close_button = QPushButton('Close', self)
-        self.close_button.setEnabled(False)
+        self.close_button = self.create_styled_button_close('Close')  # Apply styling here
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
@@ -333,6 +330,43 @@ class SendApp(QWidget):
             }
         """)
         return button
+    
+    def create_styled_button_close(self, text):
+        button = QPushButton(text)
+        button.setFixedHeight(25)
+        button.setFont(QFont("Arial", 14))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #2f3642,
+                    stop: 1 #4b5562
+                );
+                color: white;
+                border-radius: 8px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #3c4450,
+                    stop: 1 #5a6476
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 #232933,
+                    stop: 1 #414b58
+                );
+            }
+            QPushButton:disabled {
+                background: #666;
+                color: #aaa;
+            }
+        """)
+        return button
 
     def set_background(self):
         self.setStyleSheet("""
@@ -349,6 +383,7 @@ class SendApp(QWidget):
         label.setStyleSheet("""
             color: #FFFFFF;
             background-color: transparent;  /* Set the background to transparent */
+            font-size: 20px;
         """)
 
     def center_window(self):
@@ -401,10 +436,7 @@ class SendApp(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.status_label.setText("File transfer completed!")
-            self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
-
-            # Enable the close and Transfer More Files buttons
-            self.close_button.setEnabled(True)
+            self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
             self.close_button.setVisible(True)
 
 
