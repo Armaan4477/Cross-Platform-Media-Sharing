@@ -156,7 +156,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             progressBar.setProgress(0);
             progressBar.setVisibility(ProgressBar.INVISIBLE);
             animationView.setVisibility(LottieAnimationView.INVISIBLE);
-            openFolder.setVisibility(Button.VISIBLE);
+//            openFolder.setVisibility(Button.VISIBLE);
 
             openFolder.setOnClickListener(v -> {
                 // Create a File object for the destination folder
