@@ -185,24 +185,26 @@ public class ReceiveFileActivity extends AppCompatActivity {
         private void receiveFiles() {
             Log.d("ReceiveFileActivity", "File reception started.");
             try {
+                // Load the save directory from the config file
                 File configFile = new File(getFilesDir(), "config/config.json");
                 saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+                Log.d("ReceiveFileActivity", "Save directory: " + saveToDirectory);
 
-                String actualPath = saveToDirectory.replace("/tree/primary:", "")
-                        .replace("Download", Environment.DIRECTORY_DOWNLOADS)
-                        .replace("/", File.separator);
-                actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
+                // Ensure the directory path is correctly formed
+                File baseDir = Environment.getExternalStorageDirectory();
+                File targetDir = new File(baseDir, saveToDirectory);
 
-                File directory = new File(actualPath);
-                if (!directory.exists() && !directory.mkdirs()) {
-                    Log.e("ReceiveFileActivity", "Failed to create directory: " + actualPath);
+                // Create the directory if it doesn't exist
+                if (!targetDir.exists() && !targetDir.mkdirs()) {
+                    Log.e("ReceiveFileActivityPython", "Failed to create directory: " + targetDir.getPath());
                     return;
                 }
 
-                destinationFolder = actualPath;
+                destinationFolder = targetDir.getPath(); // Update destinationFolder to the newly formed path
                 JSONArray metadataArray = null;
 
                 while (true) {
+                    // Read encryption flag
                     byte[] encryptionFlagBytes = new byte[8];
                     clientSocket.getInputStream().read(encryptionFlagBytes);
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
@@ -211,6 +213,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         break;
                     }
 
+                    // Read file name size
                     byte[] fileNameSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileNameSizeBytes);
                     long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
@@ -219,10 +222,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         break;
                     }
 
+                    // Read file name
                     byte[] fileNameBytes = new byte[(int) fileNameSize];
                     clientSocket.getInputStream().read(fileNameBytes);
                     String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
 
+                    // Read file size
                     byte[] fileSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileSizeBytes);
                     long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
@@ -231,16 +236,24 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         continue;
                     }
 
+                    // Handle metadata
                     if (fileName.equals("metadata.json")) {
                         metadataArray = receiveMetadata(fileSize);
                         if (metadataArray != null) {
-                            destinationFolder = createFolderStructure(metadataArray, actualPath);
+                            destinationFolder = createFolderStructure(metadataArray, targetDir.getPath());
                         }
                         continue;
                     }
 
+                    // Ensure destination file path is valid
                     String filePath = (metadataArray != null) ? getFilePathFromMetadata(metadataArray, fileName) : fileName;
                     File receivedFile = new File(destinationFolder, filePath);
+
+                    // Check if received path is a directory
+                    if (receivedFile.isDirectory()) {
+                        Log.e("ReceiveFileActivity", "Received path is a directory, removing filename from path.");
+                        receivedFile = new File(destinationFolder, filePath + File.separator + fileName);
+                    }
 
                     File parentDir = receivedFile.getParentFile();
                     if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
@@ -262,8 +275,9 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[8192]; // Increased buffer size for faster transfer
+                        byte[] buffer = new byte[4096 * 4]; // Increased buffer size for faster transfer
                         long receivedSize = 0;
+
                         while (receivedSize < fileSize) {
                             int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
                             if (bytesRead == -1) {
@@ -274,12 +288,13 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
                             // Update progress
                             int progress = (int) ((receivedSize * 100) / fileSize);
+                            Log.d("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
                             publishProgress(progress);
                         }
                     }
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivity", "Error receiving files", e);
+                Log.e("ReceiveFileActivityPython", "Error receiving files", e);
             }
         }
     }
@@ -301,11 +316,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     // Method to load the save directory from config.json
     private String loadSaveDirectoryFromConfig(File configFile) {
-        String saveToDirectory = getFilesDir().getPath(); // Default directory if config fails
+        String saveToDirectory = ""; // Use an empty string as the initial value
         try {
-            // Update the path to point to the correct location of config.json
-            configFile = new File(getFilesDir(), "config/config.json"); // Corrected path
-
+            // Load config.json
+            configFile = new File(getFilesDir(), "config/config.json");
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -315,10 +329,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
             }
             reader.close();
             JSONObject config = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = config.optString("save_to_directory", saveToDirectory);
+            saveToDirectory = config.optString("save_to_directory", "");
+            saveToDirectory = saveToDirectory.startsWith("/") ? saveToDirectory.substring(1) : saveToDirectory; // Remove leading '/'
         } catch (Exception e) {
-            Log.e("ReceiveFileActivity", "Error loading config.json", e);
+            Log.e("ReceiveFileActivityPython", "Error loading config.json", e);
         }
+        Log.d("ReceiveFileActivityPython", "Loaded save directory: " + saveToDirectory);
         return saveToDirectory;
     }
 
