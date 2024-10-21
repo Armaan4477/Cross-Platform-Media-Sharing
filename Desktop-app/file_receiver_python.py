@@ -18,6 +18,7 @@ class ReceiveWorkerPython(QThread):
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
     close_connection_signal = pyqtSignal() 
+    receiving_started = pyqtSignal()
     password = None
 
     def __init__(self, client_ip):
@@ -60,6 +61,7 @@ class ReceiveWorkerPython(QThread):
         self.initialize_connection()
         self.accept_connection()
         if self.client_skt:
+            self.receiving_started.emit()
             self.receive_files()
         else:
             logger.error("Failed to establish a connection.")
@@ -283,6 +285,7 @@ class ReceiveWorkerPython(QThread):
         if self.server_skt:
             self.server_skt.close()
 
+
 class ReceiveAppP(QWidget):
     progress_update = pyqtSignal(int)
 
@@ -295,6 +298,21 @@ class ReceiveAppP(QWidget):
         self.current_text = "Waiting for file..."  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
+        self.progress_bar.setVisible(False)  # Initially hidden
+        
+        self.file_receiver = ReceiveWorkerPython(client_ip)
+        self.file_receiver.progress_update.connect(self.updateProgressBar)
+        self.file_receiver.decrypt_signal.connect(self.decryptor_init)
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+       
+        
+        # Start the typewriter effect
+        self.typewriter_timer = QTimer(self)
+        self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
+        self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
+
+        # Start the file receiving process and set progress bar visibility
+        QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
 
     def initUI(self):
         self.setWindowTitle('Receive File')
@@ -313,7 +331,6 @@ class ReceiveAppP(QWidget):
         # Define the relative paths to the GIFs
         receiving_gif_path = os.path.join(os.path.dirname(__file__), "assets", "file.gif")
         success_gif_path = os.path.join(os.path.dirname(__file__), "assets", "mark.gif")
-        
 
         layout = QVBoxLayout()
         layout.setSpacing(10)  # Set spacing between widgets
@@ -343,7 +360,7 @@ class ReceiveAppP(QWidget):
         """)
         layout.addWidget(self.label, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
-       # Progress bar
+        # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
             QProgressBar {
@@ -372,26 +389,15 @@ class ReceiveAppP(QWidget):
 
         self.setLayout(layout)
 
-        # Set up typewriter effect timer
-        self.typewriter_timer = QTimer(self)
-        self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(100)  # Adjust the speed of typewriter effect by changing the interval
-
-        # Start the file receiving process
-        client_ip = self.client_ip
-        self.file_receiver = ReceiveWorkerPython(client_ip)
-        self.file_receiver.progress_update.connect(self.updateProgressBar)
-        self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.start()
-
-        QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
-
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
+
+    def show_progress_bar(self):
+        self.progress_bar.setVisible(True)
 
     
     def update_typewriter_effect(self):
@@ -412,15 +418,10 @@ class ReceiveAppP(QWidget):
             self.change_gif_to_success()  # Change GIF to success animation
             self.close_button.setVisible(True)
 
-    
-    
-
     def change_gif_to_success(self):
         self.receiving_movie.stop()
         self.loading_label.setMovie(self.success_movie)
         self.success_movie.start()
-
-
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
@@ -447,8 +448,8 @@ class ReceiveAppP(QWidget):
             
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
-                
-     
+
+
 
 if __name__ == '__main__':
     import sys
