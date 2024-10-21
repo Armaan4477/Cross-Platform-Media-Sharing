@@ -272,7 +272,7 @@ class Broadcast(QWidget):
         center = QPointF(self.width() / 2, self.height() / 2)
         self.center = center
         for i in range(4):
-            radius = 90 - i * 25  # Reduced size for the circles
+            radius = 97 - i * 26  # Reduced size for the circles
             painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
 
     def update_devices(self):
@@ -282,13 +282,13 @@ class Broadcast(QWidget):
                 child.deleteLater()
 
         # Position the device buttons on the reduced circle size
-        radius = 87  # Smaller circle for the device buttons
-        center_x, center_y = 276, 160  # Adjusted center for the smaller window
+        radius = 105  # Smaller circle for the device buttons
+        center_x, center_y = 296, 160  # Adjusted center for the smaller window
 
         for i, device in enumerate(self.devices):
             angle = i * (2 * math.pi / len(self.devices))
-            x = center_x + radius * math.cos(angle) - 34  # Adjusted for smaller window
-            y = center_y + radius * math.sin(angle) - 34  # Adjusted for smaller window
+            x = center_x + radius * math.cos(angle) - 32  # Adjusted for smaller window
+            y = center_y + radius * math.sin(angle) - 20  # Adjusted for smaller window
             button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
             button_with_label.move(int(x), int(y))
             button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
