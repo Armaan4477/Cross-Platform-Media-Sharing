@@ -1,6 +1,7 @@
 Macos:
 pyinstaller --onefile --windowed \
---icon=logo.icns \
+--icon=icon.icns \
+--paths=/Users/armaan/Developer/Cross-Platform-Media-Sharing/.venv/lib/python3.13/site-packages \
 --name="DataDash" \
 --add-data "icons/*:icons" \
 --add-data "assets/*:assets" \
