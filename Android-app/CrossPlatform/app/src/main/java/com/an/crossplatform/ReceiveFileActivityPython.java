@@ -200,33 +200,25 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             });
         }
 
-            private void receiveFiles() {
+        private void receiveFiles() {
             Log.d("ReceiveFileActivityPython", "File reception started.");
             try {
+                // Load the save directory from the config file
                 File configFile = new File(getFilesDir(), "config/config.json");
                 saveToDirectory = loadSaveDirectoryFromConfig(configFile);
                 Log.d("ReceiveFileActivityPython", "Save directory: " + saveToDirectory);
 
-                String actualPath = saveToDirectory.replace("/tree/primary:", "")
-                        .replace("Download", Environment.DIRECTORY_DOWNLOADS)
-                        .replace("/", File.separator);
+                // Ensure the directory path is correctly formed
+                File baseDir = Environment.getExternalStorageDirectory();
+                File targetDir = new File(baseDir, saveToDirectory);
 
-                // Check if the path is the default storage path
-                if (actualPath.equals("/storage/emulated/0")) {
-                    // Set to the Downloads directory if it's the default path
-                    actualPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
-                } else {
-                    // Otherwise, append the external storage path
-                    actualPath = Environment.getExternalStorageDirectory().getPath() + File.separator + actualPath;
-                }
-
-                File directory = new File(actualPath);
-                if (!directory.exists() && !directory.mkdirs()) {
-                    Log.e("ReceiveFileActivityPython", "Failed to create directory: " + actualPath);
+                // Create the directory if it doesn't exist
+                if (!targetDir.exists() && !targetDir.mkdirs()) {
+                    Log.e("ReceiveFileActivityPython", "Failed to create directory: " + targetDir.getPath());
                     return;
                 }
 
-                destinationFolder = actualPath;
+                destinationFolder = targetDir.getPath(); // Update destinationFolder to the newly formed path
                 JSONArray metadataArray = null;
 
                 while (true) {
@@ -266,7 +258,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     if (fileName.equals("metadata.json")) {
                         metadataArray = receiveMetadata(fileSize);
                         if (metadataArray != null) {
-                            destinationFolder = createFolderStructure(metadataArray, actualPath);
+                            destinationFolder = createFolderStructure(metadataArray, targetDir.getPath());
                         }
                         continue;
                     }
@@ -301,7 +293,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[4096*4]; // Increased buffer size for faster transfer
+                        byte[] buffer = new byte[4096 * 4]; // Increased buffer size for faster transfer
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {
@@ -323,6 +315,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.e("ReceiveFileActivityPython", "Error receiving files", e);
             }
         }
+
     }
 
     private String getFilePathFromMetadata(JSONArray metadataArray, String fileName) {
@@ -342,11 +335,10 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
     // Method to load the save directory from config.json
     private String loadSaveDirectoryFromConfig(File configFile) {
-        String saveToDirectory = getFilesDir().getPath(); // Default directory if config fails
+        String saveToDirectory = ""; // Use an empty string as the initial value
         try {
-            // Update the path to point to the correct location of config.json
-            configFile = new File(getFilesDir(), "config/config.json"); // Corrected path
-
+            // Load config.json
+            configFile = new File(getFilesDir(), "config/config.json");
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -356,12 +348,15 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             }
             reader.close();
             JSONObject config = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = config.optString("save_to_directory", saveToDirectory);
+            saveToDirectory = config.optString("save_to_directory", "");
+            saveToDirectory = saveToDirectory.startsWith("/") ? saveToDirectory.substring(1) : saveToDirectory; // Remove leading '/'
         } catch (Exception e) {
             Log.e("ReceiveFileActivityPython", "Error loading config.json", e);
         }
+        Log.d("ReceiveFileActivityPython", "Loaded save directory: " + saveToDirectory);
         return saveToDirectory;
     }
+
 
     private JSONArray receiveMetadata(long fileSize) {
         byte[] receivedData = new byte[(int) fileSize];
