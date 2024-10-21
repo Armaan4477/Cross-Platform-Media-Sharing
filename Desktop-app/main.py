@@ -159,8 +159,8 @@ class MainApp(QWidget):
         wifi_widget = WifiAnimationWidget()
         main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
-        icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
+        icon_path_send = os.path.join(os.path.dirname(__file__), "assets", "send.svg")
+        icon_path_receive = os.path.join(os.path.dirname(__file__), "assets", "receive.svg")
 
 
         # Buttons Layout
