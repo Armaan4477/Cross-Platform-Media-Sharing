@@ -49,6 +49,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private LottieAnimationView animationView;
     private LottieAnimationView waitingAnimation;
     private Button openFolder;
+    private TextView txt_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +60,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
         animationView = findViewById(R.id.transfer_animation);
         waitingAnimation = findViewById(R.id.waiting_animation);
         openFolder = findViewById(R.id.openFolder);
+        txt_path = findViewById(R.id.path);
+        txt_path.setVisibility(TextView.VISIBLE);
 
         senderJson = getIntent().getStringExtra("receivedJson");
         senderIp = getIntent().getStringExtra("senderIp");
@@ -138,6 +141,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             progressBar.setProgress(0);
             progressBar.setVisibility(ProgressBar.INVISIBLE);
             animationView.setVisibility(LottieAnimationView.INVISIBLE);
+            txt_path.setText("Files saved to: " + destinationFolder);
 //            openFolder.setVisibility(Button.VISIBLE);
 
             openFolder.setOnClickListener(v -> {

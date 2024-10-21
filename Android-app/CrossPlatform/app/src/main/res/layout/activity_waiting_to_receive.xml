@@ -30,9 +30,9 @@
         android:text="Waiting to receive file..."
         android:textColor="@color/white"
         android:textSize="18sp"
-        app:layout_constraintTop_toBottomOf="@id/waiting_animation"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/waiting_animation" />
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/transfer_animation"
@@ -72,5 +72,21 @@
         android:background="@drawable/state_list_drawable"
         android:visibility="gone"
         android:layout_marginBottom="40dp"/>
+
+    <TextView
+        android:id="@+id/path"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="106dp"
+        android:gravity="center"
+        android:maxLines="10"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/transfer_animation"
+        app:layout_constraintTop_toBottomOf="@+id/txt_waiting"
+        tools:layout_editor_absoluteX="155dp" 
+        android:textIsSelectable="true"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
