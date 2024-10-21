@@ -310,6 +310,11 @@ class ReceiveAppP(QWidget):
             }
         """)
 
+        # Define the relative paths to the GIFs
+        receiving_gif_path = os.path.join(os.path.dirname(__file__), "assets", "file.gif")
+        success_gif_path = os.path.join(os.path.dirname(__file__), "assets", "mark.gif")
+        
+
         layout = QVBoxLayout()
         layout.setSpacing(10)  # Set spacing between widgets
         layout.setContentsMargins(10, 10, 10, 10)  # Add some margins around the layout
@@ -317,8 +322,8 @@ class ReceiveAppP(QWidget):
         # Loading label with the movie (GIF)
         self.loading_label = QLabel(self)
         self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
-        self.receiving_movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/file2.gif")
-        self.success_movie = QMovie("C:/Users/Admin/Documents/Cross-Platform-Media-Sharing/Desktop-app/mark.gif")  # New success GIF
+        self.receiving_movie = QMovie(receiving_gif_path)
+        self.success_movie = QMovie(success_gif_path)  # New success GIF
         self.receiving_movie.setScaledSize(QtCore.QSize(100, 100))
         self.success_movie.setScaledSize(QtCore.QSize(100, 100))  # Set size for success GIF
         self.loading_label.setMovie(self.receiving_movie)
