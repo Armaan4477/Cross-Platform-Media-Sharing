@@ -114,6 +114,9 @@ class BroadcastWorker(QThread):
 
     def connect_to_device(self, device_ip, device_name):
         try:
+            # Close any existing client socket
+            if self.client_socket:
+                self.client_socket.close()
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.bind(('', SENDER_JSON))
             self.client_socket.connect((device_ip, RECEIVER_JSON))

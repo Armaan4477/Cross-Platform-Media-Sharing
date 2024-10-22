@@ -162,6 +162,10 @@ public class PreferencesActivity extends AppCompatActivity {
                     result -> {
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                             String pickedDir = result.getData().getData().getPath();
+                            // Give a warning if the selected directory is within the "Download" folder and may cause issues
+                            if (pickedDir.contains("Download")) {
+                                Toast.makeText(this, "Warning: Selected directory is within the Download folder", Toast.LENGTH_SHORT).show();
+                            }
                             saveToPathInput.setText(pickedDir);
                         }
                     });

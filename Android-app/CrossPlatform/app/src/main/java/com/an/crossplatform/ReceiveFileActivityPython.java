@@ -300,7 +300,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[4096 * 4]; // Increased buffer size for faster transfer
+                        byte[] buffer = new byte[4096]; // Increased buffer size for faster transfer
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {

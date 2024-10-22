@@ -520,10 +520,16 @@ public class SendFileActivity extends AppCompatActivity {
                 // Get the file name from content URI
                 Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
                 if (cursor != null && cursor.moveToFirst()) {
-                    // Retrieve the display name (actual file name)
-                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                    finalRelativePath = cursor.getString(nameIndex);
+                    // Set finalRelativePath to the relative path from the content URI after removing folder name
+                    String base_folder_name_URI = filePaths.get(0);
+                    // Resolve the URI and get the base folder name
+                    DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_URI));
+                    String base_folder_name = baseFolderDocument.getName();
+                    Log.d("SendFileActivity", "Base folder name: " + base_folder_name);
+                    // Replace only the first occurrence of the base folder name in the relative path
+                    finalRelativePath = finalRelativePath.replaceFirst(base_folder_name + "\\\\", "");
                     cursor.close();
+                    Log.d("SendFileActivity", "File name: " + finalRelativePath);
                 } else {
                     // Fallback to using the last segment of the URI path
                     finalRelativePath = new File(fileUri.getPath()).getName();
