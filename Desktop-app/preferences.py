@@ -256,9 +256,11 @@ class PreferencesApp(QWidget):
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.encryption_toggle.setChecked(config["encryption"])
+        self.android_encryption=(config["android_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.original_preferences = config.copy()
         logger.info("Loaded preferences: %s", self.version)
+        logger.info("Loaded preferences: %s", self.android_encryption)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -283,6 +285,9 @@ class PreferencesApp(QWidget):
                     );
                     color: #FFFFFF;
                     font-size: 16px;
+                }
+                QLabel {
+                background-color: transparent; /* Make the label background transparent */
                 }
                 QPushButton {
                     background: qlineargradient(
@@ -319,6 +324,7 @@ class PreferencesApp(QWidget):
             "device_name": device_name,
             "save_to_directory": save_to_path,
             "encryption": encryption,
+            "android_encryption": self.android_encryption,
             "show_warning": show_warning  # Save show_warning state
         }
 
@@ -458,6 +464,7 @@ class PreferencesApp(QWidget):
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
+            "android_encryption": self.android_encryption,
             "show_warning": self.show_warning_toggle.isChecked()  # Get show_warning toggle state
         }
         return current_preferences != self.original_preferences

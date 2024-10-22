@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 
@@ -145,6 +145,8 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
 
 class Broadcast(QWidget):
+    
+   
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Device Discovery')
@@ -358,6 +360,57 @@ class Broadcast(QWidget):
         self.send_app.show()
 
     def show_send_app_java(self, device_ip, device_name, receiver_data):
+        
+        if get_config()["encryption"] and get_config()["show_warning"]:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Input Error")
+                msg_box.setText("You have encryption Enabled, unfortunately android tranfer doesn't support that yet. Clicking ok will bypass your encryption settings for this file transfer.")
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec() 
+        
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
