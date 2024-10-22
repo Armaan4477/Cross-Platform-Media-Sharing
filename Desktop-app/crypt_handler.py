@@ -70,29 +70,38 @@ class Decryptor(QWidget):
         self.initUI()
         self.encrypted_files = file_list
         self.pass_attempts = 3
-        self.setFixedSize(400, 300)
+        self.setFixedSize(400, 200)
         self.set_background()
         self.center_window()
 
     def initUI(self):
         self.setWindowTitle('Decryptor')
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(100, 100, 400, 200)  # Reduced window size
         
         layout = QVBoxLayout()
+        layout.setSpacing(0)  # Reduced spacing between elements
+        layout.setContentsMargins(30, 20, 30, 20)  # Reduced margins
+        
         self.password_label = QLabel('Decryption Password:', self)
         self.style_label(self.password_label)
         layout.addWidget(self.password_label)
 
+         # Add a spacer to remove the gap between the label and the input box
+        spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        layout.addItem(spacer)
+
         self.password_input = QLineEdit(self)
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.submit_button = QPushButton('Submit', self)
-
         self.style_input(self.password_input)
         layout.addWidget(self.password_input)
+        
+        self.submit_button = QPushButton('Submit', self)
         self.style_button(self.submit_button)
-        layout.addWidget(self.submit_button,alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.submit_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
         self.submit_button.clicked.connect(self.decrypt_all_files)
         self.setLayout(layout)
+
 
     def decrypt_all_files(self, pass_attempts = 3):
         password = self.password_input.text()
@@ -389,7 +398,7 @@ class Decryptor(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 400, 300
+        window_width, window_height = 400, 200
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
