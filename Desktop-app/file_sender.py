@@ -241,7 +241,7 @@ class SendApp(QWidget):
         if self.config['encryption']:
             password_layout = QHBoxLayout()
             self.password_label = QLabel('Encryption Password:')
-            self.password_label.setStyleSheet("color: white; font-size: 14px;")
+            self.password_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
             password_layout.addWidget(self.password_label)
 
             self.password_input = QLineEdit()
