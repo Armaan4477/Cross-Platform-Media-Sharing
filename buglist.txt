@@ -1,8 +1,0 @@
-Python:
-1) Broadcast connection socket non closure
-2) Decryptor Window GUI not updated
-3) Copy number code doesnt work for encrypted files, but works for encrypted folders
-
-Android:
-1) Android Send folder with 2 same file names is causing overwrite
-2) Android send folder name issue
