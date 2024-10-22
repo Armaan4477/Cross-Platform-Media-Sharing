@@ -327,10 +327,17 @@ public class SendFileActivityPython extends AppCompatActivity {
         // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
         String base_folder_name_path = filePaths.get(0);
-        // Get the name of file after last '/'
-        int lastSlashIndex = base_folder_name_path.lastIndexOf('/');
-        if (lastSlashIndex != -1) {
-            base_folder_name_path = base_folder_name_path.substring(lastSlashIndex + 1);
+        // Get the name of the base folder
+        if (base_folder_name_path.startsWith("content://")) {
+            DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
+            if (baseFolderDocument != null) {
+                base_folder_name_path = baseFolderDocument.getName();
+            }
+        } else {
+            File baseFolder = new File(base_folder_name_path);
+            if (baseFolder.exists()) {
+                base_folder_name_path = baseFolder.getName();
+            }
         }
         base_folder_name.put("base_folder_name", base_folder_name_path);
         base_folder_name.put("path", ".delete");
@@ -694,6 +701,29 @@ public class SendFileActivityPython extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Close the socket connection when the activity is destroyed
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
         executorService.shutdown();  // Clean up background threads
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Close sockets on activity destruction
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
     }
 }

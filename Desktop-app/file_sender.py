@@ -70,9 +70,6 @@ class FileSender(QThread):
             
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
-        self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
         self.client_skt.close()
 
     def create_metadata(self, folder_path=None, file_paths=None):

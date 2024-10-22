@@ -64,6 +64,12 @@ class ReceiveWorkerJava(QThread):
         else:
             logger.error("Failed to establish a connection.")
 
+        # Close all active sockets
+        if self.client_skt:
+            self.client_skt.close()
+        if self.server_skt:
+            self.server_skt.close()
+
 
     def receive_files(self):
         self.broadcasting = False  # Stop broadcasting
