@@ -4,6 +4,7 @@ Python:
 3) Encryption to enter password message box not updated with new GUI
 4) Copy number code doesnt work for encrypted files, but works for encrypted folders
 5) Add warning message for python sending to android if encryption is enabled as there is no encryption feature yet.
+6) Device name empty warning in settings menu has double background
 Android:
 1) Android Send folder with 2 same file names is causing overwrite
 2) Android send folder name issue
