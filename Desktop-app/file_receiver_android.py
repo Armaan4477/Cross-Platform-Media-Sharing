@@ -485,8 +485,8 @@ class ReceiveAppPJava(QWidget):
             self.decryptor.show()
 
     def open_receiving_directory(self):
-        config = get_config()
-        receiving_dir = config.get("save_to_directory")
+
+        receiving_dir = get_config()["save_to_directory"]
         
         if receiving_dir:
             try:
