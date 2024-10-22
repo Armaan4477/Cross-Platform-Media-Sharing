@@ -367,6 +367,7 @@ class Decryptor(QWidget):
         label.setStyleSheet("""
             color: #FFFFFF;
             background-color: transparent;  /* Set the background to transparent */
+            font-size: 20px;
         """)
 
     def style_input(self, input_field):
