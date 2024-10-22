@@ -20,7 +20,7 @@ RECEIVER_DATA = 58000
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
-    config = get_config()
+
     password = None
 
     def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
@@ -53,8 +53,8 @@ class FileSender(QThread):
         if not self.initialize_connection():
             return
         
-        self.config = get_config()
-        self.encryption_flag = self.config['encryption']
+
+        self.encryption_flag = get_config()["encryption"]
 
         for file_path in self.file_paths:
             if os.path.isdir(file_path):
@@ -171,7 +171,6 @@ class FileSender(QThread):
         return True
 
 class SendApp(QWidget):
-    config = get_config()
 
     def __init__(self, ip_address, device_name, receiver_data):
         super().__init__()
@@ -183,8 +182,8 @@ class SendApp(QWidget):
         self.progress_bar.setVisible(False)
 
     def initUI(self):
-        self.config = get_config()
-        logger.debug("Encryption : %s", self.config['encryption'])
+ 
+        logger.debug("Encryption : %s", get_config()["encryption"])
         self.setWindowTitle('DataDash: Send File')
         self.setFixedSize(960, 540)  # Updated to 16:9 ratio
         self.center_window()
@@ -238,7 +237,7 @@ class SendApp(QWidget):
         content_layout.addWidget(self.file_path_display)
 
         # Password input (if encryption is enabled)
-        if self.config['encryption']:
+        if get_config()["encryption"]:
             password_layout = QHBoxLayout()
             self.password_label = QLabel('Encryption Password:')
             self.password_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
@@ -419,7 +418,7 @@ class SendApp(QWidget):
     def sendSelectedFiles(self):
         password = None
 
-        if self.config['encryption']:
+        if get_config()["encryption"]:
             password = self.password_input.text()
             if not password:
                 msg_box = QMessageBox(self)

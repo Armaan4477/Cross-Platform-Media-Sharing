@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 
@@ -145,8 +145,8 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
 
 class Broadcast(QWidget):
-    from constant import get_config
-    config = get_config()
+    
+   
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Device Discovery')
@@ -361,7 +361,7 @@ class Broadcast(QWidget):
 
     def show_send_app_java(self, device_ip, device_name, receiver_data):
         
-        if self.config['encryption'] and self.config['show_warning']:
+        if get_config()["encryption"] and get_config()["show_warning"]:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("Input Error")
                 msg_box.setText("You have encryption Enabled, unfortunately android tranfer doesn't support that yet. Clicking ok will bypass your encryption settings for this file transfer.")
