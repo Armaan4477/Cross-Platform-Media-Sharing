@@ -1,3 +1,4 @@
+Python:
 1) Broadcast connection socket non closure
 2) Decryptor Window GUI not updated
 3) Encryption text in sender window having double background
@@ -5,5 +6,6 @@
 5) Copy number code doesnt work for encrypted files, but works for encrypted folders
 6) Even if encryption code is enabled, android doesnt support encrypted files, make sure to not send encrypted version.
 7) Add warning message for python sending to android if encryption is enabled.
-6) Android Send folder with 2 same file names is causing overwrite
-7) Android send folder name issue
+Android:
+1) Android Send folder with 2 same file names is causing overwrite
+2) Android send folder name issue
