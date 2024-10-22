@@ -5,11 +5,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 import os
 import base64
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QMessageBox
-)
 import sys
 from constant import logger
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QDialog, QLabel, QGridLayout, QPushButton, QApplication, QSpacerItem, QSizePolicy, QMessageBox
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QColor, QScreen
+from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 def derive_key(key: str, salt: bytes) -> bytes:
     """Derive a key using PBKDF2HMAC."""
@@ -69,29 +70,83 @@ class Decryptor(QWidget):
         self.initUI()
         self.encrypted_files = file_list
         self.pass_attempts = 3
+        self.setFixedSize(400, 300)
+        self.set_background()
+        self.center_window()
 
     def initUI(self):
         self.setWindowTitle('Decryptor')
         self.setGeometry(100, 100, 400, 300)
-
+        
         layout = QVBoxLayout()
         self.password_label = QLabel('Decryption Password:', self)
+        self.style_label(self.password_label)
         layout.addWidget(self.password_label)
 
         self.password_input = QLineEdit(self)
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.submit_button = QPushButton('Submit', self)
 
+        self.style_input(self.password_input)
         layout.addWidget(self.password_input)
-        layout.addWidget(self.submit_button)
+        self.style_button(self.submit_button)
+        layout.addWidget(self.submit_button,alignment=Qt.AlignmentFlag.AlignCenter)
         self.submit_button.clicked.connect(self.decrypt_all_files)
         self.setLayout(layout)
 
     def decrypt_all_files(self, pass_attempts = 3):
         password = self.password_input.text()
         if not password:
-            QMessageBox.critical(self_instance, 'Input Error', 'Password cannot be empty.') # type: ignore
-            return
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Input Error")
+                msg_box.setText("Please Enter a Password.")
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec()
+            
+                return
 
         failed = False
 
@@ -110,10 +165,188 @@ class Decryptor(QWidget):
             os.remove(f)
 
         if failed:
-            QMessageBox.critical(self, "Too many incorrect attempts", "File has been deleted.")
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Input Error")
+                msg_box.setText("Too many incorrect attempts, File has been deleted.")
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec()
         else:
-            QMessageBox.information(self, "Success", "Successfully decrypted files")
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Success")
+                msg_box.setText("Successfully decrypted files")
+                msg_box.setIcon(QMessageBox.Icon.Information)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec()
         self.hide()
+
+    def set_background(self):
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+            }
+        """)
+
+    def style_button(self, button):
+        button.setFixedSize(150, 40)  # Adjust the size as needed
+        button.setFont(QFont("Arial", 15))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                );
+                color: white;
+                border-radius: 18px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),   /* Lightened Dark Color */
+                    stop: 1 rgba(90, 100, 118, 255)  /* Lightened Light Color */
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),   /* Darker on press */
+                    stop: 1 rgba(65, 75, 88, 255)    /* Darker on press */
+                );
+            }
+        """)
+
+        # Adding a constant glow effect to the button
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)  # Adjust the blur radius for a softer glow
+        glow_effect.setXOffset(0)       # Center the glow horizontally
+        glow_effect.setYOffset(0)       # Center the glow vertically
+        glow_effect.setColor(QColor(255, 255, 255, 100))  # Soft white glow with some transparency
+        button.setGraphicsEffect(glow_effect)
+
+    def style_label(self, label):
+        label.setStyleSheet("""
+            color: #FFFFFF;
+            background-color: transparent;  /* Set the background to transparent */
+        """)
+
+    def style_input(self, input_field):
+        input_field.setStyleSheet("""
+            QLineEdit {
+                color: #FFFFFF;
+                background-color: transparent;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 5px;
+                caret-color: #00FF00;  /* Green cursor color */
+            }
+            QLineEdit:focus {
+                border: 2px solid #333333;  /* Dark grey border on focus */
+                caret-color: #00FF00;  /* Green cursor color on focus */
+                background-color: rgba(255, 255, 255, 0.1); /* Slightly opaque background on focus */
+            }
+        """)
+
+    def center_window(self):
+        screen = QScreen.availableGeometry(QApplication.primaryScreen())
+        window_width, window_height = 400, 300
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.setGeometry(x, y, window_width, window_height)
+
+
 # if __name__ == '__main__':
 #     app = QApplication(sys.argv)
 #     dialog = PasswordDialog()
