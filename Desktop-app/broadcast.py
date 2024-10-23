@@ -119,6 +119,7 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
 
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
             self.client_socket.bind(('', SENDER_JSON))
             self.client_socket.connect((device_ip, RECEIVER_JSON))
 
