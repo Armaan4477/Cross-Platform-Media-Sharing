@@ -132,6 +132,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer... values) {
             progressBar.setProgress(values[0]);
+            // End and execute onPostExecute when progress reaches 100
+            if (values[0] == 100) {
+                onPostExecute(null);
+            }
+
         }
 
         @Override

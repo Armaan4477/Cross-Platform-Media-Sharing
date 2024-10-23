@@ -2,6 +2,7 @@ package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.icu.text.LocaleDisplayNames;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -66,6 +67,7 @@ public class SendFileActivity extends AppCompatActivity {
     DataInputStream dis = null;
     private ProgressBar progressBar_send;
     private LottieAnimationView animationView;
+    String base_folder_name_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -325,7 +327,7 @@ public class SendFileActivity extends AppCompatActivity {
 
         // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
-        String base_folder_name_path = filePaths.get(0);
+        base_folder_name_path = filePaths.get(0);
         // Get the name of file after last '/'
         int lastSlashIndex = base_folder_name_path.lastIndexOf('/');
         if (lastSlashIndex != -1) {
@@ -535,6 +537,9 @@ public class SendFileActivity extends AppCompatActivity {
                 finalRelativePath = file.getName();  // Get the name of the file
             }
 
+            if(relativePath != null && !relativePath.isEmpty()) {
+                finalRelativePath = relativePath;
+            }
             // Make final variables to use inside AsyncTask
             final InputStream finalInputStream = inputStream;
             final String finalPathToSend = finalRelativePath;
@@ -694,6 +699,12 @@ public class SendFileActivity extends AppCompatActivity {
             String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
                     ? filePath.substring(topLevelFolderName.length() + 1)
                     : filePath;
+
+            Log.d("SendFileActivity", "Base folder name: " + base_folder_name_path);
+            Log.d("SendFileActivity", "Sending file: " + parentPath + documentFile.getName());
+            // Extract string after base_folder_name_path to get the relative path
+//            relativeFilePath = relativeFilePath.substring(base_folder_name_path.length() + 1);
+
 
             Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
 

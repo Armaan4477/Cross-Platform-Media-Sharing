@@ -66,6 +66,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     DataInputStream dis = null;
     private ProgressBar progressBar_send;
     private LottieAnimationView animationView;
+    String base_folder_name_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -326,7 +327,7 @@ public class SendFileActivityPython extends AppCompatActivity {
 
         // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
-        String base_folder_name_path = filePaths.get(0);
+        base_folder_name_path = filePaths.get(0);
         // Get the name of the base folder
         if (base_folder_name_path.startsWith("content://")) {
             DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
@@ -542,6 +543,9 @@ public class SendFileActivityPython extends AppCompatActivity {
                 finalRelativePath = file.getName();  // Get the name of the file
             }
 
+            if(relativePath != null && !relativePath.isEmpty()) {
+                finalRelativePath = relativePath;
+            }
             // Make final variables to use inside AsyncTask
             final InputStream finalInputStream = inputStream;
             final String finalPathToSend = finalRelativePath;
@@ -687,6 +691,9 @@ public class SendFileActivityPython extends AppCompatActivity {
 
             // Modify the relative path to match the desired format (using backslashes)
             String finalRelativePath = relativeFilePath.replace("/", "\\"); // Use backslashes for Windows path
+
+            // Extract string after base_folder_name_path to get the relative path
+            finalRelativePath = finalRelativePath.substring(base_folder_name_path.length() + 1);
 
             try {
                 InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
