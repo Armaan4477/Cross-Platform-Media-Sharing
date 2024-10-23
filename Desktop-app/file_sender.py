@@ -492,11 +492,6 @@ class SendApp(QWidget):
 
         self.send_button.setVisible(False)
 
-                # If a previous sender exists, ensure it's stopped before starting a new one
-        if self.file_sender and self.file_sender.isRunning():
-            self.file_sender.stop()
-            self.file_sender.wait()
-            
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
