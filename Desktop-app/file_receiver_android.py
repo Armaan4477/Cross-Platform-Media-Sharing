@@ -35,6 +35,8 @@ class ReceiveWorkerJava(QThread):
         # Close all previous server_sockets
         if self.server_skt:
             self.server_skt.close()
+        if self.client_skt:
+            self.client_skt.close()
         self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # Bind the server socket to a local port
@@ -47,6 +49,8 @@ class ReceiveWorkerJava(QThread):
             return None
 
     def accept_connection(self):
+        if self.client_skt:
+            self.client_skt.close()
         try:
             # Accept a connection from a client
             self.client_skt, self.client_address = self.server_skt.accept()

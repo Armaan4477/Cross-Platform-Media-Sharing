@@ -48,6 +48,8 @@ class FileSender(QThread):
         return True
 
     def run(self):
+        if self.client_skt:
+            self.client_skt.close()
         metadata_file_path = None
         self.metadata_created = False
         if not self.initialize_connection():
