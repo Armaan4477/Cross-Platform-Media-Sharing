@@ -21,7 +21,7 @@ class FileSender(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
 
-    password = None
+    stop_signal = False  # Stop flag
 
     def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
         super().__init__()
@@ -29,13 +29,19 @@ class FileSender(QThread):
         self.file_paths = file_paths
         self.password = password
         self.receiver_data = receiver_data
+        self.client_skt = None
 
     def initialize_connection(self):
         try:
             self.client_skt.close()
         except AttributeError:
             pass
+
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # Set socket reuse
+        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         try:
             self.client_skt.bind(('', SENDER_DATA))
             self.client_skt.connect((self.ip_address, RECEIVER_DATA))
@@ -47,30 +53,38 @@ class FileSender(QThread):
             return False
         return True
 
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
+
     def run(self):
-        metadata_file_path = None
-        self.metadata_created = False
         if not self.initialize_connection():
             return
         
-
         self.encryption_flag = get_config()["encryption"]
 
+        # Loop through all files and send them
         for file_path in self.file_paths:
+            if self.stop_signal:  # Check if stop was triggered
+                logger.debug("Stop signal received. Terminating file sending.")
+                break
+            
             if os.path.isdir(file_path):
                 self.send_folder(file_path)
             else:
-                if not self.metadata_created:
-                    metadata_file_path = self.create_metadata(file_paths=self.file_paths)
-                    self.send_file(metadata_file_path)
                 self.send_file(file_path, encrypted_transfer=self.encryption_flag)
-        
-        if self.metadata_created and metadata_file_path:
-            os.remove(metadata_file_path)
-            
-        logger.debug("Sent halt signal")
-        self.client_skt.send('encyp: h'.encode())
-        self.client_skt.close()
+
+        logger.debug("Sending halt signal")
+        try:
+            self.client_skt.send('encyp: h'.encode())
+            self.client_skt.close()
+        except Exception as e:
+            logger.error(f"Error while sending halt signal: {e}")
 
     def create_metadata(self, folder_path=None, file_paths=None):
         if folder_path:
@@ -166,6 +180,13 @@ class FileSender(QThread):
             os.remove(file_path)
 
         return True
+    
+    def closeEvent(self, event):
+        """Override the close event to ensure everything is stopped properly."""
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()  # Signal the sender to stop
+            self.file_sender.wait()  # Wait until the thread fully stops
+        event.accept()
 
 class SendApp(QWidget):
 
@@ -470,6 +491,12 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setVisible(False)
+
+                # If a previous sender exists, ensure it's stopped before starting a new one
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()
+            self.file_sender.wait()
+            
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
@@ -486,6 +513,13 @@ class SendApp(QWidget):
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def closeEvent(self, event):
+        """Override the close event to ensure everything is stopped properly."""
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()  # Signal the sender to stop
+            self.file_sender.wait()  # Wait until the thread fully stops
+        event.accept()
 
 if __name__ == '__main__':
     import sys
