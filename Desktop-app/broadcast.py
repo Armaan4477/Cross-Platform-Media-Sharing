@@ -138,6 +138,7 @@ class BroadcastWorker(QThread):
             device_type = self.receiver_data.get('device_type', 'unknown')
             if device_type == 'python':
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
+                self.client_socket.close()
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
             else:
@@ -148,6 +149,10 @@ class BroadcastWorker(QThread):
         finally:
             if self.client_socket:
                 self.client_socket.close()  # Ensure the socket is always closed
+
+    def close(self):
+        if self.client_socket:
+            self.client_socket.close()
 
 
 class Broadcast(QWidget):
