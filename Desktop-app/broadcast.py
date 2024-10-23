@@ -117,6 +117,7 @@ class BroadcastWorker(QThread):
             # Close any existing client socket
             if self.client_socket:
                 self.client_socket.close()
+
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.bind(('', SENDER_JSON))
             self.client_socket.connect((device_ip, RECEIVER_JSON))
@@ -145,7 +146,8 @@ class BroadcastWorker(QThread):
             QMessageBox.critical(None, "Connection Error", f"Failed to connect: {str(e)}")
         finally:
             if self.client_socket:
-                self.client_socket.close()
+                self.client_socket.close()  # Ensure the socket is always closed
+
 
 class Broadcast(QWidget):
     
@@ -417,6 +419,14 @@ class Broadcast(QWidget):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
+
+    def closeEvent(self, event):
+        """Override the close event to ensure sockets are properly closed."""
+        if self.broadcast_worker.client_socket:
+            self.broadcast_worker.client_socket.close()
+
+        # Close the application normally
+        event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
