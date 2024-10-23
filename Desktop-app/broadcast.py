@@ -453,6 +453,16 @@ class Broadcast(QWidget):
             except Exception as e:
                 print(f"Error closing socket: {str(e)}")
         event.accept()  # Accept the window close event
+    
+    def stop(self):
+        # Method to manually stop the socket
+        if self.client_socket:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
+                self.client_socket.close()
+                print("Socket closed manually.")
+            except Exception as e:
+                print(f"Error stopping socket: {str(e)}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
