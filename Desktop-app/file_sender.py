@@ -171,6 +171,22 @@ class FileSender(QThread):
             os.remove(file_path)
 
         return True
+    
+    def closeEvent(self, event):
+        """Override the close event to ensure everything is stopped properly."""
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()  # Signal the sender to stop
+            self.file_sender.wait()  # Wait until the thread fully stops
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 class SendApp(QWidget):
 
@@ -475,6 +491,7 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setVisible(False)
+
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
@@ -491,6 +508,22 @@ class SendApp(QWidget):
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def closeEvent(self, event):
+        """Override the close event to ensure everything is stopped properly."""
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()  # Signal the sender to stop
+            self.file_sender.wait()  # Wait until the thread fully stops
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 if __name__ == '__main__':
     import sys
