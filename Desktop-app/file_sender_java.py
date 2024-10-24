@@ -36,6 +36,7 @@ class FileSenderJava(QThread):
         except AttributeError:
             pass
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             # Bind the socket to SENDER_DATA port
             self.client_skt.bind(('', SENDER_DATA))
