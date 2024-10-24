@@ -30,30 +30,37 @@ class FileSender(QThread):
         self.password = password
         self.receiver_data = receiver_data
 
+
     def initialize_connection(self):
-        # Check if client socket exists, and close it before re-binding
+        # Ensure previous socket is closed before re-binding
         try:
             if hasattr(self, 'client_skt'):
                 self.client_skt.close()
+                logger.debug("Socket closed successfully before rebinding.")
+            sleep(1)  # Delay to ensure the OS releases the port
         except Exception as e:
             logger.error(f"Error closing socket: {e}")
-
-        # Create a new socket
+        
+        # Create a new TCP socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Attempt to bind and connect
+        # Bind the socket to the specified port and connect
         try:
-            self.client_skt.bind(('', SENDER_DATA))
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
+            self.client_skt.bind(('', SENDER_DATA))  # Binding to a specific port
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))  # Connect to receiver's IP and port
+            logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
         except ConnectionRefusedError:
+            logger.error("Connection refused: Failed to connect to the specified IP address.")
             QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
             return False
         except OSError as e:
+            logger.error(f"Binding error: {e}")
             QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
             return False
 
         return True
+
 
 
     def run(self):
