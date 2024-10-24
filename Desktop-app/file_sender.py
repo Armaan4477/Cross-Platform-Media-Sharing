@@ -48,14 +48,17 @@ class FileSender(QThread):
         return True
 
     def run(self):
-        if self.client_skt:
-            self.client_skt.close()
+        try:
+            if self.client_skt:
+                self.client_skt.close()
+        except:
+            pass
+
         metadata_file_path = None
         self.metadata_created = False
         if not self.initialize_connection():
             return
         
-
         self.encryption_flag = get_config()["encryption"]
 
         for file_path in self.file_paths:
