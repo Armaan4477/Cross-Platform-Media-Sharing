@@ -189,10 +189,8 @@ class FileSender(QThread):
         return True
     
     def closeEvent(self, event):
-        """Override the close event to ensure everything is stopped properly."""
-        if self.file_sender and self.file_sender.isRunning():
-            self.file_sender.stop()  # Signal the sender to stop
-            self.file_sender.wait()  # Wait until the thread fully stops
+        #close all sockets and unbind the sockets
+        self.client_skt.close()
         event.accept()
 
     def stop(self):
