@@ -114,8 +114,13 @@ class BroadcastWorker(QThread):
 
     def connect_to_device(self, device_ip, device_name):
         try:
+            if self.client_socket:
+                self.client_socket.shutdown(socket.SHUT_RDWR)  # Properly shutdown before closing
+                self.client_socket.close()
+            
+            # Create a new socket for connection
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.bind(('', SENDER_JSON))
+            self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.client_socket.connect((device_ip, RECEIVER_JSON))
 
             device_data = {
@@ -133,6 +138,7 @@ class BroadcastWorker(QThread):
             device_type = self.receiver_data.get('device_type', 'unknown')
             if device_type == 'python':
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
+                self.client_socket.close()
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
             else:
@@ -142,7 +148,29 @@ class BroadcastWorker(QThread):
             QMessageBox.critical(None, "Connection Error", f"Failed to connect: {str(e)}")
         finally:
             if self.client_socket:
+                self.client_socket.close()  # Ensure the socket is always closed
+
+    def closeEvent(self, event):
+        # Ensure socket is forcefully closed
+        if self.worker.client_socket:
+            try:
+                self.worker.client_socket.shutdown(socket.SHUT_RDWR)
+                self.worker.client_socket.close()
+                print("Socket closed on window switch or close.")
+            except Exception as e:
+                logger.error(f"Error closing socket: {str(e)}")
+        event.accept()  # Accept the window close event
+
+    def stop(self):
+        # Method to manually stop the socket
+        if self.client_socket:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
+                logger.info("Socket closed manually.")
+            except Exception as e:
+                logger.error(f"Error closing socket: {str(e)}")
+
 
 class Broadcast(QWidget):
     
@@ -414,6 +442,27 @@ class Broadcast(QWidget):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
+
+    def closeEvent(self, event):
+        # Ensure socket is forcefully closed
+        if self.worker.client_socket:
+            try:
+                self.worker.client_socket.shutdown(socket.SHUT_RDWR)
+                self.worker.client_socket.close()
+                print("Socket closed on window switch or close.")
+            except Exception as e:
+                print(f"Error closing socket: {str(e)}")
+        event.accept()  # Accept the window close event
+    
+    def stop(self):
+        # Method to manually stop the socket
+        if self.client_socket:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
+                self.client_socket.close()
+                print("Socket closed manually.")
+            except Exception as e:
+                print(f"Error stopping socket: {str(e)}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

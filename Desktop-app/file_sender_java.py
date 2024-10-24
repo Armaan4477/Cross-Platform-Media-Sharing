@@ -30,23 +30,34 @@ class FileSenderJava(QThread):
         self.receiver_data = receiver_data
 
     def initialize_connection(self):
-        # Close all previous sockets
+        # Ensure previous socket is closed before re-binding
         try:
-            self.client_skt.close()
-        except AttributeError:
-            pass
+            if hasattr(self, 'client_skt'):
+                self.client_skt.close()
+                logger.debug("Socket closed successfully before rebinding.")
+            sleep(1)  # Delay to ensure the OS releases the port
+        except Exception as e:
+            logger.error(f"Error closing socket: {e}")
+        
+        # Create a new TCP socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # Use dynamic port assignment to avoid WinError 10048
         try:
-            # Bind the socket to SENDER_DATA port
-            self.client_skt.bind(('', SENDER_DATA))
-            # Connect to the receiver on RECEIVER_DATA port
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
+            self.client_skt.bind(('', 0))  # Bind to any available port assigned by the OS
+            logger.debug(f"Bound to port {self.client_skt.getsockname()[1]}")  # Log the assigned port for debugging
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))  # Connect to receiver's IP and port
+            logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
         except ConnectionRefusedError:
-            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+            logger.error("Connection refused: Failed to connect to the specified IP address.")
+            self.show_message_box("Connection Error", "Failed to connect to the specified IP address.")
             return False
         except OSError as e:
-            QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
+            logger.error(f"Binding error: {e}")
+            self.show_message_box("Binding Error", f"Failed to bind to the specified port: {e}")
             return False
+
         return True
 
     def run(self):
@@ -77,9 +88,6 @@ class FileSenderJava(QThread):
             
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
-        self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
         self.client_skt.close()
 
     def create_metadata(self, folder_path=None,file_paths=None):
@@ -178,7 +186,7 @@ class FileSenderJava(QThread):
 
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
-                data = f.read(4096*4)
+                data = f.read(4096)
                 self.client_skt.sendall(data)
                 sent_size += len(data)
                 self.progress_update.emit(sent_size * 100 // file_size)
@@ -225,6 +233,7 @@ class SendAppJava(QWidget):
         super().__init__()
         self.initUI()
         self.progress_bar.setVisible(False)
+        self.setFixedSize(853, 480) 
 
     def initUI(self):
         self.config = get_config()
@@ -397,7 +406,7 @@ class SendAppJava(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)

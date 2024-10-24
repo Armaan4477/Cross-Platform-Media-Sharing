@@ -35,6 +35,8 @@ class ReceiveWorkerJava(QThread):
         # Close all previous server_sockets
         if self.server_skt:
             self.server_skt.close()
+        if self.client_skt:
+            self.client_skt.close()
         self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # Bind the server socket to a local port
@@ -47,6 +49,8 @@ class ReceiveWorkerJava(QThread):
             return None
 
     def accept_connection(self):
+        if self.client_skt:
+            self.client_skt.close()
         try:
             # Accept a connection from a client
             self.client_skt, self.client_address = self.server_skt.accept()
@@ -63,6 +67,12 @@ class ReceiveWorkerJava(QThread):
             self.receive_files()
         else:
             logger.error("Failed to establish a connection.")
+
+        # Close all active sockets
+        if self.client_skt:
+            self.client_skt.close()
+        if self.server_skt:
+            self.server_skt.close()
 
 
     def receive_files(self):
@@ -130,36 +140,48 @@ class ReceiveWorkerJava(QThread):
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
                     try:
-                        if self.destination_folder is None:
-                            self.destination_folder = get_config()["save_to_directory"]
+                        # Determine the correct path using metadata
+                        if self.metadata:
+                            relative_path = self.get_relative_path_from_metadata(file_name)
+                            file_path = os.path.join(self.destination_folder, relative_path)
+                            logger.debug("Constructed file path from metadata: %s", file_path)
+
+                            # Ensure that the directory exists for the file
+                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                            logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+                        else:
+                            # Fallback if metadata is not available
+                            file_path = self.get_file_path(file_name)
+                            logger.debug("Constructed file path without metadata: %s", file_path)
+
                         # Check if file exists in the receiving directory
                         original_name, extension = os.path.splitext(file_name)
                         logger.debug("Original name: %s, Extension: %s", original_name, extension)
+
+                        # Handle file name conflict
                         i = 1
-                        while os.path.exists(os.path.join(self.destination_folder, file_name)):
+                        while os.path.exists(file_path):
+                            # Update the file name to avoid conflict
                             file_name = f"{original_name} ({i}){extension}"
                             logger.debug("File name already exists. Trying new name: %s", file_name)
+
+                            # Re-construct the file path with the new name
+                            if self.metadata:
+                                relative_path = self.get_relative_path_from_metadata(file_name)
+                                file_path = os.path.join(self.destination_folder, relative_path)
+                            else:
+                                file_path = self.get_file_path(file_name)
+                                
+                            # Ensure the directory exists for the new file path
+                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
                             i += 1
+
                     except Exception as e:
                         logger.error("Error while checking file existence: %s", str(e))
                         pass
-                    # Determine the correct path using metadata
-                    if self.metadata:
-                        relative_path = self.get_relative_path_from_metadata(file_name)
-                        file_path = os.path.join(self.destination_folder, relative_path)
-                        logger.debug("Constructed file path from metadata: %s", file_path)
-                    else:
-                        # Fallback if metadata is not available
-                        file_path = self.get_file_path(file_name)
-                        logger.debug("Constructed file path without metadata: %s", file_path)
 
                     # Normalize the final file path
                     file_path = os.path.normpath(file_path)
-
-                    # Ensure that the directory exists for the file
-                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                    logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
-                    logger.debug("Reached 4")
 
                     # Check for encrypted transfer
                     if encrypted_transfer:

@@ -60,6 +60,18 @@ def decrypt_file(filepath: str, key: str):
     unpadder = padding.PKCS7(128).unpadder()
     decrypted_data = unpadder.update(padded_data) + unpadder.finalize()
 
+    # Get the directory of the encrypted file
+    directory = os.path.dirname(filepath)
+    # Prepare the file name without the ".crypt" extension
+    original_name, extension = os.path.splitext(os.path.basename(filepath.replace('.crypt', '')))
+    file_name = f"{original_name}{extension}"
+
+    # Check if file already exists in the same directory
+    i = 1
+    while os.path.exists(os.path.join(directory, file_name)):
+        file_name = f"{original_name} ({i}){extension}"
+        i += 1
+
     with open(filepath.replace('.crypt', ''), 'wb') as f:
         f.write(decrypted_data)
 

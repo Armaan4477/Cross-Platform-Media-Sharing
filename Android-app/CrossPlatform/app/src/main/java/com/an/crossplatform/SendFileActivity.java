@@ -2,6 +2,7 @@ package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.icu.text.LocaleDisplayNames;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -66,6 +67,7 @@ public class SendFileActivity extends AppCompatActivity {
     DataInputStream dis = null;
     private ProgressBar progressBar_send;
     private LottieAnimationView animationView;
+    String base_folder_name_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -325,7 +327,7 @@ public class SendFileActivity extends AppCompatActivity {
 
         // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
-        String base_folder_name_path = filePaths.get(0);
+        base_folder_name_path = filePaths.get(0);
         // Get the name of file after last '/'
         int lastSlashIndex = base_folder_name_path.lastIndexOf('/');
         if (lastSlashIndex != -1) {
@@ -520,21 +522,24 @@ public class SendFileActivity extends AppCompatActivity {
                 // Get the file name from content URI
                 Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
                 if (cursor != null && cursor.moveToFirst()) {
-                    // Retrieve the display name (actual file name)
-                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                    finalRelativePath = cursor.getString(nameIndex);
+                    // Get the display name from the cursor
+                    String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    finalRelativePath = displayName;  // Set finalRelativePath to the file's display name
                     cursor.close();
                 } else {
                     // Fallback to using the last segment of the URI path
                     finalRelativePath = new File(fileUri.getPath()).getName();
                 }
             } else {
-                // If it's a file path, open it directly and extract the file name
+                // If it's a regular file path, open it directly and extract the file name
                 File file = new File(fileUri.getPath());
                 inputStream = new FileInputStream(file);
                 finalRelativePath = file.getName();  // Get the name of the file
             }
 
+            if(relativePath != null && !relativePath.isEmpty()) {
+                finalRelativePath = relativePath;
+            }
             // Make final variables to use inside AsyncTask
             final InputStream finalInputStream = inputStream;
             final String finalPathToSend = finalRelativePath;
@@ -695,6 +700,12 @@ public class SendFileActivity extends AppCompatActivity {
                     ? filePath.substring(topLevelFolderName.length() + 1)
                     : filePath;
 
+            Log.d("SendFileActivity", "Base folder name: " + base_folder_name_path);
+            Log.d("SendFileActivity", "Sending file: " + parentPath + documentFile.getName());
+            // Extract string after base_folder_name_path to get the relative path
+//            relativeFilePath = relativeFilePath.substring(base_folder_name_path.length() + 1);
+
+
             Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
 
             try {
@@ -713,6 +724,29 @@ public class SendFileActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Close the socket connection when the activity is destroyed
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
         executorService.shutdown();  // Clean up background threads
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Close sockets on activity destruction
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
     }
 }

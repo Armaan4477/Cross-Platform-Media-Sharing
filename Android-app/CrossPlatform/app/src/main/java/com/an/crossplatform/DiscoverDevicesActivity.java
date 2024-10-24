@@ -81,6 +81,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
         btnConnect.setOnClickListener(v -> {
             if (selectedDeviceIP != null) {
+                btnConnect.setEnabled(false);
                 System.out.println("Selected device IP: " + selectedDeviceIP);
                 long startTime = System.currentTimeMillis();
 //                while (System.currentTimeMillis() - startTime < 15000) {

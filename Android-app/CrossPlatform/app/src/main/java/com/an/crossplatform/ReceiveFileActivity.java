@@ -132,6 +132,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer... values) {
             progressBar.setProgress(values[0]);
+            // End and execute onPostExecute when progress reaches 100
+            if (values[0] == 100) {
+                onPostExecute(null);
+            }
+
         }
 
         @Override
@@ -261,28 +266,27 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         Log.e("ReceiveFileActivity", "Received path is a directory, removing filename from path.");
                         receivedFile = new File(destinationFolder, filePath + File.separator + fileName);
                     }
+                    Log.d("ReceiveFileActivity", "Receiving file: " + receivedFile.getPath());
 
-                    File parentDir = receivedFile.getParentFile();
-                    if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
-                        Log.e("ReceiveFileActivity", "Failed to create directory: " + parentDir.getPath());
-                        continue;
-                    }
+                    try {
+                        // Rename file if it already exists
+                        String originalName = receivedFile.getName();
+                        String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
+                        String extension = originalName.substring(originalName.lastIndexOf('.'));
+                        int i = 1;
 
-                    // Rename file if it already exists
-                    String originalName = receivedFile.getName();
-                    String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-                    String extension = originalName.substring(originalName.lastIndexOf('.'));
-                    int i = 1;
-
-                    // Check if the file exists in the receiving directory
-                    while (receivedFile.exists()) {
-                        String newFileName = nameWithoutExt + " (" + i + ")" + extension;
-                        receivedFile = new File(destinationFolder, newFileName);
-                        i++;
+                        // Check if the file exists in the receiving directory
+                        while (receivedFile.exists()) {
+                            String newFileName = nameWithoutExt + " (" + i + ")" + extension;
+                            receivedFile = new File(destinationFolder, newFileName);
+                            i++;
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[8192]; // Increased buffer size for faster transfer
+                        byte[] buffer = new byte[4096];
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {
@@ -386,6 +390,15 @@ public class ReceiveFileActivity extends AppCompatActivity {
             return defaultDir; // Return default if any error occurs
         }
 
+        // Check if the top-level folder has primary in it
+        if (topLevelFolder.contains("primary")) {
+            topLevelFolder = topLevelFolder.replace("primary%3A", ""); // Remove primary%3A from the folder name
+        }
+        if(topLevelFolder.contains("%2F")) {
+            // Keep string after last instance of %2F
+            topLevelFolder = topLevelFolder.substring(topLevelFolder.lastIndexOf("%2F") + 3);
+        }
+
         // Construct the destination folder path
         String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
         Log.d("ReceiveFileActivity", "Destination folder: " + destinationFolder);
@@ -448,5 +461,22 @@ public class ReceiveFileActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e("ReceiveFileActivity", "Error closing sockets", e);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Close sockets on activity destruction
+        try {
+            if (clientSocket != null && !clientSocket.isClosed()) {
+                clientSocket.close();
+            }
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            Log.e("ReceiveFileActivityPython", "Error closing sockets", e);
+        }
+        finish();
     }
 }

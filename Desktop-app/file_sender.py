@@ -30,30 +30,52 @@ class FileSender(QThread):
         self.password = password
         self.receiver_data = receiver_data
 
+
     def initialize_connection(self):
+        # Ensure previous socket is closed before re-binding
         try:
-            self.client_skt.close()
-        except AttributeError:
-            pass
+            if hasattr(self, 'client_skt'):
+                self.client_skt.close()
+                logger.debug("Socket closed successfully before rebinding.")
+            sleep(1)  # Delay to ensure the OS releases the port
+        except Exception as e:
+            logger.error(f"Error closing socket: {e}")
+        
+        # Create a new TCP socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # Use dynamic port assignment to avoid WinError 10048
         try:
-            self.client_skt.bind(('', SENDER_DATA))
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
+            self.client_skt.bind(('', 0))  # Bind to any available port assigned by the OS
+            logger.debug(f"Bound to port {self.client_skt.getsockname()[1]}")  # Log the assigned port for debugging
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))  # Connect to receiver's IP and port
+            logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
         except ConnectionRefusedError:
-            QMessageBox.critical(None, "Connection Error", "Failed to connect to the specified IP address.")
+            logger.error("Connection refused: Failed to connect to the specified IP address.")
+            self.show_message_box("Connection Error", "Failed to connect to the specified IP address.")
             return False
         except OSError as e:
-            QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
+            logger.error(f"Binding error: {e}")
+            self.show_message_box("Binding Error", f"Failed to bind to the specified port: {e}")
             return False
+
         return True
 
+
+
     def run(self):
+        try:
+            if self.client_skt:
+                self.client_skt.close()
+        except:
+            pass
+
         metadata_file_path = None
         self.metadata_created = False
         if not self.initialize_connection():
             return
         
-
         self.encryption_flag = get_config()["encryption"]
 
         for file_path in self.file_paths:
@@ -70,9 +92,6 @@ class FileSender(QThread):
             
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
-        self.client_skt.send('encyp: h'.encode())
-        sleep(0.5)
         self.client_skt.close()
 
     def create_metadata(self, folder_path=None, file_paths=None):
@@ -169,6 +188,20 @@ class FileSender(QThread):
             os.remove(file_path)
 
         return True
+    
+    def closeEvent(self, event):
+        #close all sockets and unbind the sockets
+        self.client_skt.close()
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 class SendApp(QWidget):
 
@@ -185,7 +218,7 @@ class SendApp(QWidget):
  
         logger.debug("Encryption : %s", get_config()["encryption"])
         self.setWindowTitle('DataDash: Send File')
-        self.setFixedSize(960, 540)  # Updated to 16:9 ratio
+        self.setFixedSize(853, 480)   # Updated to 16:9 ratio
         self.center_window()
         self.set_background()
 
@@ -387,7 +420,7 @@ class SendApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 960, 540  # Updated to 16:9 ratio
+        window_width, window_height = 853, 480  # Updated to 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -473,6 +506,7 @@ class SendApp(QWidget):
                 return
 
         self.send_button.setVisible(False)
+
         self.file_sender = FileSender(self.ip_address, self.file_paths, password, self.receiver_data)
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
@@ -489,6 +523,22 @@ class SendApp(QWidget):
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def closeEvent(self, event):
+        """Override the close event to ensure everything is stopped properly."""
+        if self.file_sender and self.file_sender.isRunning():
+            self.file_sender.stop()  # Signal the sender to stop
+            self.file_sender.wait()  # Wait until the thread fully stops
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 if __name__ == '__main__':
     import sys

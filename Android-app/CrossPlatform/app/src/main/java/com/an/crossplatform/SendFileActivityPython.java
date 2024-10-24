@@ -66,6 +66,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     DataInputStream dis = null;
     private ProgressBar progressBar_send;
     private LottieAnimationView animationView;
+    String base_folder_name_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -326,11 +327,18 @@ public class SendFileActivityPython extends AppCompatActivity {
 
         // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
-        String base_folder_name_path = filePaths.get(0);
-        // Get the name of file after last '/'
-        int lastSlashIndex = base_folder_name_path.lastIndexOf('/');
-        if (lastSlashIndex != -1) {
-            base_folder_name_path = base_folder_name_path.substring(lastSlashIndex + 1);
+        base_folder_name_path = filePaths.get(0);
+        // Get the name of the base folder
+        if (base_folder_name_path.startsWith("content://")) {
+            DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
+            if (baseFolderDocument != null) {
+                base_folder_name_path = baseFolderDocument.getName();
+            }
+        } else {
+            File baseFolder = new File(base_folder_name_path);
+            if (baseFolder.exists()) {
+                base_folder_name_path = baseFolder.getName();
+            }
         }
         base_folder_name.put("base_folder_name", base_folder_name_path);
         base_folder_name.put("path", ".delete");
@@ -520,21 +528,24 @@ public class SendFileActivityPython extends AppCompatActivity {
                 // Get the file name from content URI
                 Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
                 if (cursor != null && cursor.moveToFirst()) {
-                    // Retrieve the display name (actual file name)
-                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                    finalRelativePath = cursor.getString(nameIndex);
+                    // Get the display name from the cursor
+                    String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    finalRelativePath = displayName;  // Set finalRelativePath to the file's display name
                     cursor.close();
                 } else {
                     // Fallback to using the last segment of the URI path
                     finalRelativePath = new File(fileUri.getPath()).getName();
                 }
             } else {
-                // If it's a file path, open it directly and extract the file name
+                // If it's a regular file path, open it directly and extract the file name
                 File file = new File(fileUri.getPath());
                 inputStream = new FileInputStream(file);
                 finalRelativePath = file.getName();  // Get the name of the file
             }
 
+            if(relativePath != null && !relativePath.isEmpty()) {
+                finalRelativePath = relativePath;
+            }
             // Make final variables to use inside AsyncTask
             final InputStream finalInputStream = inputStream;
             final String finalPathToSend = finalRelativePath;
@@ -662,28 +673,34 @@ public class SendFileActivityPython extends AppCompatActivity {
         });
     }
 
-    // Recursive method to send the contents of a DocumentFile (folder or file)
     private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag) {
         if (documentFile.isDirectory()) {
-            // Send the directory creation command
-            String directoryPath = parentPath + documentFile.getName() + "/";
-            Log.d("SendFileActivity", "Directory creation needed for: " + directoryPath);
-
             // Recursively send the contents of the directory
+            String directoryPath = parentPath + documentFile.getName() + "\\";
+            Log.d("SendFileActivity", "Entering directory: " + directoryPath);
+
             for (DocumentFile file : documentFile.listFiles()) {
+                // Send each file or subdirectory recursively
                 sendDocumentFile(file, directoryPath, encryptionFlag);
             }
         } else if (documentFile.isFile()) {
             // It's a file, send the file
-            String relativeFilePath = parentPath + documentFile.getName();
-            Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
+            String relativeFilePath = parentPath + documentFile.getName(); // Construct relative path with directory hierarchy
+            Log.d("SendFileActivity", "Sending file: " + documentFile.getUri());
+            Log.d("SendFileActivity", "Relative path: " + relativeFilePath);
+
+            // Modify the relative path to match the desired format (using backslashes)
+            String finalRelativePath = relativeFilePath.replace("/", "\\"); // Use backslashes for Windows path
+
+            // Extract string after base_folder_name_path to get the relative path
+            finalRelativePath = finalRelativePath.substring(base_folder_name_path.length() + 1);
 
             try {
                 InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
                 if (inputStream != null) {
-                    // Send the file data via your existing send logic
-                    sendFile(documentFile.getUri().toString(), relativeFilePath);
-                    inputStream.close();
+                    // Call sendFile with the correct relative file path
+                    sendFile(documentFile.getUri().toString(), finalRelativePath);  // Use finalRelativePath here
+                    inputStream.close();  // Close the input stream after sending
                 }
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
@@ -694,6 +711,29 @@ public class SendFileActivityPython extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Close the socket connection when the activity is destroyed
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
         executorService.shutdown();  // Clean up background threads
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Close sockets on activity destruction
+        try {
+            if (socket != null) {
+                socket.close();
+                Log.d("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            Log.e("SendFileActivity", "Error closing socket", e);
+        }
     }
 }
