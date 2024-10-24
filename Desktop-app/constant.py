@@ -38,6 +38,7 @@ def get_config_file_path():
     os.makedirs(cache_dir, exist_ok=True)
     logger.info("Config directory created/ensured: %s", cache_dir)
     return os.path.join(cache_dir, config_file_name)
+#com.an.Datadash
 
 config_file = get_config_file_path()
 if config_file is None:
@@ -75,6 +76,7 @@ def get_config(filename=config_file):
     except FileNotFoundError:
         logger.warning("Configuration file %s not found. Returning empty config.", filename)
         return {}
+    #com.an.Datadash
 
 # Check if the config file exists, and if not, create it
 if not os.path.exists(config_file):
@@ -116,6 +118,7 @@ else:
         write_config(default_config, config_file)
     else:
         logger.info("Loaded configuration: %s", config_data)
+        #com.an.Datadash
 
 def get_broadcast():
     try:
@@ -142,9 +145,11 @@ def get_broadcast():
     broadcast_address = '.'.join(ip_parts)
     logger.info("Broadcast address determined: %s", broadcast_address)
     return broadcast_address
+#com.an.Datadash
 
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
 
 logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
+#com.an.Datadash

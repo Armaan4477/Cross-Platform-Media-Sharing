@@ -46,6 +46,7 @@ class CreditsDialog(QDialog):
 
         urmi_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/urmi-joshi-6697a7320/")
         layout.addWidget(urmi_linkedin, 4, 2)
+        #com.an.Datadash
 
         # Armaan's row
         layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 5, 0)  # Increased font size
@@ -75,6 +76,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 8, 0)  # Increased font size
         vedashree_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
         layout.addWidget(vedashree_github, 8, 1)
+        #com.an.Datadash
 
         vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
         layout.addWidget(vedashree_linkedin, 8, 2)
@@ -103,6 +105,7 @@ class CreditsDialog(QDialog):
 
         vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
         layout.addWidget(vedashree_linkedin, 12, 2)
+        #com.an.Datadash
 
         # Close button at the bottom
         close_button = QPushButton("Close")

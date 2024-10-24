@@ -252,7 +252,7 @@ class MainApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-
+        #com.an.Datadash
         dest = get_config()["save_to_directory"]
         if not os.path.exists(dest):
             os.makedirs(dest)
@@ -321,6 +321,7 @@ class MainApp(QWidget):
                 self.hide()
                 self.broadcast_app = Broadcast()
                 self.broadcast_app.show()
+                #com.an.Datadash
         else:
             logger.info("Started Send File App without warning")
             self.hide()
@@ -419,3 +420,4 @@ if __name__ == '__main__':
     main = MainApp()
     main.show()
     sys.exit(app.exec()) 
+    #com.an.Datadash

@@ -32,6 +32,7 @@ def encrypt_file(filepath: str, key: str):
 
     padder = padding.PKCS7(128).padder()
     padded_data = padder.update(data) + padder.finalize()
+    #com.an.Datadash
 
     iv = os.urandom(16)
     cipher = Cipher(algorithms.AES(derived_key), modes.CBC(iv), backend=default_backend())
@@ -50,6 +51,7 @@ def decrypt_file(filepath: str, key: str):
     salt = data[:16]
     iv = data[16:32]
     encrypted_data = data[32:]
+    #com.an.Datadash
 
     derived_key = derive_key(key, salt)
 
@@ -71,6 +73,7 @@ def decrypt_file(filepath: str, key: str):
     while os.path.exists(os.path.join(directory, file_name)):
         file_name = f"{original_name} ({i}){extension}"
         i += 1
+        #com.an.Datadash
 
     with open(filepath.replace('.crypt', ''), 'wb') as f:
         f.write(decrypted_data)
@@ -97,6 +100,7 @@ class Decryptor(QWidget):
         self.password_label = QLabel('Decryption Password:', self)
         self.style_label(self.password_label)
         layout.addWidget(self.password_label)
+        #com.an.Datadash
 
          # Add a spacer to remove the gap between the label and the input box
         spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
@@ -414,6 +418,7 @@ class Decryptor(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
+        #com.an.Datadash
 
 
 # if __name__ == '__main__':

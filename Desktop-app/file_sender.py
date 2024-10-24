@@ -44,6 +44,7 @@ class FileSender(QThread):
         # Create a new TCP socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #com.an.Datadash
 
         # Use dynamic port assignment to avoid WinError 10048
         try:
@@ -93,6 +94,7 @@ class FileSender(QThread):
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         self.client_skt.close()
+        #com.an.Datadash
 
     def create_metadata(self, folder_path=None, file_paths=None):
         if folder_path:
@@ -137,6 +139,7 @@ class FileSender(QThread):
             
     def send_folder(self, folder_path):
         print("Sending folder")
+        #com.an.Datadash
         
         if not self.metadata_created:
             metadata_file_path = self.create_metadata(folder_path=folder_path)
@@ -176,6 +179,7 @@ class FileSender(QThread):
         self.client_skt.send(struct.pack('<Q', file_name_size))
         self.client_skt.send(relative_file_path.encode('utf-8'))
         self.client_skt.send(struct.pack('<Q', file_size))
+        #com.an.Datadash
 
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
@@ -221,6 +225,7 @@ class SendApp(QWidget):
         self.setFixedSize(853, 480)   # Updated to 16:9 ratio
         self.center_window()
         self.set_background()
+        #com.an.Datadash
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -252,6 +257,7 @@ class SendApp(QWidget):
         self.folder_button = self.create_styled_button('Select Folder')
         self.folder_button.clicked.connect(self.selectFolder)
         button_layout.addWidget(self.folder_button)
+        #com.an.Datadash
 
         content_layout.addLayout(button_layout)
 
@@ -322,6 +328,7 @@ class SendApp(QWidget):
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
+        #com.an.Datadash
 
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
@@ -424,6 +431,7 @@ class SendApp(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
+        #com.an.Datadash
 
     def selectFile(self):
         file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files')
@@ -445,6 +453,7 @@ class SendApp(QWidget):
     def checkReadyToSend(self):
         if self.file_paths:
             self.send_button.setVisible(True)
+            #com.an.Datadash
 
     
 
@@ -512,6 +521,7 @@ class SendApp(QWidget):
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
         self.file_sender.start()
+        #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
@@ -546,3 +556,4 @@ if __name__ == '__main__':
     send_app = SendApp("127.0.0.1", "Test Device", None)
     send_app.show()
     sys.exit(app.exec())
+    #com.an.Datadash

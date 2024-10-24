@@ -76,6 +76,7 @@ class CircularDeviceButton(QWidget):
         layout.setSpacing(2)  # Set small spacing between button and label
         layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
         self.setLayout(layout)
+        #com.an.Datadash
 
 
 
@@ -130,6 +131,7 @@ class BroadcastWorker(QThread):
             device_data_json = json.dumps(device_data)
             self.client_socket.send(struct.pack('<Q', len(device_data_json)))
             self.client_socket.send(device_data_json.encode())
+            #com.an.Datadash
 
             receiver_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
             receiver_json = self.client_socket.recv(receiver_json_size).decode()
@@ -170,6 +172,7 @@ class BroadcastWorker(QThread):
                 logger.info("Socket closed manually.")
             except Exception as e:
                 logger.error(f"Error closing socket: {str(e)}")
+                #com.an.Datadash
 
 
 class Broadcast(QWidget):
@@ -198,6 +201,7 @@ class Broadcast(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+        #com.an.Datadash
 
         # Header
         header = QFrame()
@@ -228,6 +232,7 @@ class Broadcast(QWidget):
         content_layout.addWidget(self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
         main_layout.addWidget(content)
+        #com.an.Datadash
         self.setLayout(main_layout)
 
     def style_button(self, button):
@@ -329,6 +334,7 @@ class Broadcast(QWidget):
         confirm_dialog.setWindowTitle("Confirm Connection")
         confirm_dialog.setText(f"Connect to {device['name']}?")
         confirm_dialog.setIcon(QMessageBox.Icon.Question)
+        #com.an.Datadash
 
         # Add buttons
         yes_button = confirm_dialog.addButton("Yes", QMessageBox.ButtonRole.YesRole)
@@ -442,6 +448,7 @@ class Broadcast(QWidget):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
+        #com.an.Datadash
 
     def closeEvent(self, event):
         # Ensure socket is forcefully closed
@@ -468,4 +475,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     broadcast_app = Broadcast()
     broadcast_app.show()
-    sys.exit(app.exec())    
+    sys.exit(app.exec()) 
+    #com.an.Datadash   

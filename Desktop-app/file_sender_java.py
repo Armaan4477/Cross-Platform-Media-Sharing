@@ -28,6 +28,7 @@ class FileSenderJava(QThread):
         self.file_paths = file_paths
         self.password = password
         self.receiver_data = receiver_data
+        #com.an.Datadash
 
     def initialize_connection(self):
         # Ensure previous socket is closed before re-binding
@@ -139,6 +140,7 @@ class FileSenderJava(QThread):
             metadata = json.loads(open(metadata_file_path).read())
             # Send metadata file
             self.send_file(metadata_file_path)
+            #com.an.Datadash
 
         # Send all files
         for file_info in metadata:
@@ -263,6 +265,7 @@ class SendAppJava(QWidget):
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(30, 30, 30, 30)
         content_layout.setSpacing(20)
+        #com.an.Datadash
 
         # File selection buttons
         button_layout = QHBoxLayout()
@@ -410,6 +413,7 @@ class SendAppJava(QWidget):
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
+        #com.an.Datadash
 
     def selectFile(self):
         file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files')
@@ -455,6 +459,7 @@ class SendAppJava(QWidget):
         self.file_sender_java.progress_update.connect(self.updateProgressBar)
         self.file_sender_java.file_send_completed.connect(self.fileSent)
         self.file_sender_java.start()
+        #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
@@ -477,3 +482,4 @@ if __name__ == '__main__':
     send_app = SendAppJava()
     send_app.show()
     sys.exit(app.exec())
+    #com.an.Datadash

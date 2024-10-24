@@ -21,6 +21,7 @@ class PreferencesApp(QWidget):
         self.setWindowTitle('Settings')
         self.setGeometry(100, 100, 500, 450)  # Adjusted height to accommodate new toggle
         self.center_window()
+        #com.an.Datadash
         self.set_background()
 
         layout = QVBoxLayout()
@@ -63,6 +64,7 @@ class PreferencesApp(QWidget):
 
         layout.addLayout(device_name_layout)
 
+#com.an.Datadash
         # Save to Path
         self.save_to_path_label = QLabel('Save to Path:', self)
         self.save_to_path_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
@@ -97,6 +99,7 @@ class PreferencesApp(QWidget):
         self.encryption_toggle.setFont(QFont("Arial", 18))
         self.style_checkbox(self.encryption_toggle)
         layout.addWidget(self.encryption_toggle)
+        #com.an.Datadash
 
         # Show Warning Toggle
         self.show_warning_toggle = QCheckBox('Show Warnings', self)
@@ -239,6 +242,7 @@ class PreferencesApp(QWidget):
         glow_effect.setColor(QColor(255, 255, 255, 100))
         return glow_effect
 
+#com.an.Datadash
     def resetDeviceName(self):
         self.device_name_input.setText(platform.node())
 
@@ -329,6 +333,7 @@ class PreferencesApp(QWidget):
         }
 
         write_config(preferences)
+        #com.an.Datadash
         
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Success")
@@ -473,6 +478,7 @@ class PreferencesApp(QWidget):
         logger.info("Opened Credits Dialog")
         credits_dialog = CreditsDialog()
         credits_dialog.exec()
+        #com.an.Datadash
 
     def show_help_dialog(self):
         help_dialog = QMessageBox(self)
@@ -535,6 +541,7 @@ class PreferencesApp(QWidget):
             }
         """)
         help_dialog.exec()
+        #com.an.Datadash
 
 
 

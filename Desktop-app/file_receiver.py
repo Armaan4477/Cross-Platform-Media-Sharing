@@ -39,7 +39,7 @@ class FileReceiver(QThread):
         try:
             self.server_socket.shutdown(socket.SHUT_RDWR)
             self.server_socket.close()
-        except AttributeError:
+        except AttributeError:#com.an.Datadash
             pass
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -100,6 +100,7 @@ class ReceiveApp(QWidget):
         super().__init__()
         self.initUI()
         self.setFixedSize(853, 480)
+        #com.an.Datadash
 
     def initUI(self):
         self.setWindowTitle('Receive File')
@@ -157,6 +158,7 @@ class ReceiveApp(QWidget):
         self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)  # Connect the signal to the slot
         self.file_receiver.show_receive_app_p_signal_java.connect(self.show_receive_app_p_java)
         self.file_receiver.start()
+        #com.an.Datadash
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
@@ -177,6 +179,7 @@ class ReceiveApp(QWidget):
         self.label.setText(self.full_text[:self.text_index])
         if self.text_index >= len(self.full_text):
             self.timer.stop()
+            #com.an.Datadash
 
     def listenForBroadcast(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -200,6 +203,7 @@ class ReceiveApp(QWidget):
         self.loading_label.hide()
         self.label.setText("Connected successfully!")
         self.label.setStyleSheet("color: #00FF00;")  # Green color for success
+        #com.an.Datadash
 
 
     def show_receive_app_p(self):
@@ -230,3 +234,4 @@ if __name__ == '__main__':
     receive_app = ReceiveApp()
     receive_app.show()
     app.exec()
+    #com.an.Datadash

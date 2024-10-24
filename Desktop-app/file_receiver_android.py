@@ -65,6 +65,7 @@ class ReceiveWorkerJava(QThread):
         if self.client_skt:
             self.receiving_started.emit()
             self.receive_files()
+            #com.an.Datadash
         else:
             logger.error("Failed to establish a connection.")
 
@@ -153,6 +154,7 @@ class ReceiveWorkerJava(QThread):
                             # Fallback if metadata is not available
                             file_path = self.get_file_path(file_name)
                             logger.debug("Constructed file path without metadata: %s", file_path)
+                            #com.an.Datadash
 
                         # Check if file exists in the receiving directory
                         original_name, extension = os.path.splitext(file_name)
@@ -207,6 +209,7 @@ class ReceiveWorkerJava(QThread):
 
         self.broadcasting = True  # Resume broadcasting
         logger.debug("File reception completed.")
+        #com.an.Datadash
 
 
     def _receive_data(self, socket, size):
@@ -239,6 +242,7 @@ class ReceiveWorkerJava(QThread):
         
         if not default_dir:
             raise ValueError("No save_to_directory configured")
+        #com.an.Datadash
         
         # Extract the base folder name from the last metadata entry
         top_level_folder = metadata[-1].get('base_folder_name', '')
@@ -303,6 +307,7 @@ class ReceiveWorkerJava(QThread):
             folder_path = f"{base_folder_path} ({i})"
             i += 1
         return folder_path
+    #com.an.Datadash
 
 
     def get_relative_path_from_metadata(self, file_name):
@@ -343,6 +348,7 @@ class ReceiveAppPJava(QWidget):
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+        #com.an.Datadash
        
         
         # Start the typewriter effect
@@ -401,6 +407,7 @@ class ReceiveAppPJava(QWidget):
 
         # Progress bar
         self.progress_bar = QProgressBar()
+        #com.an.Datadash
         self.progress_bar.setStyleSheet("""
             QProgressBar {
                 background-color: #2f3642;
@@ -469,6 +476,7 @@ class ReceiveAppPJava(QWidget):
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 853, 480
+        #com.an.Datadash
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)

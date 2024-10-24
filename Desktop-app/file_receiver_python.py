@@ -32,6 +32,7 @@ class ReceiveWorkerPython(QThread):
         self.store_client_ip = client_ip
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
         self.close_connection_signal.connect(self.close_connection)
+        #com.an.Datadash
 
     def initialize_connection(self):
         # Close all previous server_sockets
@@ -91,6 +92,7 @@ class ReceiveWorkerPython(QThread):
                 if not encryption_flag:
                     logger.debug("Dropped redundant data: %s", encryption_flag)
                     break
+                #com.an.Datadash
 
                 if encryption_flag[-1] == 't':
                     encrypted_transfer = True
@@ -196,6 +198,7 @@ class ReceiveWorkerPython(QThread):
                 raise ConnectionError("Connection closed before data was completely received.")
             received_data += chunk
         return received_data
+    #com.an.Datadash
 
     def receive_metadata(self, file_size):
         """Receive metadata from the sender."""
@@ -264,6 +267,7 @@ class ReceiveWorkerPython(QThread):
                     logger.debug("Folder already exists: %s", full_folder_path)
 
         return destination_folder
+    #com.an.Datadash
 
 
     def _get_unique_folder_name(self, folder_path):
@@ -305,6 +309,7 @@ class ReceiveAppP(QWidget):
         self.client_ip = client_ip
         self.initUI()
         self.setFixedSize(853, 480)
+        #com.an.Datadash
         
         self.current_text = "Waiting for file..."  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
@@ -346,6 +351,7 @@ class ReceiveAppP(QWidget):
         layout = QVBoxLayout()
         layout.setSpacing(10)  # Set spacing between widgets
         layout.setContentsMargins(10, 10, 10, 10)  # Add some margins around the layout
+        #com.an.Datadash
 
         # Loading label with the movie (GIF)
         self.loading_label = QLabel(self)
@@ -357,6 +363,7 @@ class ReceiveAppP(QWidget):
         self.loading_label.setMovie(self.receiving_movie)
         self.receiving_movie.start()
         layout.addWidget(self.loading_label, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter)
+        #com.an.Datadash
 
         # Text label "Waiting for file..." (for typewriter effect)
         self.label = QLabel("", self)
@@ -392,6 +399,7 @@ class ReceiveAppP(QWidget):
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
         self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
+        #com.an.Datadash
 
         # Keep them disabled until the file transfer is completed
         self.close_button = self.create_styled_button('Close')  # Apply styling here
@@ -458,6 +466,7 @@ class ReceiveAppP(QWidget):
         else:
             # Stop the timer when the entire text is displayed
             self.typewriter_timer.stop()
+            #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
@@ -471,6 +480,7 @@ class ReceiveAppP(QWidget):
         self.receiving_movie.stop()
         self.loading_label.setMovie(self.success_movie)
         self.success_movie.start()
+        #com.an.Datadash
 
     def decryptor_init(self, value):
         logger.debug("Received decrypt signal with filelist %s", value)
@@ -481,6 +491,7 @@ class ReceiveAppP(QWidget):
     def open_receiving_directory(self):
 
         receiving_dir = get_config()["save_to_directory"]
+        #com.an.Datadash
         
         if receiving_dir:
             try:
@@ -506,3 +517,4 @@ if __name__ == '__main__':
     receive_app = ReceiveAppP()
     receive_app.show()
     app.exec()
+    #com.an.Datadash
