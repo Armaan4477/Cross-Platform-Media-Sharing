@@ -223,6 +223,7 @@ class SendAppJava(QWidget):
         super().__init__()
         self.initUI()
         self.progress_bar.setVisible(False)
+        self.setFixedSize(853, 480) 
 
     def initUI(self):
         self.config = get_config()
@@ -395,7 +396,7 @@ class SendAppJava(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 800, 600
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)

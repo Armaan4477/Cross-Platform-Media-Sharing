@@ -218,7 +218,7 @@ class SendApp(QWidget):
  
         logger.debug("Encryption : %s", get_config()["encryption"])
         self.setWindowTitle('DataDash: Send File')
-        self.setFixedSize(960, 540)  # Updated to 16:9 ratio
+        self.setFixedSize(853, 480)   # Updated to 16:9 ratio
         self.center_window()
         self.set_background()
 
@@ -420,7 +420,7 @@ class SendApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 960, 540  # Updated to 16:9 ratio
+        window_width, window_height = 853, 480  # Updated to 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
