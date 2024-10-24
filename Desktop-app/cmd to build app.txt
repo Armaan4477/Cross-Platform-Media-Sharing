@@ -23,4 +23,4 @@ pyinstaller --onefile --windowed --icon=logo.ico --name="DataDash" --add-data "i
 
 
 Linux
-pyinstaller --onefile --add-data "./icons:icons" --add-data "./assets:assets" --icon=./logo.ico main.py
+pyinstaller --onefile --add-data "./icons;icons" --add-data "./assets;assets" --icon=./logo.png --name=DataDash main.py
