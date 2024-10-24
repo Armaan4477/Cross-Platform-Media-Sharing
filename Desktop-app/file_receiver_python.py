@@ -40,6 +40,9 @@ class ReceiveWorkerPython(QThread):
         if self.client_skt:
             self.client_skt.close()
         self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
         try:
             # Bind the server socket to a local port
             self.server_skt.bind(('', RECEIVER_DATA))
