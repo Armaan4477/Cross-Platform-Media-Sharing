@@ -31,12 +31,18 @@ class FileSender(QThread):
         self.receiver_data = receiver_data
 
     def initialize_connection(self):
+        # Check if client socket exists, and close it before re-binding
         try:
-            self.client_skt.close()
-        except AttributeError:
-            pass
+            if hasattr(self, 'client_skt'):
+                self.client_skt.close()
+        except Exception as e:
+            logger.error(f"Error closing socket: {e}")
+
+        # Create a new socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # Attempt to bind and connect
         try:
             self.client_skt.bind(('', SENDER_DATA))
             self.client_skt.connect((self.ip_address, RECEIVER_DATA))
@@ -46,7 +52,9 @@ class FileSender(QThread):
         except OSError as e:
             QMessageBox.critical(None, "Binding Error", f"Failed to bind to the specified port: {e}")
             return False
+
         return True
+
 
     def run(self):
         try:
