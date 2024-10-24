@@ -70,10 +70,9 @@ public class PreferencesActivity extends AppCompatActivity {
 
         if (jsonString != null) {
             try {
-                // Parse the JSON to get the preferences
                 JSONObject configJson = new JSONObject(jsonString);
-                String deviceName = configJson.optString("device_name", "Android Device");
-                String saveToPath = configJson.optString("save_to_directory", Environment.getExternalStorageDirectory().getPath());
+                String deviceName = configJson.getString("device_name");
+                String saveToPath = configJson.getString("saveToPath");
 
                 // Store original preferences in a map
                 originalPreferences.put("device_name", deviceName);
@@ -92,12 +91,28 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void setDefaults() {
-        // In case of an error, use defaults
-        originalPreferences.put("device_name", "Android Device");
-        originalPreferences.put("save_to_directory", Environment.getExternalStorageDirectory().getPath());
+        // Set the saveToPath to the Android/media folder within external storage
+        File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
+        // Create the media directory if it doesn't exist
+        if (!mediaDir.exists()) {
+            boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
+            if (!dirCreated) {
+                Log.e("PreferencesActivity", "Failed to create media directory");
+                return;
+            }
+        }
+
+        // Get the full path to the media folder
+        String saveToPath = mediaDir.getAbsolutePath();
+
+        // Set defaults for device name and saveToPath
+        originalPreferences.put("device_name", "Android Device");
+        originalPreferences.put("save_to_directory", saveToPath);
+
+        // Update UI fields with defaults
         deviceNameInput.setText("Android Device");
-        saveToPathInput.setText(Environment.getExternalStorageDirectory().getPath());
+        saveToPathInput.setText(saveToPath);
     }
 
     // Method to read JSON from internal storage
