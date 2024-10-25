@@ -355,7 +355,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             }
             reader.close();
             JSONObject config = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = config.optString("save_to_directory", "");
+            saveToDirectory = config.optString("saveToPath", "");
             saveToDirectory = saveToDirectory.startsWith("/") ? saveToDirectory.substring(1) : saveToDirectory; // Remove leading '/'
         } catch (Exception e) {
             Log.e("ReceiveFileActivityPython", "Error loading config.json", e);
