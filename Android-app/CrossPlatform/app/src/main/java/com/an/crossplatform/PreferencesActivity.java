@@ -76,7 +76,7 @@ public class PreferencesActivity extends AppCompatActivity {
 
                 // Store original preferences in a map
                 originalPreferences.put("device_name", deviceName);
-                originalPreferences.put("save_to_directory", saveToPath);
+                originalPreferences.put("saveToPath", saveToPath);
 
                 // Set the input fields with the retrieved values
                 deviceNameInput.setText(deviceName);
@@ -108,7 +108,7 @@ public class PreferencesActivity extends AppCompatActivity {
 
         // Set defaults for device name and saveToPath
         originalPreferences.put("device_name", "Android Device");
-        originalPreferences.put("save_to_directory", saveToPath);
+        originalPreferences.put("saveToPath", saveToPath);
 
         // Update UI fields with defaults
         deviceNameInput.setText("Android Device");
@@ -201,7 +201,7 @@ public class PreferencesActivity extends AppCompatActivity {
         JSONObject configJson = new JSONObject();
         try {
             configJson.put("device_name", deviceName);
-            configJson.put("save_to_directory", saveToPath);
+            configJson.put("saveToPath", saveToPath);
             configJson.put("max_file_size", 1000000);  // 1 MB
             configJson.put("encryption", false);
 

@@ -116,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
                     jsonObject.put("device_name", deviceName);
                     jsonObject.put("saveToPath", saveToPath); // Updated saveToPath
+                    Log.d("MainActivity", "saveToPath: " + saveToPath);
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 
