@@ -8,7 +8,7 @@ class CreditsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Project Credits")
-        self.setFixedSize(600, 625)  # Increased window size to provide more space
+        self.setFixedSize(600, 425)  # Increased window size to provide more space
         self.set_background()  # Set the background style
         self.center_window()
 
@@ -24,45 +24,45 @@ class CreditsDialog(QDialog):
         layout.addWidget(title_coder, 0, 0, 1, 3)  # Span across 3 columns
 
          # Samay's row
-        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 2, 0)  # Increased font size
+        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 3, 0)  # Increased font size
         samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
-        layout.addWidget(samay_github, 2, 1)
+        layout.addWidget(samay_github, 3, 1)
 
         samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
-        layout.addWidget(samay_linkedin, 2, 2)
+        layout.addWidget(samay_linkedin, 3, 2)
 
         # Nishal's row
-        layout.addWidget(QLabel("Nishal Poojary", font=QFont("Arial", 18)), 3, 0)  # Increased font size
+        layout.addWidget(QLabel("Nishal Poojary", font=QFont("Arial", 18)), 6, 0)  # Increased font size
         nishal_github = self.create_link_button("GitHub", "https://github.com/Ailover123")
-        layout.addWidget(nishal_github, 3, 1)
+        layout.addWidget(nishal_github, 6, 1)
 
         nishal_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/nishal-poojary-159530290")
-        layout.addWidget(nishal_linkedin, 3, 2)
+        layout.addWidget(nishal_linkedin, 6, 2)
 
          # Urmi's row
-        layout.addWidget(QLabel("Urmi Joshi", font=QFont("Arial", 18)), 4, 0)  # Increased font size
+        layout.addWidget(QLabel("Urmi Joshi", font=QFont("Arial", 18)), 5, 0)  # Increased font size
         urmi_github = self.create_link_button("GitHub", "https://github.com/ura-dev04")
-        layout.addWidget(urmi_github, 4, 1)
+        layout.addWidget(urmi_github, 5, 1)
 
         urmi_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/urmi-joshi-6697a7320/")
-        layout.addWidget(urmi_linkedin, 4, 2)
+        layout.addWidget(urmi_linkedin, 5, 2)
         #com.an.Datadash
 
         # Armaan's row
-        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 5, 0)  # Increased font size
+        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 2, 0)  # Increased font size
         armaan_github = self.create_link_button("GitHub", "https://github.com/Armaan4477")
-        layout.addWidget(armaan_github, 5, 1)
+        layout.addWidget(armaan_github, 2, 1)
 
         armaan_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/armaan-nakhuda-756492235/")
-        layout.addWidget(armaan_linkedin, 5, 2)
+        layout.addWidget(armaan_linkedin, 2, 2)
 
         # Yash's row
-        layout.addWidget(QLabel("Yash Patil", font=QFont("Arial", 18)), 6, 0)  # Increased font size
+        layout.addWidget(QLabel("Yash Patil", font=QFont("Arial", 18)), 4, 0)  # Increased font size
         yash_github = self.create_link_button("GitHub", "https://github.com/FrosT2k5")
-        layout.addWidget(yash_github, 6, 1)
+        layout.addWidget(yash_github, 4, 1)
 
         yash_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/yash-patil-385171257")
-        layout.addWidget(yash_linkedin, 6, 2)
+        layout.addWidget(yash_linkedin, 4, 2)
 
         # Adwait's row
         layout.addWidget(QLabel("Adwait Patil", font=QFont("Arial", 18)), 7, 0)  # Increased font size
@@ -72,39 +72,6 @@ class CreditsDialog(QDialog):
         adwait_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/adwait-patil-56a1682a9/")
         layout.addWidget(adwait_linkedin, 7, 2)
 
-        # Vedashree's row
-        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 8, 0)  # Increased font size
-        vedashree_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
-        layout.addWidget(vedashree_github, 8, 1)
-        #com.an.Datadash
-
-        vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
-        layout.addWidget(vedashree_linkedin, 8, 2)
-
-        # Add extra space before the Project Documentation section
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding), 9, 0, 1, 3)
-
-        # Title 2: Project Documentation
-        title_docs = QLabel("Project Documentation")
-        title_docs.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_docs.setFont(QFont("Arial", 16, QFont.Weight.Bold))  # Use consistent font
-        layout.addWidget(title_docs, 9, 0, 1, 3)  # Span across 3 columns
-
-        # Samay's row
-        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 11, 0)  # Increased font size
-        samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
-        layout.addWidget(samay_github, 11, 1)
-
-        samay_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/samaypandey1644")
-        layout.addWidget(samay_linkedin, 11, 2)
-
-        # Vedashree's row
-        layout.addWidget(QLabel("Vedashree Gaikwad", font=QFont("Arial", 18)), 12, 0)  # Increased font size
-        vedashree_github = self.create_link_button("GitHub", "https://github.com/vedashree2004")  # Placeholder link
-        layout.addWidget(vedashree_github, 12, 1)
-
-        vedashree_linkedin = self.create_link_button("LinkedIn", "https://www.linkedin.com/in/vedashree-gaikwad-716783298")  # Placeholder link
-        layout.addWidget(vedashree_linkedin, 12, 2)
         #com.an.Datadash
 
         # Close button at the bottom
@@ -181,7 +148,7 @@ class CreditsDialog(QDialog):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 600, 625
+        window_width, window_height = 600, 425
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
