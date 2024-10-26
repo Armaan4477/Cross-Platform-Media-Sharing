@@ -148,7 +148,7 @@ class CreditsDialog(QDialog):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 600, 625
+        window_width, window_height = 600, 425
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
