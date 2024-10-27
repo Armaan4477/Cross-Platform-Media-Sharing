@@ -14,3 +14,4 @@ Desktop-app/main.spec
 /Desktop-app/dist
 Desktop-app/DataDash.spec
 /Desktop-app/icon.iconset
+/.venv
