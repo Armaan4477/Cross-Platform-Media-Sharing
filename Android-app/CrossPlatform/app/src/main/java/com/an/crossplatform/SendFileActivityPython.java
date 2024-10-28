@@ -43,9 +43,11 @@ import android.os.Looper;
 
 import com.airbnb.lottie.LottieAnimationView;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
+import java.util.concurrent.Future;
 
 public class SendFileActivityPython extends AppCompatActivity {
 
@@ -192,38 +194,50 @@ public class SendFileActivityPython extends AppCompatActivity {
             return;
         }
 
-        // Start AsyncTask to create metadata
-        new MetadataCreationTask().execute();
+        if (!metadataCreated) {
+            createMetadata();
+        } else {
+            new Thread(new ConnectionTask(selected_device_ip)).start();
+        }
     }
 
-    private class MetadataCreationTask extends AsyncTask<Void, Void, String> {
-
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                // Create metadata based on the selected files or folder
-                if (isFolder) {
-                    return createFolderMetadata();
-                } else {
-                    return createFileMetadata();
+    private void createMetadata() {
+        Callable<String> task = new Callable<String>() {
+            @Override
+            public String call() {
+                try {
+                    // Create metadata based on the selected files or folder
+                    if (isFolder) {
+                        return createFolderMetadata();
+                    } else {
+                        return createFileMetadata();
+                    }
+                } catch (IOException | JSONException e) {
+                    Log.e("SendFileActivity", "Failed to create metadata", e);
+                    return null;  // Indicate failure
                 }
-            } catch (IOException | JSONException e) {
-                Log.e("SendFileActivity", "Failed to create metadata", e);
-                return null;  // Indicate failure
             }
-        }
+        };
 
-        @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-                metadataFilePath = result;
-                metadataCreated = true;
-                Toast.makeText(SendFileActivityPython.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
-                new ConnectionTask().execute(selected_device_ip);  // Start sending files/folders after metadata is created
-            } else {
-                Toast.makeText(SendFileActivityPython.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
+        Future<String> future = executorService.submit(task);
+
+        new Thread(() -> {
+            try {
+                String result = future.get();
+                runOnUiThread(() -> {
+                    if (result != null) {
+                        metadataFilePath = result;
+                        metadataCreated = true;
+                        Toast.makeText(SendFileActivityPython.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
+                        new Thread(new ConnectionTask(selected_device_ip)).start();
+                    } else {
+                        Toast.makeText(SendFileActivityPython.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (Exception e) {
+                Log.e("SendFileActivity", "Error executing metadata task", e);
             }
-        }
+        }).start();
     }
 
     private String createFileMetadata() throws IOException, JSONException {
@@ -280,7 +294,6 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting folder metadata creation");
 
-        // Determine the target directory for metadata files
         File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
         Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
         ensureDirectoryExists(metadataDirectory);
@@ -292,16 +305,14 @@ public class SendFileActivityPython extends AppCompatActivity {
             Uri uri = Uri.parse(filePath);
 
             if ("content".equals(uri.getScheme())) {
-                // Handle content URIs using DocumentFile
                 DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
                 if (documentFile != null) {
                     if (documentFile.isDirectory()) {
                         Log.d(TAG, "Processing directory from URI: " + filePath);
-                        addFolderMetadataFromDocumentFile(documentFile, metadata, ""); // Pass base path
+                        addFolderMetadataFromDocumentFile(documentFile, metadata, "");
                     } else if (documentFile.isFile()) {
-                        // Handle individual file
                         JSONObject fileMetadata = new JSONObject();
-                        String path = getPathFromUri(uri); // Get the relative path
+                        String path = getPathFromUri(uri);
                         fileMetadata.put("path", path);
                         fileMetadata.put("size", documentFile.length());
                         metadata.put(fileMetadata);
@@ -313,22 +324,18 @@ public class SendFileActivityPython extends AppCompatActivity {
                     Log.e(TAG, "Could not resolve content URI: " + filePath);
                 }
             } else {
-                // Handle file system paths
                 File file = new File(filePath);
                 if (file.isDirectory()) {
-                    // Process directory
                     Log.d(TAG, "Processing directory: " + filePath);
-                    addFolderMetadata(file, metadata, ""); // Pass base path
+                    addFolderMetadata(file, metadata, "");
                 } else {
                     Log.e(TAG, "File not found or not valid: " + filePath);
                 }
             }
         }
 
-        // Append base folder name at the end of metadata
         JSONObject base_folder_name = new JSONObject();
         base_folder_name_path = filePaths.get(0);
-        // Get the name of the base folder
         if (base_folder_name_path.startsWith("content://")) {
             DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
             if (baseFolderDocument != null) {
@@ -345,11 +352,8 @@ public class SendFileActivityPython extends AppCompatActivity {
         base_folder_name.put("size", 0);
         metadata.put(base_folder_name);
 
-        // Log metadata before saving
         Log.d(TAG, "Metadata before saving: " + metadata.toString());
 
-        // Save metadata to a JSON file in the specified directory
-        Log.d(TAG, "Saving metadata to file: " + metadataFilePath);
         try {
             saveMetadataToFile(metadataFilePath, metadata);
             metadataCreated = true;
@@ -367,14 +371,14 @@ public class SendFileActivityPython extends AppCompatActivity {
         if (files != null) {
             for (DocumentFile file : files) {
                 JSONObject fileMetadata = new JSONObject();
-                String path = basePath + file.getName(); // Construct the full path
+                String path = basePath + file.getName();
                 fileMetadata.put("path", path + (file.isDirectory() ? "/" : ""));
                 fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
                 metadata.put(fileMetadata);
                 Log.d(TAG, "Added metadata: " + fileMetadata.toString());
 
                 if (file.isDirectory()) {
-                    addFolderMetadataFromDocumentFile(file, metadata, path + "/"); // Pass updated base path
+                    addFolderMetadataFromDocumentFile(file, metadata, path + "/");
                 }
             }
         } else {
@@ -388,15 +392,14 @@ public class SendFileActivityPython extends AppCompatActivity {
         if (files != null) {
             for (File file : files) {
                 JSONObject fileMetadata = new JSONObject();
-                String relativePath = basePath + file.getName(); // Construct the full path
+                String relativePath = basePath + file.getName();
                 fileMetadata.put("path", relativePath + (file.isDirectory() ? "/" : ""));
                 fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
                 metadata.put(fileMetadata);
                 Log.d(TAG, "Added metadata: " + fileMetadata.toString());
 
-                // If it's a directory, recurse into it
                 if (file.isDirectory()) {
-                    addFolderMetadata(file, metadata, relativePath + "/"); // Pass updated base path
+                    addFolderMetadata(file, metadata, relativePath + "/");
                 }
             }
         } else {
@@ -407,15 +410,12 @@ public class SendFileActivityPython extends AppCompatActivity {
     private String getPathFromUri(Uri uri) {
         String path = uri.getPath();
         if (path != null) {
-            // Split the path by '/'
             String[] pathSegments = path.split("/");
-            // Check if the first segment is "document" and the second is "primary:"
             if (pathSegments.length > 2 && "document".equals(pathSegments[0]) && pathSegments[1].startsWith("primary:")) {
-                // Return the segments after "primary:"
                 return String.join("/", Arrays.copyOfRange(pathSegments, 2, pathSegments.length));
             }
         }
-        return path; // Fallback to the raw path if no segments match
+        return path;
     }
 
     private void ensureDirectoryExists(File directory) {
@@ -447,57 +447,39 @@ public class SendFileActivityPython extends AppCompatActivity {
         fileAdapter.notifyDataSetChanged();
     }
 
-    // AsyncTask to handle connection initialization and file/folder sending
-    private class ConnectionTask extends AsyncTask<String, Void, Void> {
+    private class ConnectionTask implements Runnable {
+        private final String ip;
+
+        ConnectionTask(String ip) {
+            this.ip = ip;
+        }
 
         @Override
-        protected Void doInBackground(String... params) {
-            String ip = params[0];
-
-            // Initialize connection in the background
+        public void run() {
+            // Initialize connection
             try {
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(ip, 58000), 10000);
                 Log.d("SendFileActivity", "Socket connected: " + socket.isConnected());
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Failed to connect to server", e);
-                cancel(true);  // Stop task if connection fails
+                runOnUiThread(() ->
+                        Toast.makeText(SendFileActivityPython.this, "Connection Failed", Toast.LENGTH_SHORT).show()
+                );
+                return;
             }
 
-            if (!isCancelled()) {
-                // Send files/folders if connection is successful
-                for (String filePath : filePaths) {
-                    if (isFolder) {
-                        sendFolder(filePath);
-                    } else {
-                        sendFile(filePath, null);
-                    }
+            // Send files/folders if connection is successful
+            for (String filePath : filePaths) {
+                if (isFolder) {
+                    sendFolder(filePath);
+                } else {
+                    sendFile(filePath, null);
                 }
             }
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // Show animation when sending starts
-            progressBar_send.setVisibility(ProgressBar.VISIBLE);
-            animationView.setVisibility(LottieAnimationView.VISIBLE);
-            animationView.playAnimation();
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-//            // Update UI or notify user when sending is completed
-//            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        protected void onCancelled() {
-            Toast.makeText(SendFileActivityPython.this, "Connection Failed", Toast.LENGTH_SHORT).show();
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
     private void sendFile(String filePath, String relativePath) {
         boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
 
@@ -506,145 +488,115 @@ public class SendFileActivityPython extends AppCompatActivity {
             return;
         }
 
-        try {
-            InputStream inputStream;
-            String finalRelativePath;  // Declare finalRelativePath here
+        executorService.execute(() -> {
+            try {
+                InputStream inputStream;
+                String finalRelativePath;
 
-            // Check if relativePath is null and initialize it based on the filePath
-            if (relativePath == null) {
-                finalRelativePath = new File(filePath).getName();
-            } else {
-                finalRelativePath = relativePath;
-            }
-
-            // Check if the filePath is a content URI
-            Uri fileUri = Uri.parse(filePath);
-
-            if (filePath.startsWith("content://")) {
-                // Use ContentResolver to open the file from the URI
-                ContentResolver contentResolver = getContentResolver();
-                inputStream = contentResolver.openInputStream(fileUri);
-
-                // Get the file name from content URI
-                Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
-                if (cursor != null && cursor.moveToFirst()) {
-                    // Get the display name from the cursor
-                    String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                    finalRelativePath = displayName;  // Set finalRelativePath to the file's display name
-                    cursor.close();
+                if (relativePath == null) {
+                    finalRelativePath = new File(filePath).getName();
                 } else {
-                    // Fallback to using the last segment of the URI path
-                    finalRelativePath = new File(fileUri.getPath()).getName();
+                    finalRelativePath = relativePath;
                 }
-            } else {
-                // If it's a regular file path, open it directly and extract the file name
-                File file = new File(fileUri.getPath());
-                inputStream = new FileInputStream(file);
-                finalRelativePath = file.getName();  // Get the name of the file
-            }
 
-            if(relativePath != null && !relativePath.isEmpty()) {
-                finalRelativePath = relativePath;
-            }
-            // Make final variables to use inside AsyncTask
-            final InputStream finalInputStream = inputStream;
-            final String finalPathToSend = finalRelativePath;
-            final long fileSize = finalInputStream.available();  // Get file size from the InputStream
+                Uri fileUri = Uri.parse(filePath);
 
-            Log.d("SendFileActivity", "File size: " + fileSize);
-            Log.d("SendFileActivity", "Final file name: " + finalPathToSend);  // Check file name
+                if (filePath.startsWith("content://")) {
+                    ContentResolver contentResolver = getContentResolver();
+                    inputStream = contentResolver.openInputStream(fileUri);
 
-            // Initialize the progress bar
-            runOnUiThread(() -> {
-                progressBar_send.setMax(100);
-                progressBar_send.setProgress(0);
-                progressBar_send.setVisibility(ProgressBar.VISIBLE);  // Ensure the progress bar is visible
-                animationView.setVisibility(LottieAnimationView.VISIBLE);  // Ensure the animation view is visible
-                animationView.playAnimation();  // Start the animation
-            });
-
-            // Initialize the socket connection inside AsyncTask
-            new AsyncTask<Void, Integer, Void>() {
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    try {
-                        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-
-                        // Determine the encryption flag
-                        String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
-                        dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
-                        dos.flush();
-                        Log.d("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
-
-                        // Send the relative path size and the path
-                        byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
-                        long relativePathSize = relativePathBytes.length;
-
-                        ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                        pathSizeBuffer.putLong(relativePathSize);
-                        dos.write(pathSizeBuffer.array());
-                        dos.flush();
-
-                        dos.write(relativePathBytes);
-                        dos.flush();
-
-                        // Send the file size
-                        ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                        sizeBuffer.putLong(fileSize);
-                        dos.write(sizeBuffer.array());
-                        dos.flush();
-
-                        // Send the file data
-                        byte[] buffer = new byte[4096];
-                        long sentSize = 0;
-
-                        while (sentSize < fileSize) {
-                            int bytesRead = finalInputStream.read(buffer);  // Use finalInputStream here
-                            if (bytesRead == -1) break;
-                            dos.write(buffer, 0, bytesRead);
-                            sentSize += bytesRead;
-                            int progress = (int) (sentSize * 100 / fileSize);
-                            Log.d("SendFileActivity", "Progress: " + progress + "%");
-                            publishProgress(progress);  // Call publishProgress to trigger onProgressUpdate
-                        }
-                        dos.flush();
-
-                        finalInputStream.close();  // Close finalInputStream here
-                    } catch (IOException e) {
-                        Log.e("SendFileActivity", "Error sending file", e);
+                    Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        String displayName = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                        finalRelativePath = displayName;
+                        cursor.close();
+                    } else {
+                        finalRelativePath = new File(fileUri.getPath()).getName();
                     }
-                    return null;
-                }
-                @Override
-                protected void onProgressUpdate(Integer... values) {
-                    progressBar_send.setProgress(values[0]);
+                } else {
+                    File file = new File(fileUri.getPath());
+                    inputStream = new FileInputStream(file);
+                    finalRelativePath = file.getName();
                 }
 
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    // Reset progress bar when done
-                    progressBar_send.setProgress(0);
-                    progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                    animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                    Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                if (relativePath != null && !relativePath.isEmpty()) {
+                    finalRelativePath = relativePath;
                 }
-            }.execute();
-        } catch (IOException e) {
-            Log.e("SendFileActivity", "Error initializing connection", e);
-        }
+
+                final InputStream finalInputStream = inputStream;
+                final String finalPathToSend = finalRelativePath;
+                final long fileSize = finalInputStream.available();
+
+                runOnUiThread(() -> {
+                    progressBar_send.setMax(100);
+                    progressBar_send.setProgress(0);
+                    progressBar_send.setVisibility(ProgressBar.VISIBLE);
+                    animationView.setVisibility(LottieAnimationView.VISIBLE);
+                    animationView.playAnimation();
+                });
+
+                try {
+                    DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+
+                    String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
+                    dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
+                    dos.flush();
+
+                    byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
+                    long relativePathSize = relativePathBytes.length;
+
+                    ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                    pathSizeBuffer.putLong(relativePathSize);
+                    dos.write(pathSizeBuffer.array());
+                    dos.flush();
+
+                    dos.write(relativePathBytes);
+                    dos.flush();
+
+                    ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                    sizeBuffer.putLong(fileSize);
+                    dos.write(sizeBuffer.array());
+                    dos.flush();
+
+                    byte[] buffer = new byte[4096];
+                    long sentSize = 0;
+
+                    while (sentSize < fileSize) {
+                        int bytesRead = finalInputStream.read(buffer);
+                        if (bytesRead == -1) break;
+                        dos.write(buffer, 0, bytesRead);
+                        sentSize += bytesRead;
+                        int progress = (int) (sentSize * 100 / fileSize);
+                        runOnUiThread(() -> {
+                            progressBar_send.setProgress(progress);
+                            if(progress == 100) {
+
+                                progressBar_send.setProgress(0);
+                                progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                                animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                                Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                    dos.flush();
+
+                    finalInputStream.close();
+                } catch (IOException e) {
+                    Log.e("SendFileActivity", "Error sending file", e);
+                }
+            } catch (IOException e) {
+                Log.e("SendFileActivity", "Error initializing connection", e);
+            }
+        });
     }
 
-    // Update sendFolder to accept a String instead of Uri
     private void sendFolder(String folderPath) {
-        boolean encryptionFlag = false;  // Set to true if you want to encrypt the files before sending
+        boolean encryptionFlag = false;
 
-        // Convert the String folderPath to a Uri
-        Uri folderUri = Uri.parse(folderPath);  // Assuming folderPath is a content URI string
+        Uri folderUri = Uri.parse(folderPath);
 
-        // Ensure metadataFilePath is set and not null
         if (metadataFilePath != null) {
-            // Send the metadata file first
-            sendFile(metadataFilePath, "");
+            sendFile(metadataFilePath, "metadata.json");
         } else {
             Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
             return;
@@ -652,7 +604,6 @@ public class SendFileActivityPython extends AppCompatActivity {
 
         executorService.execute(() -> {
             try {
-                // Create a DocumentFile from the tree URI to traverse the folder
                 DocumentFile folderDocument = DocumentFile.fromTreeUri(this, folderUri);
 
                 if (folderDocument == null) {
@@ -660,10 +611,13 @@ public class SendFileActivityPython extends AppCompatActivity {
                     return;
                 }
 
-                // Check if the DocumentFile is a directory (folder)
                 if (folderDocument.isDirectory()) {
-                    // Send the folder contents recursively
-                    sendDocumentFile(folderDocument, "", encryptionFlag);
+                    String topLevelFolderName = folderDocument.getName();
+                    if (topLevelFolderName == null) {
+                        topLevelFolderName = "";
+                    }
+
+                    sendDocumentFile(folderDocument, "", encryptionFlag, topLevelFolderName);
                 } else {
                     Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
                 }
@@ -673,34 +627,30 @@ public class SendFileActivityPython extends AppCompatActivity {
         });
     }
 
-    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag) {
+    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag, String topLevelFolderName) {
         if (documentFile.isDirectory()) {
-            // Recursively send the contents of the directory
-            String directoryPath = parentPath + documentFile.getName() + "\\";
-            Log.d("SendFileActivity", "Entering directory: " + directoryPath);
+            String directoryPath = parentPath.isEmpty() ? documentFile.getName() + "/"
+                    : parentPath + documentFile.getName() + "/";
+
+            String relativeDirectoryPath = directoryPath.startsWith(topLevelFolderName + "/")
+                    ? directoryPath.substring(topLevelFolderName.length() + 1)
+                    : directoryPath;
 
             for (DocumentFile file : documentFile.listFiles()) {
-                // Send each file or subdirectory recursively
-                sendDocumentFile(file, directoryPath, encryptionFlag);
+                sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
             }
         } else if (documentFile.isFile()) {
-            // It's a file, send the file
-            String relativeFilePath = parentPath + documentFile.getName(); // Construct relative path with directory hierarchy
-            Log.d("SendFileActivity", "Sending file: " + documentFile.getUri());
-            Log.d("SendFileActivity", "Relative path: " + relativeFilePath);
+            String filePath = parentPath + documentFile.getName();
 
-            // Modify the relative path to match the desired format (using backslashes)
-            String finalRelativePath = relativeFilePath.replace("/", "\\"); // Use backslashes for Windows path
-
-            // Extract string after base_folder_name_path to get the relative path
-            finalRelativePath = finalRelativePath.substring(base_folder_name_path.length() + 1);
+            String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
+                    ? filePath.substring(topLevelFolderName.length() + 1)
+                    : filePath;
 
             try {
                 InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
                 if (inputStream != null) {
-                    // Call sendFile with the correct relative file path
-                    sendFile(documentFile.getUri().toString(), finalRelativePath);  // Use finalRelativePath here
-                    inputStream.close();  // Close the input stream after sending
+                    sendFile(documentFile.getUri().toString(), relativeFilePath);
+                    inputStream.close();
                 }
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
