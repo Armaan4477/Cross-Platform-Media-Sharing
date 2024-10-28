@@ -272,39 +272,13 @@
             android:orientation="horizontal"
             android:layout_marginBottom="10dp"
             android:gravity="top"> <!-- Ensure top alignment of child views -->
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="Vedashree Gaikwad"
-                android:textSize="18sp"
-                android:textColor="@android:color/white"
-                android:maxLines="2"
-                android:layout_gravity="top" /> <!-- Align text to the top -->
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="GitHub"
-                android:id="@+id/vedashree_github_button"
-                android:background="@drawable/state_list_drawable"
-                android:textColor="@android:color/white" />
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="LinkedIn"
-                android:id="@+id/vedashree_linkedin_button"
-                android:background="@drawable/state_list_drawable"
-                android:textColor="@android:color/white" />
         </LinearLayout>
 
 
         <!-- Spacer -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="20dp" />
+            android:layout_height="60dp" />
 
         <!-- Close Button -->
         <androidx.appcompat.widget.AppCompatButton

@@ -73,13 +73,6 @@ public class CreditsActivity extends AppCompatActivity {
 
         Button samayLinkedInButton_doc = findViewById(R.id.samay_linkedin_button_doc);
         samayLinkedInButton_doc.setOnClickListener(v -> openLink("https://www.linkedin.com/in/samaypandey1644"));
-        // Vedashree's links
-
-        Button vedashreeGitHubButton = findViewById(R.id.vedashree_github_button);
-        vedashreeGitHubButton.setOnClickListener(v -> openLink("https://github.com/vedashree2004"));
-
-        Button vedashreeLinkedInButton = findViewById(R.id.vedashree_linkedin_button);
-        vedashreeLinkedInButton.setOnClickListener(v -> openLink("https://www.linkedin.com/in/vedashree-gaikwad-716783298"));
     }
 
     private void openLink(String url) {
