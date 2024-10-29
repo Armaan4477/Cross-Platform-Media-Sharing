@@ -208,10 +208,20 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
                     try {
                         String originalName = receivedFile.getName();
-                        String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-                        String extension = originalName.substring(originalName.lastIndexOf('.'));
-                        int i = 1;
+                        String nameWithoutExt;
+                        String extension = "";
 
+                        int dotIndex = originalName.lastIndexOf('.');
+                        if (dotIndex == -1) {
+                            // No extension found
+                            nameWithoutExt = originalName;
+                        } else {
+                            // Split name and extension
+                            nameWithoutExt = originalName.substring(0, dotIndex);
+                            extension = originalName.substring(dotIndex);
+                        }
+
+                        int i = 1;
                         while (receivedFile.exists()) {
                             String newFileName = nameWithoutExt + " (" + i + ")" + extension;
                             receivedFile = new File(destinationFolder, newFileName);
@@ -236,16 +246,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             int progress = (int) ((receivedSize * 100) / fileSize);
                             Log.d("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
                             runOnUiThread(() -> progressBar.setProgress(progress));
-                            if(progress == 100){
-                                runOnUiThread(() -> {
-                                    txt_waiting.setText("File transfer completed");
-                                    progressBar.setProgress(0);
-                                    progressBar.setVisibility(ProgressBar.INVISIBLE);
-                                    animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                                    txt_path.setText("Files saved to: " + destinationFolder);
-                                    txt_path.setVisibility(TextView.VISIBLE);
-                                });
-                            }
                         }
                     }
                 }

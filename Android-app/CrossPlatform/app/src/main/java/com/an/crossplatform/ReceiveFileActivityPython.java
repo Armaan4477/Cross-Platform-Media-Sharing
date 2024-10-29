@@ -238,17 +238,29 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                         continue;
                     }
 
-                    // Rename file if it already exists
-                    String originalName = receivedFile.getName();
-                    String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-                    String extension = originalName.substring(originalName.lastIndexOf('.'));
-                    int i = 1;
+                    try {
+                        String originalName = receivedFile.getName();
+                        String nameWithoutExt;
+                        String extension = "";
 
-                    // Check if the file exists in the receiving directory
-                    while (receivedFile.exists()) {
-                        String newFileName = nameWithoutExt + " (" + i + ")" + extension;
-                        receivedFile = new File(destinationFolder, newFileName);
-                        i++;
+                        int dotIndex = originalName.lastIndexOf('.');
+                        if (dotIndex == -1) {
+                            // No extension found
+                            nameWithoutExt = originalName;
+                        } else {
+                            // Split name and extension
+                            nameWithoutExt = originalName.substring(0, dotIndex);
+                            extension = originalName.substring(dotIndex);
+                        }
+
+                        int i = 1;
+                        while (receivedFile.exists()) {
+                            String newFileName = nameWithoutExt + " (" + i + ")" + extension;
+                            receivedFile = new File(destinationFolder, newFileName);
+                            i++;
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
