@@ -34,28 +34,28 @@ public class MainActivity extends AppCompatActivity {
 
         btnSend.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
-            if (!isNetworkConnected()) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Warning")
-                        .setMessage("Please connect to a network before sending files.")
-                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return;
-            }
+//            if (!isNetworkConnected()) {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setTitle("Warning")
+//                        .setMessage("Please connect to a network before sending files.")
+//                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+//                        .show();
+//                return;
+//            }
             Intent intent = new Intent(MainActivity.this, DiscoverDevicesActivity.class);
             startActivity(intent);
         });
 
         btnReceive.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
-            if (!isNetworkConnected()) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Warning")
-                        .setMessage("Please connect to a network before receiving files.")
-                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return;
-            }
+//            if (!isNetworkConnected()) {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setTitle("Warning")
+//                        .setMessage("Please connect to a network before receiving files.")
+//                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+//                        .show();
+//                return;
+//            }
             Intent intent = new Intent(MainActivity.this, WaitingToReceiveActivity.class);
             startActivity(intent);
         });
@@ -64,12 +64,6 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
-    }
-
-    private boolean isNetworkConnected() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        return networkInfo != null && networkInfo.isConnected();
     }
 
     private void createConfigFileIfNotExists() {
