@@ -27,7 +27,7 @@ import android.widget.ImageButton;
 public class PreferencesActivity extends AppCompatActivity {
 
     private EditText deviceNameInput;
-    private EditText saveToPathInput;
+    private EditText saveToDirectoryInput;
     private Map<String, Object> originalPreferences = new HashMap<>();
 
     private static final String CONFIG_FOLDER_NAME = "config";
@@ -40,11 +40,11 @@ public class PreferencesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_preferences);
 
         deviceNameInput = findViewById(R.id.device_name_input);
-        saveToPathInput = findViewById(R.id.save_to_path_input);
+        saveToDirectoryInput = findViewById(R.id.save_to_path_input);
         imageButton = findViewById(R.id.imageButton);
 
         Button resetDeviceNameButton = findViewById(R.id.device_name_reset_button);
-        Button saveToPathPickerButton = findViewById(R.id.save_to_path_picker_button);
+        Button saveToDirectoryPickerButton = findViewById(R.id.save_to_path_picker_button);
         Button resetSavePathButton = findViewById(R.id.save_to_path_reset_button);
         Button submitButton = findViewById(R.id.submit_button);
         Button mainMenuButton = findViewById(R.id.main_menu_button);
@@ -54,7 +54,7 @@ public class PreferencesActivity extends AppCompatActivity {
         loadPreferences();
 
         resetDeviceNameButton.setOnClickListener(v -> resetDeviceName());
-        saveToPathPickerButton.setOnClickListener(v -> pickDirectory());
+        saveToDirectoryPickerButton.setOnClickListener(v -> pickDirectory());
         resetSavePathButton.setOnClickListener(v -> resetSavePath());
         submitButton.setOnClickListener(v -> submitPreferences());
         mainMenuButton.setOnClickListener(v -> goToMainMenu());
@@ -72,15 +72,15 @@ public class PreferencesActivity extends AppCompatActivity {
             try {
                 JSONObject configJson = new JSONObject(jsonString);
                 String deviceName = configJson.getString("device_name");
-                String saveToPath = configJson.getString("saveToPath");
+                String saveToDirectory = configJson.getString("saveToDirectory");
 
                 // Store original preferences in a map
                 originalPreferences.put("device_name", deviceName);
-                originalPreferences.put("saveToPath", saveToPath);
+                originalPreferences.put("saveToDirectory", saveToDirectory);
 
                 // Set the input fields with the retrieved values
                 deviceNameInput.setText(deviceName);
-                saveToPathInput.setText(saveToPath);
+                saveToDirectoryInput.setText(saveToDirectory);
             } catch (Exception e) {
                 Log.e("PreferencesActivity", "Error loading preferences", e);
                 setDefaults();  // Fallback to default values if any error occurs
@@ -91,7 +91,7 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void setDefaults() {
-        // Set the saveToPath to the Android/media folder within external storage
+        // Set the saveToDirectory to the Android/media folder within external storage
         File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
         // Create the media directory if it doesn't exist
@@ -104,15 +104,15 @@ public class PreferencesActivity extends AppCompatActivity {
         }
 
         // Get the full path to the media folder
-        String saveToPath = mediaDir.getAbsolutePath();
+        String saveToDirectory = mediaDir.getAbsolutePath();
 
-        // Set defaults for device name and saveToPath
+        // Set defaults for device name and saveToDirectory
         originalPreferences.put("device_name", "Android Device");
-        originalPreferences.put("saveToPath", saveToPath);
+        originalPreferences.put("saveToDirectory", saveToDirectory);
 
         // Update UI fields with defaults
         deviceNameInput.setText("Android Device");
-        saveToPathInput.setText(saveToPath);
+        saveToDirectoryInput.setText(saveToDirectory);
     }
 
     // Method to read JSON from internal storage
@@ -144,7 +144,7 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void resetSavePath() {
-        // Set the saveToPath to the Android/media folder within external storage
+        // Set the saveToDirectory to the Android/media folder within external storage
         // Correctly construct the media directory path
         File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
@@ -157,13 +157,13 @@ public class PreferencesActivity extends AppCompatActivity {
             }
         }
         // Get the full path to the media folder
-        String saveToPath = mediaDir.getAbsolutePath();
+        String saveToDirectory = mediaDir.getAbsolutePath();
 
         // Remove the "/storage/emulated/0" prefix if it exists
-        if (saveToPath.startsWith("/storage/emulated/0")) {
-            saveToPath = saveToPath.replace("/storage/emulated/0", ""); // Remove the prefix
+        if (saveToDirectory.startsWith("/storage/emulated/0")) {
+            saveToDirectory = saveToDirectory.replace("/storage/emulated/0", ""); // Remove the prefix
         }
-        saveToPathInput.setText(saveToPath);  // Reset save path to default
+        saveToDirectoryInput.setText(saveToDirectory);  // Reset save path to default
     }
 
     private void pickDirectory() {
@@ -181,16 +181,16 @@ public class PreferencesActivity extends AppCompatActivity {
                             if (pickedDir.contains("Download")) {
                                 Toast.makeText(this, "Warning: Selected directory is within the Download folder", Toast.LENGTH_SHORT).show();
                             }
-                            saveToPathInput.setText(pickedDir);
+                            saveToDirectoryInput.setText(pickedDir);
                         }
                     });
 
     private void submitPreferences() {
         String deviceName = deviceNameInput.getText().toString();
-        String saveToPathURI = saveToPathInput.getText().toString();
+        String saveToDirectoryURI = saveToDirectoryInput.getText().toString();
         // Convert into a path like /storage/emulated/0/Download
-        String saveToPath = saveToPathURI.substring(saveToPathURI.indexOf(":", 0) + 1);
-        Log.d("PreferencesActivity", "Save to path: " + saveToPath);
+        String saveToDirectory = saveToDirectoryURI.substring(saveToDirectoryURI.indexOf(":", 0) + 1);
+        Log.d("PreferencesActivity", "Save to path: " + saveToDirectory);
 
         if (deviceName.isEmpty()) {
             Toast.makeText(this, "Device Name cannot be empty", Toast.LENGTH_SHORT).show();
@@ -201,7 +201,7 @@ public class PreferencesActivity extends AppCompatActivity {
         JSONObject configJson = new JSONObject();
         try {
             configJson.put("device_name", deviceName);
-            configJson.put("saveToPath", saveToPath);
+            configJson.put("saveToDirectory", saveToDirectory);
             configJson.put("max_file_size", 1000000);  // 1 MB
             configJson.put("encryption", false);
 

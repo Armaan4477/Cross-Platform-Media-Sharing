@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject();
                     String deviceName = Build.MODEL;  // Device name
 
-                    // Set the saveToPath to the Android/media folder within external storage
+                    // Set the saveToDirectory to the Android/media folder within external storage
                     // Correctly construct the media directory path
                     File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
@@ -101,16 +101,16 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     // Get the full path to the media folder
-                    String saveToPath = mediaDir.getAbsolutePath();
+                    String saveToDirectory = mediaDir.getAbsolutePath();
 
                     // Remove the "/storage/emulated/0" prefix if it exists
-                    if (saveToPath.startsWith("/storage/emulated/0")) {
-                        saveToPath = saveToPath.replace("/storage/emulated/0", ""); // Remove the prefix
+                    if (saveToDirectory.startsWith("/storage/emulated/0")) {
+                        saveToDirectory = saveToDirectory.replace("/storage/emulated/0", ""); // Remove the prefix
                     }
 
                     jsonObject.put("device_name", deviceName);
-                    jsonObject.put("saveToPath", saveToPath); // Updated saveToPath
-                    Log.d("MainActivity", "saveToPath: " + saveToPath);
+                    jsonObject.put("saveToDirectory", saveToDirectory); // Updated saveToDirectory
+                    Log.d("MainActivity", "saveToDirectory: " + saveToDirectory);
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 

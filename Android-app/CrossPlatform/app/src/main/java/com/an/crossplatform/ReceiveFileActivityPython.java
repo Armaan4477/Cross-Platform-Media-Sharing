@@ -308,7 +308,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             }
             fis.close();
             JSONObject json = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = json.optString("saveToPath", "Download/DataDash");
+            saveToDirectory = json.optString("saveToDirectory", "Download/DataDash");
         } catch (Exception e) {
             Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
             saveToDirectory = "Download/DataDash";
