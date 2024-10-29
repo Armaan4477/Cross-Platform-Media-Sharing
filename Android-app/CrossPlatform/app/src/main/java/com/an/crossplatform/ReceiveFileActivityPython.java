@@ -342,9 +342,8 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
     // Method to load the save directory from config.json
     private String loadSaveDirectoryFromConfig(File configFile) {
-        String saveToDirectory = ""; // Use an empty string as the initial value
+        String saveToDirectory = "";
         try {
-            // Load config.json
             configFile = new File(getFilesDir(), "config/config.json");
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
@@ -353,14 +352,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             while ((line = reader.readLine()) != null) {
                 jsonBuilder.append(line);
             }
-            reader.close();
-            JSONObject config = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = config.optString("saveToPath", "");
-            saveToDirectory = saveToDirectory.startsWith("/") ? saveToDirectory.substring(1) : saveToDirectory; // Remove leading '/'
+            fis.close();
+            JSONObject json = new JSONObject(jsonBuilder.toString());
+            saveToDirectory = json.optString("saveToPath", "Download/update");
         } catch (Exception e) {
-            Log.e("ReceiveFileActivityPython", "Error loading config.json", e);
+            Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
+            saveToDirectory = "Download/update";
         }
-        Log.d("ReceiveFileActivityPython", "Loaded save directory: " + saveToDirectory);
         return saveToDirectory;
     }
 
