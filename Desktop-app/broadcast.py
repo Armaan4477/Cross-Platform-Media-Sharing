@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QListWidget, QListWidgetItem, QFrame
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
-from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon
+from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence,QKeyEvent
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
@@ -77,8 +77,6 @@ class CircularDeviceButton(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
         self.setLayout(layout)
         #com.an.Datadash
-
-
 
 class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
@@ -235,6 +233,16 @@ class Broadcast(QWidget):
         #com.an.Datadash
         self.setLayout(main_layout)
 
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.openMainWindow()
+
+    def openMainWindow(self):
+        from main import MainApp
+        self.main_window = MainApp()
+        self.main_window.show()
+        self.close()
+        
     def style_button(self, button):
         button.setFixedSize(180, 60)  # Increased size for better visibility
         button.setFont(QFont("Arial", 18))
@@ -452,14 +460,19 @@ class Broadcast(QWidget):
 
     def closeEvent(self, event):
         # Ensure socket is forcefully closed
-        if self.worker.client_socket:
-            try:
-                self.worker.client_socket.shutdown(socket.SHUT_RDWR)
-                self.worker.client_socket.close()
-                print("Socket closed on window switch or close.")
-            except Exception as e:
-                print(f"Error closing socket: {str(e)}")
-        event.accept()  # Accept the window close event
+        try:
+            if self.worker.client_socket:
+                try:
+                    self.worker.client_socket.shutdown(socket.SHUT_RDWR)
+                    self.worker.client_socket.close()
+                    print("Socket closed on window switch or close.")
+                except Exception as e:
+                    print(f"Error closing socket: {str(e)}")
+        except Exception as e:
+            pass
+        finally:
+            self.broadcast_worker.stop()
+            event.accept()  # Accept the window close event
     
     def stop(self):
         # Method to manually stop the socket

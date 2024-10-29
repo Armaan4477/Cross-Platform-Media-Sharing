@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
     QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit, QHBoxLayout, QFrame
 )
-from PyQt6.QtGui import QScreen, QFont
+from PyQt6.QtGui import QScreen, QFont, QKeyEvent, QKeySequence
 import os
 import socket
 import struct
@@ -350,8 +350,23 @@ class SendAppJava(QWidget):
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
 
+        self.mainmenu_button = self.create_styled_button('Main Menu')
+        self.mainmenu_button.setVisible(False)
+        self.mainmenu_button.clicked.connect(self.openMainWindow)
+        content_layout.addWidget(self.mainmenu_button)
+
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.openMainWindow()
+
+    def openMainWindow(self):
+        from main import MainApp
+        self.main_window = MainApp()
+        self.main_window.show()
+        self.close()
 
     def create_styled_button(self, text):
         button = QPushButton(text)
@@ -471,10 +486,31 @@ class SendAppJava(QWidget):
             # Enable the close and Transfer More Files buttons
             self.close_button.setEnabled(True)
             self.close_button.setVisible(True)
+            # self.mainmenu_button.setVisible(True)
 
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def closeEvent(self, event):
+        try:
+            """Override the close event to ensure everything is stopped properly."""
+            if self.file_sender and self.file_sender.isRunning():
+                self.file_sender.stop()  # Signal the sender to stop
+                self.file_sender.wait()  # Wait until the thread fully stops
+        except Exception as e:
+            pass
+        finally:
+            event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 if __name__ == '__main__':
     import sys

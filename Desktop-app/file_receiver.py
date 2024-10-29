@@ -8,7 +8,7 @@ from PyQt6 import QtCore
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
-from PyQt6.QtGui import QScreen, QMovie
+from PyQt6.QtGui import QScreen, QMovie, QKeySequence, QKeyEvent
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
@@ -37,12 +37,19 @@ class FileReceiver(QThread):
     def run(self):
         # Clear all connections on the about to be used ports 
         try:
-            self.server_socket.shutdown(socket.SHUT_RDWR)
-            self.server_socket.close()
-        except AttributeError:#com.an.Datadash
+            if self.server_socket:
+                self.server_socket.close()
+                sleep(0.5)
+            if self.client_socket:
+                self.client_socket.close()
+                sleep(0.5)
+            if self.receiver_worker:
+                self.receiver_worker.terminate()
+        except Exception as e:
             pass
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow immediate reuse of the address
         self.server_socket.bind(('0.0.0.0', RECEIVER_JSON))
         self.server_socket.listen(5)  # Listen for multiple connections
 
@@ -165,6 +172,16 @@ class ReceiveApp(QWidget):
 # Call the method to start typewriter effect
         self.start_typewriter_effect("Waiting for Connection...")
 
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.openMainWindow()
+
+    def openMainWindow(self):
+        from main import MainApp
+        self.main_app = MainApp()
+        self.main_app.show()
+        self.close()
+
     def start_typewriter_effect(self, full_text, interval=100):
         """Starts the typewriter effect to show text character by character."""
         self.full_text = full_text
@@ -227,6 +244,23 @@ class ReceiveApp(QWidget):
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
 
+    def closeEvent(self, event):
+        try:
+            """Override the close event to ensure everything is stopped properly."""
+            if self.file_receiver:
+                self.file_receiver.terminate()
+                self.stop()
+        except AttributeError:
+            pass
+        # Stop the broadcasting thread
+        self.file_receiver.broadcasting = False
+        event.accept()
+
+    def stop(self):
+        self.file_receiver.broadcasting = False
+        self.file_receiver.server_socket.close()
+        self.file_receiver.client_socket.close()
+        self.file_receiver.receiver_worker.terminate()
 
 if __name__ == '__main__':
     import sys

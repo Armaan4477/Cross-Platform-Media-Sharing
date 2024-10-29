@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
-from PyQt6.QtGui import QScreen, QFont, QColor
+from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence
 from PyQt6.QtCore import Qt
 import sys
 import platform
@@ -128,6 +128,10 @@ class PreferencesApp(QWidget):
 
         self.setLayout(layout)
         self.loadPreferences()
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.goToMainMenu()
 
     def style_label(self, label):
         label.setStyleSheet("""
