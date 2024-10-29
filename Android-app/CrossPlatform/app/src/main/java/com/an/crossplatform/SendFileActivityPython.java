@@ -479,6 +479,24 @@ public class SendFileActivityPython extends AppCompatActivity {
                     sendFile(filePath, null);
                 }
             }
+            // Send "halt encryption" signal after all files are sent
+            try {
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                String haltEncryptionSignal = "encyp: h";
+                dos.write(haltEncryptionSignal.getBytes(StandardCharsets.UTF_8));
+                dos.flush();
+                Log.d("SendFileActivity", "Sent halt encryption signal: " + haltEncryptionSignal);
+                runOnUiThread(() -> {
+                    if (progressBar_send.getProgress() == 100) {
+                        progressBar_send.setProgress(0);
+                        progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                        animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                        Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (IOException e) {
+                Log.e("SendFileActivity", "Error sending halt encryption signal", e);
+            }
         }
     }
 
@@ -583,15 +601,6 @@ public class SendFileActivityPython extends AppCompatActivity {
                         runOnUiThread(() -> progressBar_send.setProgress(progress));
                     }
                     dos.flush();
-
-                    runOnUiThread(() -> {
-                        if (progressBar_send.getProgress() == 100) {
-                            progressBar_send.setProgress(0);
-                            progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-                        }
-                    });
 
                     finalInputStream.close();
                 } catch (IOException e) {

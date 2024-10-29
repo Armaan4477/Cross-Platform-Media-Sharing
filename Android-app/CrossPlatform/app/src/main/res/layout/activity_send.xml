@@ -43,23 +43,11 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
-        app:layout_constraintBottom_toTopOf="@id/list_items"
+        app:layout_constraintBottom_toTopOf="@id/transfer_animation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_select_folder" />
 
-    <ListView
-        android:id="@+id/list_items"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toTopOf="@id/transfer_animation"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.4"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/recycler_view" />
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/transfer_animation"
@@ -71,7 +59,7 @@
         app:lottie_loop="true"
         app:lottie_autoPlay="true"
         app:layout_constraintBottom_toTopOf="@id/progressBar_send"
-        app:layout_constraintTop_toBottomOf="@id/list_items" />
+        app:layout_constraintTop_toBottomOf="@id/recycler_view" />
 
     <ProgressBar
         android:id="@+id/progressBar_send"

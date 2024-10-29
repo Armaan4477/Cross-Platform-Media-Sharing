@@ -41,6 +41,8 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.Looper;
+
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
@@ -459,6 +461,24 @@ public class SendFileActivity extends AppCompatActivity {
                     sendFile(filePath, null);
                 }
             }
+            // Send "halt encryption" signal after all files are sent
+            try {
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                String haltEncryptionSignal = "encyp: h";
+                dos.write(haltEncryptionSignal.getBytes(StandardCharsets.UTF_8));
+                dos.flush();
+                Log.d("SendFileActivity", "Sent halt encryption signal: " + haltEncryptionSignal);
+                runOnUiThread(() -> {
+                    if (progressBar_send.getProgress() == 100) {
+                        progressBar_send.setProgress(0);
+                        progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                        animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                        Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (IOException e) {
+                Log.e("SendFileActivity", "Error sending halt encryption signal", e);
+            }
         }
     }
 
@@ -470,10 +490,13 @@ public class SendFileActivity extends AppCompatActivity {
             return;
         }
 
+        // Create a CountDownLatch for sequential file transfers
+        CountDownLatch latch = new CountDownLatch(1);
+
         executorService.execute(() -> {
             try {
                 InputStream inputStream;
-                String finalRelativePath;  // Declare finalRelativePath here
+                String finalRelativePath;
 
                 // Check if relativePath is null and initialize it based on the filePath
                 if (relativePath == null) {
@@ -493,25 +516,21 @@ public class SendFileActivity extends AppCompatActivity {
                     // Get the file name from content URI
                     Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
                     if (cursor != null && cursor.moveToFirst()) {
-                        // Retrieve the display name (actual file name)
                         int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
                         finalRelativePath = cursor.getString(nameIndex);
                         cursor.close();
                     } else {
-                        // Fallback to using the last segment of the URI path
                         finalRelativePath = new File(fileUri.getPath()).getName();
                     }
                 } else {
-                    // If it's a file path, open it directly and extract the file name
                     File file = new File(fileUri.getPath());
                     inputStream = new FileInputStream(file);
-                    finalRelativePath = file.getName();  // Get the name of the file
+                    finalRelativePath = file.getName();
                 }
 
-                // Make final variables to use inside AsyncTask
                 final InputStream finalInputStream = inputStream;
                 final String finalPathToSend = finalRelativePath;
-                final long fileSize = finalInputStream.available();  // Get file size from the InputStream
+                final long fileSize = finalInputStream.available();
 
                 runOnUiThread(() -> {
                     progressBar_send.setMax(100);
@@ -553,19 +572,17 @@ public class SendFileActivity extends AppCompatActivity {
                     long sentSize = 0;
 
                     while (sentSize < fileSize) {
-                        int bytesRead = finalInputStream.read(buffer);  // Use finalInputStream here
+                        int bytesRead = finalInputStream.read(buffer);
                         if (bytesRead == -1) break;
                         dos.write(buffer, 0, bytesRead);
                         sentSize += bytesRead;
-                        progress = (int) (sentSize * 100 / fileSize);
-                        runOnUiThread(() -> {
-                            progressBar_send.setProgress(progress);
-                        });
+                        int progress = (int) (sentSize * 100 / fileSize);
+                        runOnUiThread(() -> progressBar_send.setProgress(progress));
                     }
                     dos.flush();
-                    runOnUiThread(() -> {
-                        if(progress == 100) {
 
+                    runOnUiThread(() -> {
+                        if (progressBar_send.getProgress() == 100) {
                             progressBar_send.setProgress(0);
                             progressBar_send.setVisibility(ProgressBar.INVISIBLE);
                             animationView.setVisibility(LottieAnimationView.INVISIBLE);
@@ -578,8 +595,18 @@ public class SendFileActivity extends AppCompatActivity {
                 }
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Error initializing connection", e);
+            } finally {
+                // Count down the latch to allow the next file to send
+                latch.countDown();
             }
         });
+
+        try {
+            // Wait for the current file transfer to complete
+            latch.await();
+        } catch (InterruptedException e) {
+            Log.e("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
+        }
     }
 
     private void sendFolder(String folderPath) {

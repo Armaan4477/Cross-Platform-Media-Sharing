@@ -11,6 +11,8 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
@@ -124,7 +126,23 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private class ReceiveFilesTask implements Runnable {
         @Override
         public void run() {
+            // Close any existing connections
+            try {
+                if (serverSocket != null && !serverSocket.isClosed()) {
+                    serverSocket.close();
+                }
+            } catch (IOException e) {
+                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+            }
             receiveFiles();
+            // Close any existing connections
+            try {
+                if (serverSocket != null && !serverSocket.isClosed()) {
+                    serverSocket.close();
+                }
+            } catch (IOException e) {
+                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+            }
         }
 
         private void receiveFiles() {
