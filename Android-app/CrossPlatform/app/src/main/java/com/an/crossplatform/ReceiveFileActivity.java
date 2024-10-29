@@ -137,7 +137,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             Log.d("ReceiveFileActivity", "File reception started.");
             try {
                 File configFile = new File(getFilesDir(), "config/config.json");
-                saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+                saveToDirectory = loadSaveDirectoryFromConfig();
                 Log.d("ReceiveFileActivity", "Save directory: " + saveToDirectory);
 
                 File baseDir = Environment.getExternalStorageDirectory();
@@ -270,10 +270,14 @@ public class ReceiveFileActivity extends AppCompatActivity {
         return fileName;
     }
 
-    private String loadSaveDirectoryFromConfig(File configFile) {
+    // Method to load the save directory from config.json
+    // Updated loadSaveDirectoryFromConfig method
+    private String loadSaveDirectoryFromConfig() {
         String saveToDirectory = "";
+        File configFile = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/config.json");
+
         try {
-            configFile = new File(getFilesDir(), "config/config.json");
+            Log.e("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -286,7 +290,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             saveToDirectory = json.optString("saveToDirectory", "Download/DataDash");
         } catch (Exception e) {
             Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
-            saveToDirectory = "Download/DataDash";
+            saveToDirectory = "Download/DataDash"; // Default if loading fails
         }
         return saveToDirectory;
     }

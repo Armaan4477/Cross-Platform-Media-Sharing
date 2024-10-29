@@ -1,6 +1,7 @@
 package com.an.crossplatform;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -117,8 +118,8 @@ public class PreferencesActivity extends AppCompatActivity {
 
     // Method to read JSON from internal storage
     private String readJsonFromFile() {
-        // Get the internal file path for the config directory
-        File folder = new File(getFilesDir(), CONFIG_FOLDER_NAME);  // Internal storage file path
+        // Get the external file path for the config directory
+        File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config"); // External storage path
         File file = new File(folder, CONFIG_FILE_NAME);
 
         if (file.exists()) {
@@ -144,9 +145,7 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void resetSavePath() {
-        // Set the saveToDirectory to the Android/media folder within external storage
-        // Correctly construct the media directory path
-        File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
+        File mediaDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
 
         // Create the media directory if it doesn't exist
         if (!mediaDir.exists()) {
@@ -176,7 +175,21 @@ public class PreferencesActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                            String pickedDir = result.getData().getData().getPath();
+                            Uri uri = result.getData().getData();
+                            String pickedDir = uri.getPath();
+
+                            // Check if the picked directory path is valid
+                            if (pickedDir != null) {
+                                // Ensure it starts with a slash
+                                if (!pickedDir.startsWith("/")) {
+                                    pickedDir = "/" + pickedDir;
+                                }
+                                // Ensure it ends with a slash
+                                if (!pickedDir.endsWith("/")) {
+                                    pickedDir += "/";
+                                }
+                            }
+
                             // Give a warning if the selected directory is within the "Download" folder and may cause issues
                             if (pickedDir.contains("Download")) {
                                 Toast.makeText(this, "Warning: Selected directory is within the Download folder", Toast.LENGTH_SHORT).show();
@@ -188,6 +201,17 @@ public class PreferencesActivity extends AppCompatActivity {
     private void submitPreferences() {
         String deviceName = deviceNameInput.getText().toString();
         String saveToDirectoryURI = saveToDirectoryInput.getText().toString();
+
+        // Ensure the directory path ends with a slash
+        if (!saveToDirectoryURI.startsWith("/")) {
+            saveToDirectoryURI += "/";
+        }
+
+        // Ensure the directory path ends with a slash
+        if (!saveToDirectoryURI.endsWith("/")) {
+            saveToDirectoryURI += "/";
+        }
+
         // Convert into a path like /storage/emulated/0/Download
         String saveToDirectory = saveToDirectoryURI.substring(saveToDirectoryURI.indexOf(":", 0) + 1);
         Log.d("PreferencesActivity", "Save to path: " + saveToDirectory);
@@ -222,9 +246,9 @@ public class PreferencesActivity extends AppCompatActivity {
     // Method to save the modified JSON to internal storage
     private void saveJsonToFile(String jsonString) {
         try {
-            File folder = new File(getFilesDir(),CONFIG_FOLDER_NAME);  // Ensure the config folder exists
+            File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");  // External storage path
             if (!folder.exists()) {
-                boolean folderCreated = folder.mkdir();
+                boolean folderCreated = folder.mkdirs();
                 Log.d("PreferencesActivity", "Config folder created: " + folder.getAbsolutePath());
                 if (!folderCreated) {
                     Log.e("PreferencesActivity", "Failed to create config folder");
