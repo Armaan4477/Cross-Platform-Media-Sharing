@@ -44,6 +44,7 @@ import android.os.Looper;
 import com.airbnb.lottie.LottieAnimationView;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
@@ -69,6 +70,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     private ProgressBar progressBar_send;
     private LottieAnimationView animationView;
     String base_folder_name_path;
+    int progress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -488,10 +490,13 @@ public class SendFileActivityPython extends AppCompatActivity {
             return;
         }
 
+        // Create a CountDownLatch for waiting on this file transfer
+        CountDownLatch latch = new CountDownLatch(1);
+
         executorService.execute(() -> {
             try {
                 InputStream inputStream;
-                String finalRelativePath;  // Declare finalRelativePath here
+                String finalRelativePath;
 
                 // Check if relativePath is null and initialize it based on the filePath
                 if (relativePath == null) {
@@ -516,20 +521,19 @@ public class SendFileActivityPython extends AppCompatActivity {
                         finalRelativePath = cursor.getString(nameIndex);
                         cursor.close();
                     } else {
-                        // Fallback to using the last segment of the URI path
                         finalRelativePath = new File(fileUri.getPath()).getName();
                     }
                 } else {
                     // If it's a file path, open it directly and extract the file name
                     File file = new File(fileUri.getPath());
                     inputStream = new FileInputStream(file);
-                    finalRelativePath = file.getName();  // Get the name of the file
+                    finalRelativePath = file.getName();
                 }
 
                 // Make final variables to use inside AsyncTask
                 final InputStream finalInputStream = inputStream;
                 final String finalPathToSend = finalRelativePath;
-                final long fileSize = finalInputStream.available();  // Get file size from the InputStream
+                final long fileSize = finalInputStream.available();
 
                 runOnUiThread(() -> {
                     progressBar_send.setMax(100);
@@ -542,52 +546,52 @@ public class SendFileActivityPython extends AppCompatActivity {
                 try {
                     DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 
-                    // Determine the encryption flag
+                    // Step 1: Send encryption flag
                     String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
                     dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
                     dos.flush();
                     Log.d("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
 
-                    // Send the relative path size and the path
+                    // Step 2: Send the file name size
                     byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
                     long relativePathSize = relativePathBytes.length;
-
                     ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
                     pathSizeBuffer.putLong(relativePathSize);
                     dos.write(pathSizeBuffer.array());
                     dos.flush();
 
+                    // Step 3: Send the file name
                     dos.write(relativePathBytes);
                     dos.flush();
 
-                    // Send the file size
+                    // Step 4: Send the file size
                     ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
                     sizeBuffer.putLong(fileSize);
                     dos.write(sizeBuffer.array());
                     dos.flush();
 
-                    // Send the file data
+                    // Step 5: Send the file data
                     byte[] buffer = new byte[4096];
                     long sentSize = 0;
 
                     while (sentSize < fileSize) {
-                        int bytesRead = finalInputStream.read(buffer);  // Use finalInputStream here
+                        int bytesRead = finalInputStream.read(buffer);
                         if (bytesRead == -1) break;
                         dos.write(buffer, 0, bytesRead);
                         sentSize += bytesRead;
                         int progress = (int) (sentSize * 100 / fileSize);
-                        runOnUiThread(() -> {
-                            progressBar_send.setProgress(progress);
-                            if(progress == 100) {
-
-                                progressBar_send.setProgress(0);
-                                progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                                animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                                Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                        runOnUiThread(() -> progressBar_send.setProgress(progress));
                     }
                     dos.flush();
+
+                    runOnUiThread(() -> {
+                        if (progressBar_send.getProgress() == 100) {
+                            progressBar_send.setProgress(0);
+                            progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
 
                     finalInputStream.close();
                 } catch (IOException e) {
@@ -595,8 +599,18 @@ public class SendFileActivityPython extends AppCompatActivity {
                 }
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Error initializing connection", e);
+            } finally {
+                // Count down the latch to allow the next file to send
+                latch.countDown();
             }
         });
+
+        try {
+            // Wait for the current file transfer to complete
+            latch.await();
+        } catch (InterruptedException e) {
+            Log.e("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
+        }
     }
 
     private void sendFolder(String folderPath) {

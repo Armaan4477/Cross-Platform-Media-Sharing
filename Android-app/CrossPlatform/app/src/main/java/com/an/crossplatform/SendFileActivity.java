@@ -563,14 +563,15 @@ public class SendFileActivity extends AppCompatActivity {
                         });
                     }
                     dos.flush();
+                    runOnUiThread(() -> {
+                        if(progress == 100) {
 
-                    if(progress == 100) {
-
-                        progressBar_send.setProgress(0);
-                        progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                        animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                        Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-                    }
+                            progressBar_send.setProgress(0);
+                            progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                            Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                     finalInputStream.close();
                 } catch (IOException e) {
                     Log.e("SendFileActivity", "Error sending file", e);
