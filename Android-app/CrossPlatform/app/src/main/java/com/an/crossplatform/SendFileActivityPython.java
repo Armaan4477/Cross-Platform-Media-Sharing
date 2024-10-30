@@ -165,6 +165,7 @@ public class SendFileActivityPython extends AppCompatActivity {
 
     private void onSelectFileClicked() {
         Log.d("SendFileActivity", "Select File button clicked");
+        isFolder = false;
 
         // Launch file picker
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);

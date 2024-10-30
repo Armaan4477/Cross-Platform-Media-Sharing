@@ -194,6 +194,7 @@ public class SendFileActivity extends AppCompatActivity {
 
     private void onSendClicked() {
         Log.d("SendFileActivity", "Send button clicked");
+        isFolder = false;
 
         if (filePaths.isEmpty()) {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
