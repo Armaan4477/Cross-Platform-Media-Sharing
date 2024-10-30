@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Arrays;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SendFileActivityPython extends AppCompatActivity {
 
@@ -71,6 +72,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     private LottieAnimationView animationView;
     String base_folder_name_path;
     int progress;
+    boolean metadataSent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,7 +232,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     if (result != null) {
                         metadataFilePath = result;
                         metadataCreated = true;
-                        Toast.makeText(SendFileActivityPython.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(SendFileActivityPython.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
                         new Thread(new ConnectionTask(selected_device_ip)).start();
                     } else {
                         Toast.makeText(SendFileActivityPython.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
@@ -451,9 +453,46 @@ public class SendFileActivityPython extends AppCompatActivity {
 
     private class ConnectionTask implements Runnable {
         private final String ip;
+        private final AtomicInteger pendingTransfers;
 
         ConnectionTask(String ip) {
             this.ip = ip;
+            this.pendingTransfers = new AtomicInteger(getTotalFileCount());
+        }
+
+        private int getTotalFileCount() {
+            int count = 0;
+            for (String filePath : filePaths) {
+                if (isFolder) {
+                    count += countFilesInFolder(filePath); // Count files in folder
+                } else {
+                    count++;
+                }
+            }
+            Log.d("SendFileActivity", "Total files to send: " + count);
+            return count + 1;
+        }
+
+        private int countFilesInFolder(String folderPath) {
+            Uri folderUri = Uri.parse(folderPath);
+            DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivityPython.this, folderUri);
+
+            if (folderDocument != null && folderDocument.isDirectory()) {
+                return countFilesRecursively(folderDocument);
+            }
+            return 0;
+        }
+
+        private int countFilesRecursively(DocumentFile directory) {
+            int fileCount = 0;
+            for (DocumentFile file : directory.listFiles()) {
+                if (file.isDirectory()) {
+                    fileCount += countFilesRecursively(file); // Add files from subdirectories
+                } else {
+                    fileCount++;
+                }
+            }
+            return fileCount;
         }
 
         @Override
@@ -476,11 +515,43 @@ public class SendFileActivityPython extends AppCompatActivity {
                 if (isFolder) {
                     sendFolder(filePath);
                 } else {
+                    if (!metadataSent) {
+                        sendFile(filePath, null);
+                        metadataSent = true;
+                    }
                     sendFile(filePath, null);
                 }
             }
         }
-    }
+
+        private void onTransferComplete() {
+            int remainingTransfers = pendingTransfers.decrementAndGet();
+            Log.d("SendFileActivity", "Files remaining: " + remainingTransfers); // Debugging line
+
+            if (remainingTransfers == 0) {
+                sendHaltEncryptionSignal(); // Send halt signal once all transfers complete
+            }
+        }
+
+        private void sendHaltEncryptionSignal() {
+            try {
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                String haltEncryptionSignal = "encyp: h";
+                dos.write(haltEncryptionSignal.getBytes(StandardCharsets.UTF_8));
+                dos.flush();
+                Log.d("SendFileActivity", "Sent halt encryption signal: " + haltEncryptionSignal);
+                runOnUiThread(() -> {
+                    if (progressBar_send.getProgress() == 100) {
+                        progressBar_send.setProgress(0);
+                        progressBar_send.setVisibility(ProgressBar.INVISIBLE);
+                        animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                        Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (IOException e) {
+                Log.e("SendFileActivity", "Error sending halt encryption signal", e);
+            }
+        }
 
     private void sendFile(String filePath, String relativePath) {
         boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
@@ -584,15 +655,6 @@ public class SendFileActivityPython extends AppCompatActivity {
                     }
                     dos.flush();
 
-                    runOnUiThread(() -> {
-                        if (progressBar_send.getProgress() == 100) {
-                            progressBar_send.setProgress(0);
-                            progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                            Toast.makeText(SendFileActivityPython.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
                     finalInputStream.close();
                 } catch (IOException e) {
                     Log.e("SendFileActivity", "Error sending file", e);
@@ -600,6 +662,7 @@ public class SendFileActivityPython extends AppCompatActivity {
             } catch (IOException e) {
                 Log.e("SendFileActivity", "Error initializing connection", e);
             } finally {
+                onTransferComplete(); // Call after each file transfer completes
                 // Count down the latch to allow the next file to send
                 latch.countDown();
             }
@@ -623,6 +686,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         if (metadataFilePath != null) {
             // Send the metadata file first
             sendFile(metadataFilePath, "");
+            metadataSent = true;
         } else {
             Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
             return;
@@ -631,7 +695,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         executorService.execute(() -> {
             try {
                 // Create a DocumentFile from the tree URI to traverse the folder
-                DocumentFile folderDocument = DocumentFile.fromTreeUri(this, folderUri);
+                DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivityPython.this, folderUri);
 
                 if (folderDocument == null) {
                     Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
@@ -679,6 +743,7 @@ public class SendFileActivityPython extends AppCompatActivity {
             }
         }
     }
+}
 
     @Override
     protected void onDestroy() {

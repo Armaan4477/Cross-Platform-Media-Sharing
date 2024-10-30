@@ -41,6 +41,7 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.Looper;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +72,7 @@ public class SendFileActivity extends AppCompatActivity {
     private LottieAnimationView animationView;
     String base_folder_name_path;
     int progress;
+    boolean metadataSent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -221,7 +223,7 @@ public class SendFileActivity extends AppCompatActivity {
                 if (finalResult != null) {
                     metadataFilePath = finalResult;
                     metadataCreated = true;
-                    Toast.makeText(SendFileActivity.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(SendFileActivity.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
                     new Thread(new SendFileActivity.ConnectionTask(selected_device_ip)).start();
                 } else {
                     Toast.makeText(SendFileActivity.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
@@ -433,9 +435,46 @@ public class SendFileActivity extends AppCompatActivity {
 
     private class ConnectionTask implements Runnable {
         private final String ip;
+        private final AtomicInteger pendingTransfers;
 
         ConnectionTask(String ip) {
             this.ip = ip;
+            this.pendingTransfers = new AtomicInteger(getTotalFileCount());
+        }
+
+        private int getTotalFileCount() {
+            int count = 0;
+            for (String filePath : filePaths) {
+                if (isFolder) {
+                    count += countFilesInFolder(filePath); // Count files in folder
+                } else {
+                    count++;
+                }
+            }
+            Log.d("SendFileActivity", "Total files to send: " + count);
+            return count + 1;
+        }
+
+        private int countFilesInFolder(String folderPath) {
+            Uri folderUri = Uri.parse(folderPath);
+            DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivity.this, folderUri);
+
+            if (folderDocument != null && folderDocument.isDirectory()) {
+                return countFilesRecursively(folderDocument);
+            }
+            return 0;
+        }
+
+        private int countFilesRecursively(DocumentFile directory) {
+            int fileCount = 0;
+            for (DocumentFile file : directory.listFiles()) {
+                if (file.isDirectory()) {
+                    fileCount += countFilesRecursively(file); // Add files from subdirectories
+                } else {
+                    fileCount++;
+                }
+            }
+            return fileCount;
         }
 
         @Override
@@ -458,10 +497,25 @@ public class SendFileActivity extends AppCompatActivity {
                 if (isFolder) {
                     sendFolder(filePath);
                 } else {
+                    if (!metadataSent) {
+                        sendFile(filePath, null);
+                        metadataSent = true;
+                    }
                     sendFile(filePath, null);
                 }
             }
-            // Send "halt encryption" signal after all files are sent
+        }
+
+        private void onTransferComplete() {
+            int remainingTransfers = pendingTransfers.decrementAndGet();
+            Log.d("SendFileActivity", "Files remaining: " + remainingTransfers); // Debugging line
+
+            if (remainingTransfers == 0) {
+                sendHaltEncryptionSignal(); // Send halt signal once all transfers complete
+            }
+        }
+
+        private void sendHaltEncryptionSignal() {
             try {
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
                 String haltEncryptionSignal = "encyp: h";
@@ -480,217 +534,210 @@ public class SendFileActivity extends AppCompatActivity {
                 Log.e("SendFileActivity", "Error sending halt encryption signal", e);
             }
         }
-    }
 
-    private void sendFile(String filePath, String relativePath) {
-        boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
+        private void sendFile(String filePath, String relativePath) {
+            boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
 
-        if (filePath == null) {
-            Log.e("SendFileActivity", "File path is null");
-            return;
-        }
+            if (filePath == null) {
+                Log.e("SendFileActivity", "File path is null");
+                return;
+            }
 
-        // Create a CountDownLatch for sequential file transfers
-        CountDownLatch latch = new CountDownLatch(1);
+            // Create a CountDownLatch for sequential file transfers
+            CountDownLatch latch = new CountDownLatch(1);
 
-        executorService.execute(() -> {
-            try {
-                InputStream inputStream;
-                String finalRelativePath;
-
-                // Check if relativePath is null and initialize it based on the filePath
-                if (relativePath == null) {
-                    finalRelativePath = new File(filePath).getName();
-                } else {
-                    finalRelativePath = relativePath;
-                }
-
-                // Check if the filePath is a content URI
-                Uri fileUri = Uri.parse(filePath);
-
-                if (filePath.startsWith("content://")) {
-                    // Use ContentResolver to open the file from the URI
-                    ContentResolver contentResolver = getContentResolver();
-                    inputStream = contentResolver.openInputStream(fileUri);
-
-                    // Get the file name from content URI
-                    Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
-                    if (cursor != null && cursor.moveToFirst()) {
-                        int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                        finalRelativePath = cursor.getString(nameIndex);
-                        cursor.close();
-                    } else {
-                        finalRelativePath = new File(fileUri.getPath()).getName();
-                    }
-                } else {
-                    File file = new File(fileUri.getPath());
-                    inputStream = new FileInputStream(file);
-                    finalRelativePath = file.getName();
-                }
-
-                final InputStream finalInputStream = inputStream;
-                final String finalPathToSend = finalRelativePath;
-                final long fileSize = finalInputStream.available();
-
-                runOnUiThread(() -> {
-                    progressBar_send.setMax(100);
-                    progressBar_send.setProgress(0);
-                    progressBar_send.setVisibility(ProgressBar.VISIBLE);
-                    animationView.setVisibility(LottieAnimationView.VISIBLE);
-                    animationView.playAnimation();
-                });
-
+            executorService.execute(() -> {
                 try {
-                    DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                    InputStream inputStream;
+                    String finalRelativePath;
 
-                    // Determine the encryption flag
-                    String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
-                    dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
-                    dos.flush();
-                    Log.d("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
-
-                    // Send the relative path size and the path
-                    byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
-                    long relativePathSize = relativePathBytes.length;
-
-                    ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                    pathSizeBuffer.putLong(relativePathSize);
-                    dos.write(pathSizeBuffer.array());
-                    dos.flush();
-
-                    dos.write(relativePathBytes);
-                    dos.flush();
-
-                    // Send the file size
-                    ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                    sizeBuffer.putLong(fileSize);
-                    dos.write(sizeBuffer.array());
-                    dos.flush();
-
-                    // Send the file data
-                    byte[] buffer = new byte[4096];
-                    long sentSize = 0;
-
-                    while (sentSize < fileSize) {
-                        int bytesRead = finalInputStream.read(buffer);
-                        if (bytesRead == -1) break;
-                        dos.write(buffer, 0, bytesRead);
-                        sentSize += bytesRead;
-                        int progress = (int) (sentSize * 100 / fileSize);
-                        runOnUiThread(() -> progressBar_send.setProgress(progress));
+                    // Check if relativePath is null and initialize it based on the filePath
+                    if (relativePath == null) {
+                        finalRelativePath = new File(filePath).getName();
+                    } else {
+                        finalRelativePath = relativePath;
                     }
-                    dos.flush();
+
+                    // Check if the filePath is a content URI
+                    Uri fileUri = Uri.parse(filePath);
+
+                    if (filePath.startsWith("content://")) {
+                        // Use ContentResolver to open the file from the URI
+                        ContentResolver contentResolver = getContentResolver();
+                        inputStream = contentResolver.openInputStream(fileUri);
+
+                        // Get the file name from content URI
+                        Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
+                        if (cursor != null && cursor.moveToFirst()) {
+                            int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                            finalRelativePath = cursor.getString(nameIndex);
+                            cursor.close();
+                        } else {
+                            finalRelativePath = new File(fileUri.getPath()).getName();
+                        }
+                    } else {
+                        File file = new File(fileUri.getPath());
+                        inputStream = new FileInputStream(file);
+                        finalRelativePath = file.getName();
+                    }
+
+                    final InputStream finalInputStream = inputStream;
+                    final String finalPathToSend = finalRelativePath;
+                    final long fileSize = finalInputStream.available();
 
                     runOnUiThread(() -> {
-                        if (progressBar_send.getProgress() == 100) {
-                            progressBar_send.setProgress(0);
-                            progressBar_send.setVisibility(ProgressBar.INVISIBLE);
-                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
-                            Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
-                        }
+                        progressBar_send.setMax(100);
+                        progressBar_send.setProgress(0);
+                        progressBar_send.setVisibility(ProgressBar.VISIBLE);
+                        animationView.setVisibility(LottieAnimationView.VISIBLE);
+                        animationView.playAnimation();
                     });
-                    finalInputStream.close();
+
+                    try {
+                        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+
+                        // Determine the encryption flag
+                        String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
+                        dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
+                        dos.flush();
+                        Log.d("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
+
+                        // Send the relative path size and the path
+                        byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
+                        long relativePathSize = relativePathBytes.length;
+
+                        ByteBuffer pathSizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                        pathSizeBuffer.putLong(relativePathSize);
+                        dos.write(pathSizeBuffer.array());
+                        dos.flush();
+
+                        dos.write(relativePathBytes);
+                        dos.flush();
+
+                        // Send the file size
+                        ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                        sizeBuffer.putLong(fileSize);
+                        dos.write(sizeBuffer.array());
+                        dos.flush();
+
+                        // Send the file data
+                        byte[] buffer = new byte[4096];
+                        long sentSize = 0;
+
+                        while (sentSize < fileSize) {
+                            int bytesRead = finalInputStream.read(buffer);
+                            if (bytesRead == -1) break;
+                            dos.write(buffer, 0, bytesRead);
+                            sentSize += bytesRead;
+                            int progress = (int) (sentSize * 100 / fileSize);
+                            runOnUiThread(() -> progressBar_send.setProgress(progress));
+                        }
+                        dos.flush();
+                        finalInputStream.close();
+                    } catch (IOException e) {
+                        Log.e("SendFileActivity", "Error sending file", e);
+                    }
                 } catch (IOException e) {
-                    Log.e("SendFileActivity", "Error sending file", e);
+                    Log.e("SendFileActivity", "Error initializing connection", e);
+                } finally {
+                    onTransferComplete(); // Call after each file transfer completes
+                    // Count down the latch to allow the next file to send
+                    latch.countDown();
                 }
-            } catch (IOException e) {
-                Log.e("SendFileActivity", "Error initializing connection", e);
-            } finally {
-                // Count down the latch to allow the next file to send
-                latch.countDown();
-            }
-        });
+            });
 
-        try {
-            // Wait for the current file transfer to complete
-            latch.await();
-        } catch (InterruptedException e) {
-            Log.e("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
-        }
-    }
-
-    private void sendFolder(String folderPath) {
-        boolean encryptionFlag = false;  // Set to true if you want to encrypt the files before sending
-
-        // Convert the String folderPath to a Uri
-        Uri folderUri = Uri.parse(folderPath);  // Assuming folderPath is a content URI string
-
-        // Ensure metadataFilePath is set and not null
-        if (metadataFilePath != null) {
-            // Send the metadata file first
-            sendFile(metadataFilePath, "metadata.json");
-        } else {
-            Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
-            return;
-        }
-
-        executorService.execute(() -> {
             try {
-                // Create a DocumentFile from the tree URI to traverse the folder
-                DocumentFile folderDocument = DocumentFile.fromTreeUri(this, folderUri);
+                // Wait for the current file transfer to complete
+                latch.await();
+            } catch (InterruptedException e) {
+                Log.e("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
+            }
+        }
 
-                if (folderDocument == null) {
-                    Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
-                    return;
-                }
+        private void sendFolder(String folderPath) {
+            boolean encryptionFlag = false;  // Set to true if you want to encrypt the files before sending
 
-                // Check if the DocumentFile is a directory (folder)
-                if (folderDocument.isDirectory()) {
-                    // Get the name of the top-level folder
-                    String topLevelFolderName = folderDocument.getName();
-                    if (topLevelFolderName == null) {
-                        topLevelFolderName = ""; // Fallback if name is null
+            // Convert the String folderPath to a Uri
+            Uri folderUri = Uri.parse(folderPath);  // Assuming folderPath is a content URI string
+
+            // Ensure metadataFilePath is set and not null
+            if (metadataFilePath != null) {
+                // Send the metadata file first
+                sendFile(metadataFilePath, "metadata.json");
+                metadataSent = true;
+            } else {
+                Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
+                return;
+            }
+
+            executorService.execute(() -> {
+                try {
+                    // Create a DocumentFile from the tree URI to traverse the folder
+                    DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivity.this, folderUri);
+
+                    if (folderDocument == null) {
+                        Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
+                        return;
                     }
 
-                    // Send the folder contents recursively
-                    sendDocumentFile(folderDocument, "", encryptionFlag, topLevelFolderName);
-                } else {
-                    Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
+                    // Check if the DocumentFile is a directory (folder)
+                    if (folderDocument.isDirectory()) {
+                        // Get the name of the top-level folder
+                        String topLevelFolderName = folderDocument.getName();
+                        if (topLevelFolderName == null) {
+                            topLevelFolderName = ""; // Fallback if name is null
+                        }
+
+                        // Send the folder contents recursively
+                        sendDocumentFile(folderDocument, "", encryptionFlag, topLevelFolderName);
+                    } else {
+                        Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
+                    }
+                } catch (Exception e) {
+                    Log.e("SendFileActivity", "Error sending folder", e);
                 }
-            } catch (Exception e) {
-                Log.e("SendFileActivity", "Error sending folder", e);
-            }
-        });
-    }
+            });
+        }
 
-    // Modified recursive method to send the contents of a DocumentFile (folder or file)
-    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag, String topLevelFolderName) {
-        if (documentFile.isDirectory()) {
-            // Construct the directory path without the top-level folder name
-            String directoryPath = parentPath.isEmpty() ? documentFile.getName() + "/"
-                    : parentPath + documentFile.getName() + "/";
+        // Modified recursive method to send the contents of a DocumentFile (folder or file)
+        private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag, String topLevelFolderName) {
+            if (documentFile.isDirectory()) {
+                // Construct the directory path without the top-level folder name
+                String directoryPath = parentPath.isEmpty() ? documentFile.getName() + "/"
+                        : parentPath + documentFile.getName() + "/";
 
-            // Remove the top-level folder name from the path
-            String relativeDirectoryPath = directoryPath.startsWith(topLevelFolderName + "/")
-                    ? directoryPath.substring(topLevelFolderName.length() + 1)
-                    : directoryPath;
+                // Remove the top-level folder name from the path
+                String relativeDirectoryPath = directoryPath.startsWith(topLevelFolderName + "/")
+                        ? directoryPath.substring(topLevelFolderName.length() + 1)
+                        : directoryPath;
 
-            Log.d("SendFileActivity", "Directory creation needed for: " + relativeDirectoryPath);
+                Log.d("SendFileActivity", "Directory creation needed for: " + relativeDirectoryPath);
 
-            // Recursively send the contents of the directory
-            for (DocumentFile file : documentFile.listFiles()) {
-                sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
-            }
-        } else if (documentFile.isFile()) {
-            // Construct the file path
-            String filePath = parentPath + documentFile.getName();
-
-            // Remove the top-level folder name from the path
-            String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
-                    ? filePath.substring(topLevelFolderName.length() + 1)
-                    : filePath;
-
-            Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
-
-            try {
-                InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
-                if (inputStream != null) {
-                    // Send the file data via your existing send logic
-                    sendFile(documentFile.getUri().toString(), relativeFilePath);
-                    inputStream.close();
+                // Recursively send the contents of the directory
+                for (DocumentFile file : documentFile.listFiles()) {
+                    sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
                 }
-            } catch (IOException e) {
-                Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
+            } else if (documentFile.isFile()) {
+                // Construct the file path
+                String filePath = parentPath + documentFile.getName();
+
+                // Remove the top-level folder name from the path
+                String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
+                        ? filePath.substring(topLevelFolderName.length() + 1)
+                        : filePath;
+
+                Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
+
+                try {
+                    InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
+                    if (inputStream != null) {
+                        // Send the file data via your existing send logic
+                        sendFile(documentFile.getUri().toString(), relativeFilePath);
+                        inputStream.close();
+                    }
+                } catch (IOException e) {
+                    Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
+                }
             }
         }
     }
