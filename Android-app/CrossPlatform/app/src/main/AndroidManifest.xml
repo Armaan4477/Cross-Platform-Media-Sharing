@@ -42,8 +42,6 @@
         <activity android:name=".ReceiveFileActivity" />
         <activity android:name=".PreferencesActivity" />
         <activity android:name=".SendFileActivityPython" />
-        <activity android:name=".FileAdapter" />
-        <activity android:name=".HelpDialog" />
         <activity android:name=".ReceiveFileActivityPython" />
         <activity android:name=".CreditsActivity" />
 
