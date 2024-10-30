@@ -73,6 +73,9 @@ public class SendFileActivity extends AppCompatActivity {
     String base_folder_name_path;
     int progress;
     boolean metadataSent = false;
+    Button selectFileButton;
+    Button selectFolderButton;
+    Button sendButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,9 +98,9 @@ public class SendFileActivity extends AppCompatActivity {
         Log.d("SendFileActivity", "Selected Device IP: " + selected_device_ip);
 
         // Set up buttons
-        Button selectFileButton = findViewById(R.id.btn_select_file);
-        Button selectFolderButton = findViewById(R.id.btn_select_folder);
-        Button sendButton = findViewById(R.id.btn_send);
+        selectFileButton = findViewById(R.id.btn_select_file);
+        selectFolderButton = findViewById(R.id.btn_select_folder);
+        sendButton = findViewById(R.id.btn_send);
 
         // Set up RecyclerView for displaying selected files/folder
         recyclerView = findViewById(R.id.recycler_view);
@@ -498,7 +501,7 @@ public class SendFileActivity extends AppCompatActivity {
                     sendFolder(filePath);
                 } else {
                     if (!metadataSent) {
-                        sendFile(filePath, null);
+                        sendFile(metadataFilePath, null);
                         metadataSent = true;
                     }
                     sendFile(filePath, null);
@@ -527,6 +530,9 @@ public class SendFileActivity extends AppCompatActivity {
                         progressBar_send.setProgress(0);
                         progressBar_send.setVisibility(ProgressBar.INVISIBLE);
                         animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                        selectFileButton.setEnabled(false);
+                        selectFolderButton.setEnabled(false);
+                        sendButton.setEnabled(false);
                         Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
                     }
                 });
