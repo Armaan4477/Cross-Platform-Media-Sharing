@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit,
     QHBoxLayout, QFrame
 )
-from PyQt6.QtGui import QScreen, QFont, QColor
+from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 import os
 import socket
@@ -330,8 +330,23 @@ class SendApp(QWidget):
         content_layout.addWidget(self.close_button)
         #com.an.Datadash
 
+        self.mainmenu_button = self.create_styled_button_close('Main Menu')  # Apply styling here
+        self.mainmenu_button.setVisible(False)
+        self.mainmenu_button.clicked.connect(self.openMainWindow)
+        content_layout.addWidget(self.mainmenu_button)
+
         main_layout.addLayout(content_layout)
         self.setLayout(main_layout)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.openMainWindow()
+
+    def openMainWindow(self):
+        from main import MainApp
+        self.main_window = MainApp()
+        self.main_window.show()
+        self.close()
 
     def create_styled_button(self, text):
         button = QPushButton(text)
@@ -455,8 +470,6 @@ class SendApp(QWidget):
             self.send_button.setVisible(True)
             #com.an.Datadash
 
-    
-
     def sendSelectedFiles(self):
         password = None
 
@@ -529,17 +542,22 @@ class SendApp(QWidget):
             self.status_label.setText("File transfer completed!")
             self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
             self.close_button.setVisible(True)
+            # self.mainmenu_button.setVisible(True)
 
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
 
     def closeEvent(self, event):
-        """Override the close event to ensure everything is stopped properly."""
-        if self.file_sender and self.file_sender.isRunning():
-            self.file_sender.stop()  # Signal the sender to stop
-            self.file_sender.wait()  # Wait until the thread fully stops
-        event.accept()
+        try:
+            """Override the close event to ensure everything is stopped properly."""
+            if self.file_sender and self.file_sender.isRunning():
+                self.file_sender.stop()  # Signal the sender to stop
+                self.file_sender.wait()  # Wait until the thread fully stops
+        except Exception as e:
+            pass
+        finally:
+            event.accept()
 
     def stop(self):
         """Sets the stop signal to True and closes the socket if it's open."""

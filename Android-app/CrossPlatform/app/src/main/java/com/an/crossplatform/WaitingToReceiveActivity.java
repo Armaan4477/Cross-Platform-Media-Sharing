@@ -2,6 +2,7 @@ package com.an.crossplatform;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -67,14 +68,15 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     }
 
     private String readJsonFromFile() {
-        File folder = new File(getFilesDir(), "config");
+        // Access the config.json file in the new location in Downloads/DataDash/Config
+        File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/");
         if (!folder.exists()) {
-            Log.d("readJsonFromFile", "Config folder does not exist. Returning null.");
+            Log.d("readJsonFromFile", "Config folder does not exist in Downloads. Returning null.");
             return null;
         }
 
         File file = new File(folder, "config.json");
-        Log.d("readJsonFromFile", "Looking for file at: " + file.getAbsolutePath());
+        Log.d("readJsonFromFile", "Looking for config file at: " + file.getAbsolutePath());
 
         if (file.exists()) {
             Log.d("readJsonFromFile", "File exists. Reading contents...");
@@ -90,7 +92,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 Log.e("readJsonFromFile", "Error reading JSON from file", e);
             }
         } else {
-            Log.d("readJsonFromFile", "File does not exist at: " + file.getAbsolutePath());
+            Log.d("readJsonFromFile", "Config file does not exist at: " + file.getAbsolutePath());
         }
         return null;
     }

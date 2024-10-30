@@ -11,6 +11,8 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
@@ -31,6 +33,9 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class ReceiveFileActivityPython extends AppCompatActivity {
 
@@ -50,6 +55,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private LottieAnimationView waitingAnimation;
     private Button openFolder;
     private TextView txt_path;
+    private ExecutorService executorService = Executors.newFixedThreadPool(2); // Using 2 threads: one for connection, one for file reception
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,26 +79,31 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             Log.e("ReceiveFileActivityPython", "Failed to retrieve OS type", e);
         }
 
-        txt_waiting.setText("Waiting to receive file from " + deviceType);
-
-        new ConnectionTask().execute();
+        if(osType.equals("Windows")) {
+            txt_waiting.setText("Receiving files from Windows PC");
+        } else if (osType.equals("Linux")) {
+            txt_waiting.setText("Receiving files from Linux PC");
+        } else if (osType.equals("Mac")) {
+            txt_waiting.setText("Receiving files from Mac");
+        } else {
+            txt_waiting.setText("Receiving files from Python");
+        }
+        startConnectionTask();
     }
 
-    private class ConnectionTask extends AsyncTask<Void, Void, Boolean> {
+    private class ConnectionTask implements Runnable {
         @Override
-        protected Boolean doInBackground(Void... voids) {
-            return initializeConnection();
-        }
-
-        @Override
-        protected void onPostExecute(Boolean connectionSuccessful) {
-            if (connectionSuccessful) {
-                Log.d("ReceiveFileActivityPython", "Connection established with the sender.");
-                txt_waiting.setText("Receiving files from " + deviceType);
-                new ReceiveFilesTask().execute();
-            } else {
-                Log.e("ReceiveFileActivityPython", "Failed to establish connection.");
-            }
+        public void run() {
+            boolean connectionSuccessful = initializeConnection();
+            runOnUiThread(() -> {
+                if (connectionSuccessful) {
+                    Log.d("ReceiveFileActivityPython", "Connection established with the sender.");
+                    txt_waiting.setText("Receiving files from " + deviceType);
+                    executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
+                } else {
+                    Log.e("ReceiveFileActivityPython", "Failed to establish connection.");
+                }
+            });
         }
     }
 
@@ -112,10 +123,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
-    private class ReceiveFilesTask extends AsyncTask<Void, Integer, Void> {
+    private class ReceiveFilesTask implements Runnable {
         @Override
-        protected Void doInBackground(Void... voids) {
+        public void run() {
             // Close any existing connections
             try {
                 if (serverSocket != null && !serverSocket.isClosed()) {
@@ -125,94 +135,28 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
             }
             receiveFiles();
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            if (values.length > 0) {
-                int progressValue = values[0];
-                Log.d("ReceiveFilesTask", "Updating progress: " + progressValue);
-                progressBar.setProgress(progressValue);
-            }
-            if (progressBar.getProgress() == 100) {
-                txt_waiting.setText("File transfer completed");
-                progressBar.setVisibility(ProgressBar.INVISIBLE);
-                waitingAnimation.setVisibility(LottieAnimationView.VISIBLE);
-                waitingAnimation.playAnimation();
-            }
-        }
-
-        @Override
-        protected void onPreExecute() {
-            // Show animation when sending starts
-            progressBar.setVisibility(ProgressBar.VISIBLE);
-            waitingAnimation.setVisibility(LottieAnimationView.INVISIBLE);
-            animationView.setVisibility(LottieAnimationView.VISIBLE);
-            animationView.playAnimation();
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            txt_waiting.setText("File transfer completed");
-            progressBar.setProgress(0);
-            progressBar.setVisibility(ProgressBar.INVISIBLE);
-            animationView.setVisibility(LottieAnimationView.INVISIBLE);
-            txt_path.setText("Files saved to: " + destinationFolder);
-            txt_path.setVisibility(TextView.VISIBLE);
-//            openFolder.setVisibility(Button.VISIBLE);
-
-            openFolder.setOnClickListener(v -> {
-                // Create a File object for the destination folder
-                File folder = new File(destinationFolder);
-
-                Log.d("ReceiveFileActivity", "Opening folder: " + folder.getPath());
-                if (folder.exists() && folder.isDirectory()) {
-                    try {
-                        // Create an intent to view the folder
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        Uri folderUri;
-
-                        // Use FileProvider if targeting Android 7.0 (API level 24) or higher
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            // Use FileProvider for API 24 and above
-                            folderUri = FileProvider.getUriForFile(
-                                    ReceiveFileActivityPython.this,
-                                    getApplicationContext().getPackageName() + ".provider",
-                                    folder
-                            );
-                            intent.setDataAndType(folderUri, "*/*");
-                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        } else {
-                            // Use direct file URI for earlier versions
-                            folderUri = Uri.fromFile(folder);
-                            intent.setDataAndType(folderUri, "*/*");
-                        }
-
-                        // Add flags to minimize the current app and open the file manager
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-                        // Start the file manager without expecting a result
-                        startActivity(intent);
-                        // Optionally, call finish() to close the current activity
-                        finish();
-                    } catch (IllegalArgumentException e) {
-                        Log.e("ReceiveFileActivity", "FileProvider error: " + e.getMessage());
-                    }
-                } else {
-                    Log.e("ReceiveFileActivity", "Directory does not exist: " + destinationFolder);
+            // Close threads and sockets after file reception
+            if (clientSocket != null && !clientSocket.isClosed()) {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    Log.e("ReceiveFileActivityPython", "Error closing client socket", e);
                 }
-            });
+            }
         }
 
         private void receiveFiles() {
+            runOnUiThread(() -> {
+                progressBar.setVisibility(ProgressBar.VISIBLE);
+                waitingAnimation.setVisibility(LottieAnimationView.INVISIBLE);
+                animationView.setVisibility(LottieAnimationView.VISIBLE);
+                animationView.playAnimation();
+            });
             Log.d("ReceiveFileActivityPython", "File reception started.");
             try {
                 // Load the save directory from the config file
                 File configFile = new File(getFilesDir(), "config/config.json");
-                saveToDirectory = loadSaveDirectoryFromConfig(configFile);
+                saveToDirectory = loadSaveDirectoryFromConfig();
                 Log.d("ReceiveFileActivityPython", "Save directory: " + saveToDirectory);
 
                 // Ensure the directory path is correctly formed
@@ -225,7 +169,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     return;
                 }
 
-                destinationFolder = targetDir.getPath(); // Update destinationFolder to the newly formed path
+                destinationFolder = targetDir.getPath();
                 JSONArray metadataArray = null;
 
                 while (true) {
@@ -235,6 +179,16 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
 
                     if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
+                        Log.d("ReceiveFileActivityPython", "Received all files.");
+                        // After file reception is complete, update the UI accordingly
+                        runOnUiThread(() -> {
+                            txt_waiting.setText("File transfer completed");
+                            progressBar.setProgress(0);
+                            progressBar.setVisibility(ProgressBar.INVISIBLE);
+                            animationView.setVisibility(LottieAnimationView.INVISIBLE);
+                            txt_path.setText("Files saved to: " + destinationFolder);
+                            txt_path.setVisibility(TextView.VISIBLE);
+                        });
                         break;
                     }
 
@@ -286,21 +240,33 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                         continue;
                     }
 
-                    // Rename file if it already exists
-                    String originalName = receivedFile.getName();
-                    String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-                    String extension = originalName.substring(originalName.lastIndexOf('.'));
-                    int i = 1;
+                    try {
+                        String originalName = receivedFile.getName();
+                        String nameWithoutExt;
+                        String extension = "";
 
-                    // Check if the file exists in the receiving directory
-                    while (receivedFile.exists()) {
-                        String newFileName = nameWithoutExt + " (" + i + ")" + extension;
-                        receivedFile = new File(destinationFolder, newFileName);
-                        i++;
+                        int dotIndex = originalName.lastIndexOf('.');
+                        if (dotIndex == -1) {
+                            // No extension found
+                            nameWithoutExt = originalName;
+                        } else {
+                            // Split name and extension
+                            nameWithoutExt = originalName.substring(0, dotIndex);
+                            extension = originalName.substring(dotIndex);
+                        }
+
+                        int i = 1;
+                        while (receivedFile.exists()) {
+                            String newFileName = nameWithoutExt + " (" + i + ")" + extension;
+                            receivedFile = new File(destinationFolder, newFileName);
+                            i++;
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[4096]; // Increased buffer size for faster transfer
+                        byte[] buffer = new byte[4096];
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {
@@ -311,10 +277,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                             fos.write(buffer, 0, bytesRead);
                             receivedSize += bytesRead;
 
-                            // Update progress
                             int progress = (int) ((receivedSize * 100) / fileSize);
                             Log.d("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
-                            publishProgress(progress);
+                            runOnUiThread(() -> progressBar.setProgress(progress));
                         }
                     }
                 }
@@ -322,7 +287,10 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 Log.e("ReceiveFileActivityPython", "Error receiving files", e);
             }
         }
+    }
 
+    public void startConnectionTask() {
+        executorService.submit(new ConnectionTask());
     }
 
     private String getFilePathFromMetadata(JSONArray metadataArray, String fileName) {
@@ -341,11 +309,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     }
 
     // Method to load the save directory from config.json
-    private String loadSaveDirectoryFromConfig(File configFile) {
-        String saveToDirectory = ""; // Use an empty string as the initial value
+    // Updated loadSaveDirectoryFromConfig method
+    private String loadSaveDirectoryFromConfig() {
+        String saveToDirectory = "";
+        File configFile = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/config.json");
+
         try {
-            // Load config.json
-            configFile = new File(getFilesDir(), "config/config.json");
+            Log.e("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -353,14 +323,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             while ((line = reader.readLine()) != null) {
                 jsonBuilder.append(line);
             }
-            reader.close();
-            JSONObject config = new JSONObject(jsonBuilder.toString());
-            saveToDirectory = config.optString("saveToPath", "");
-            saveToDirectory = saveToDirectory.startsWith("/") ? saveToDirectory.substring(1) : saveToDirectory; // Remove leading '/'
+            fis.close();
+            JSONObject json = new JSONObject(jsonBuilder.toString());
+            saveToDirectory = json.optString("saveToDirectory", "Download/DataDash");
         } catch (Exception e) {
-            Log.e("ReceiveFileActivityPython", "Error loading config.json", e);
+            Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
+            saveToDirectory = "Download/DataDash"; // Default if loading fails
         }
-        Log.d("ReceiveFileActivityPython", "Loaded save directory: " + saveToDirectory);
         return saveToDirectory;
     }
 

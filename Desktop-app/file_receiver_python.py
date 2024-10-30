@@ -7,7 +7,7 @@ import platform
 from PyQt6 import QtCore
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject,QTimer
 from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QHBoxLayout
-from PyQt6.QtGui import QScreen,QMovie,QFont
+from PyQt6.QtGui import QScreen,QMovie,QFont,QKeyEvent,QKeySequence
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 
@@ -407,7 +407,22 @@ class ReceiveAppP(QWidget):
         self.close_button.clicked.connect(self.close)
         layout.addWidget(self.close_button)
 
+        self.mainmenu_button = self.create_styled_button('Main Menu')
+        self.mainmenu_button.setVisible(False)
+        self.mainmenu_button.clicked.connect(self.openMainWindow)
+        layout.addWidget(self.mainmenu_button)
+
         self.setLayout(layout)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.openMainWindow()
+
+    def openMainWindow(self):
+        from main import MainApp
+        self.main_window = MainApp()
+        self.main_window.show()
+        self.close()
 
     def create_styled_button(self, text):
         button = QPushButton(text)
@@ -475,6 +490,7 @@ class ReceiveAppP(QWidget):
             self.open_dir_button.setVisible(True)  # Show the button when file is received
             self.change_gif_to_success()  # Change GIF to success animation
             self.close_button.setVisible(True)
+            # self.mainmenu_button.setVisible(True)
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
@@ -509,7 +525,28 @@ class ReceiveAppP(QWidget):
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
 
+    def closeEvent(self, event):
+        try:
+            """Override the close event to ensure everything is stopped properly."""
+            self.stop()
+        except Exception as e:
+            pass
+        finally:
+            event.accept()
 
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
+        if self.server_skt:
+            try:
+                self.server_skt.close()
+            except Exception as e:
+                logger.error(f"Error while closing socket: {e}")
 
 if __name__ == '__main__':
     import sys

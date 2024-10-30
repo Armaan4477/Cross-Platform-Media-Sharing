@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         createConfigFileIfNotExists();
+        //createdownloadfolder();
 
         Button btnSend = findViewById(R.id.btn_send);
         Button btnReceive = findViewById(R.id.btn_receive);
@@ -34,28 +35,28 @@ public class MainActivity extends AppCompatActivity {
 
         btnSend.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
-            if (!isNetworkConnected()) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Warning")
-                        .setMessage("Please connect to a network before sending files.")
-                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return;
-            }
+//            if (!isNetworkConnected()) {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setTitle("Warning")
+//                        .setMessage("Please connect to a network before sending files.")
+//                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+//                        .show();
+//                return;
+//            }
             Intent intent = new Intent(MainActivity.this, DiscoverDevicesActivity.class);
             startActivity(intent);
         });
 
         btnReceive.setOnClickListener(v -> {
             // Give a warning if the device is not connected to a network
-            if (!isNetworkConnected()) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Warning")
-                        .setMessage("Please connect to a network before receiving files.")
-                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
-                        .show();
-                return;
-            }
+//            if (!isNetworkConnected()) {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setTitle("Warning")
+//                        .setMessage("Please connect to a network before receiving files.")
+//                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+//                        .show();
+//                return;
+//            }
             Intent intent = new Intent(MainActivity.this, WaitingToReceiveActivity.class);
             startActivity(intent);
         });
@@ -66,26 +67,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private boolean isNetworkConnected() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        return networkInfo != null && networkInfo.isConnected();
-    }
-
     private void createConfigFileIfNotExists() {
         try {
-            // Use internal storage for folder (this is for the config file, unchanged)
-            File folder = new File(getFilesDir(), "config");
-            if (!folder.exists()) {
-                boolean folderCreated = folder.mkdir();
+            // Use external storage for the folder path
+            File configDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");
+            Log.e("MainActivity", "Config directory path: " + configDir.getAbsolutePath());
+            // Create the config directory if it doesn't exist
+            if (!configDir.exists()) {
+                boolean folderCreated = configDir.mkdirs();
                 if (!folderCreated) {
-                    Log.e("MainActivity", "Failed to create config folder");
+                    Log.e("MainActivity", "Failed to create config directory");
                     return;
                 }
             }
 
             // Create config.json inside the folder
-            File file = new File(folder, "config.json");
+            File file = new File(configDir, "config.json");
             if (!file.exists()) {
                 boolean fileCreated = file.createNewFile();
                 if (fileCreated) {
@@ -93,9 +90,9 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject();
                     String deviceName = Build.MODEL;  // Device name
 
-                    // Set the saveToPath to the Android/media folder within external storage
+                    // Set the saveToDirectory to the Android/media folder within external storage
                     // Correctly construct the media directory path
-                    File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
+                    File mediaDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
 
                     // Create the media directory if it doesn't exist
                     if (!mediaDir.exists()) {
@@ -107,16 +104,16 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     // Get the full path to the media folder
-                    String saveToPath = mediaDir.getAbsolutePath();
+                    String saveToDirectory = mediaDir.getAbsolutePath();
 
                     // Remove the "/storage/emulated/0" prefix if it exists
-                    if (saveToPath.startsWith("/storage/emulated/0")) {
-                        saveToPath = saveToPath.replace("/storage/emulated/0", ""); // Remove the prefix
+                    if (saveToDirectory.startsWith("/storage/emulated/0")) {
+                        saveToDirectory = saveToDirectory.replace("/storage/emulated/0", ""); // Remove the prefix
                     }
 
                     jsonObject.put("device_name", deviceName);
-                    jsonObject.put("saveToPath", saveToPath); // Updated saveToPath
-                    Log.d("MainActivity", "saveToPath: " + saveToPath);
+                    jsonObject.put("saveToDirectory", saveToDirectory); // Updated saveToDirectory
+                    Log.d("MainActivity", "saveToDirectory: " + saveToDirectory);
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 
@@ -135,4 +132,29 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "Error creating or writing to config.json", e);
         }
     }
+
+//    private void createdownloadfolder() {
+//        try {
+//            // Set up the path to the Downloads/DataDash directory
+//            File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
+//            Log.e("MainActivity", "DataDash download directory path: " + downloadDir.getAbsolutePath());
+//
+//            // Create the DataDash directory if it doesn't exist
+//            if (!downloadDir.exists()) {
+//                boolean folderCreated = downloadDir.mkdirs();
+//                if (!folderCreated) {
+//                    Log.e("MainActivity", "Failed to create DataDash download directory");
+//                    return;
+//                } else {
+//                    Log.d("MainActivity", "DataDash download directory created successfully");
+//                }
+//            } else {
+//                Log.d("MainActivity", "DataDash download directory already exists");
+//            }
+//
+//        } catch (Exception e) {
+//            Log.e("MainActivity", "Error creating DataDash download directory", e);
+//        }
+//    }
+
 }
