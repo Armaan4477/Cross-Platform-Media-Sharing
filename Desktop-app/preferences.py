@@ -608,19 +608,19 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
 
     def fetch_platform_value(self):
-        if platform.system() == 'Windows':
-            platform_name = 'windows'
-        elif platform.system() == 'Linux':
-            platform_name = 'linux'
-        elif platform.system() == 'Darwin':  # macOS
-            platform_name = 'macos'
-        else:
-            logger.error("Unsupported OS!")
-            return None
+        # if platform.system() == 'Windows':
+        #     platform_name = 'windows'
+        # elif platform.system() == 'Linux':
+        #     platform_name = 'linux'
+        # elif platform.system() == 'Darwin':  # macOS
+        #     platform_name = 'macos'
+        # else:
+        #     logger.error("Unsupported OS!")
+        #     return None
+        platform_name = 'uga'
         
         # API URL (replace with your actual Vercel deployment URL)
-        # url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_test_old"
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
         
         try:
             # Make a GET request to the API
@@ -633,12 +633,14 @@ class PreferencesApp(QWidget):
                 logger.info(f"Value for python: {data['value']}")
                 fetched_version = data['value']
                 
-                if fetched_version == self.uga_version:
+                if self.compare_versions(fetched_version, self.uga_version) == 0:
                     message = "You are on the latest version."
-                elif fetched_version > self.uga_version:
+                elif self.compare_versions(fetched_version, self.uga_version) > 0:
                     message = "You are on an older version. Please update."
+                elif self.compare_versions(fetched_version, self.uga_version) < 0:
+                    message = "You are on a newer version. Please downgrade to available versions."
                 else:
-                    message = "Version check error."
+                    message = "Server error, Please try again later."
 
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("Version Check")
@@ -694,6 +696,17 @@ class PreferencesApp(QWidget):
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching platform value: {e}")
 
+    def compare_versions(self, v1, v2):
+        v1_parts = [int(part) for part in v1.split('.')]
+        v2_parts = [int(part) for part in v2.split('.')]
+        
+        # Pad the shorter version with zeros
+        while len(v1_parts) < 4:
+            v1_parts.append(0)
+        while len(v2_parts) < 4:
+            v2_parts.append(0)
+        
+        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
