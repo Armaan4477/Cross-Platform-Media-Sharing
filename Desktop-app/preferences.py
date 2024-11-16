@@ -26,21 +26,28 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
         self.set_background()
         self.displayversion()
-        self.fetch_platform_value()
+        #self.fetch_platform_value()
 
         layout = QVBoxLayout()
 
-        # Combined layout for version label and help button
+        # Combined layout for version label, check for update button, and help button
         top_layout = QHBoxLayout()
         
-    
         # Create the Version label
-        self.version_label= QLabel('Version Number: ' + self.uga_version)
+        self.version_label = QLabel('Version Number: ' + self.uga_version)
         self.version_label.setFont(QFont("Arial", 14))
         self.style_label(self.version_label)
         top_layout.addWidget(self.version_label)
         
-        top_layout.addStretch()  # Adds a spacer that pushes the button to the right
+        top_layout.addStretch()  # Adds a spacer that pushes the buttons to the right
+
+        # Create the Check for Update button
+        self.update_button = QPushButton('Check for Update', self)
+        self.update_button.setFont(QFont("Arial", 10))
+        self.update_button.setFixedSize(250, 30)
+        self.style_update_button(self.update_button)
+        self.update_button.clicked.connect(self.fetch_platform_value)
+        top_layout.addWidget(self.update_button)
 
         # Create the Help button
         self.help_button = QPushButton('Help', self)
@@ -209,6 +216,38 @@ class PreferencesApp(QWidget):
 
     def style_help_button(self, button):
         button.setFixedSize(60, 30)
+        button.setFont(QFont("Arial", 12))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                );
+                color: white;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        button.setGraphicsEffect(self.create_glow_effect())
+
+    def style_update_button(self, button):
+        button.setFixedSize(110, 30)
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
@@ -596,7 +635,6 @@ class PreferencesApp(QWidget):
                 logger.error(f"Value key not found in response: {data}")
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching platform value: {e}")
-
 
 
 if __name__ == '__main__':
