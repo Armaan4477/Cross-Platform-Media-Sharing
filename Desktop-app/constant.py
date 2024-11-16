@@ -4,7 +4,6 @@ import os
 import logging
 import socket
 
-# Define the logger configuration
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(levelname)s %(name)s %(message)s',
@@ -13,19 +12,16 @@ logging.basicConfig(
     ]
 )
 
-# Create the logger instance
 logger = logging.getLogger('FileSharing: ')
 
-# Set the logger level to debug
 logger.setLevel(logging.DEBUG)
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5"  # Set the current version of the configuration
+current_version = "5"  # Set the current version of the json config file
 app_version = "3.0"  # Set the current version of the application
 
 def get_config_file_path():
-    # Get the home directory and create a DataDash folder in the appropriate cache location
     if platform.system() == 'Windows':
         cache_dir = os.path.join(os.getenv('APPDATA'), 'DataDash')
     elif platform.system() == 'Linux':
@@ -43,7 +39,7 @@ def get_config_file_path():
 
 config_file = get_config_file_path()
 if config_file is None:
-    exit(1)  # Exit if the config file path is not valid
+    exit(1)
 
 def get_default_path():
     if platform.system() == 'Windows':
@@ -79,12 +75,12 @@ def get_config(filename=config_file):
         return {}
     #com.an.Datadash
 
-# Check if the config file exists, and if not, create it
+
 if not os.path.exists(config_file):
     file_path = get_default_path()
 
     default_config = {
-        "version": current_version,  # Add version number
+        "version": current_version,
         "app_version": app_version,
         "device_name": platform.node(),
         "save_to_directory": file_path,
@@ -98,17 +94,14 @@ if not os.path.exists(config_file):
     logger.info("Created new configuration file.")
 
 else:
-    # Load the existing configuration
     config_data = get_config(config_file)
 
-    # Check if version exists and matches
     if "version" not in config_data or config_data["version"] != current_version:
         logger.warning("Configuration version mismatch or missing. Overwriting with default config.")
         file_path = get_default_path()
         
-        # Write the new default configuration
         default_config = {
-            "version": current_version,  # Ensure the version number is included
+            "version": current_version,
             "app_version": app_version,
             "device_name": platform.node(),
             "save_to_directory": file_path,
@@ -125,9 +118,7 @@ else:
 
 def get_broadcast():
     try:
-        # Create a socket to connect to a remote server
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # Attempt to connect to an external server (this will not send data)
         s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
         logger.info("Local IP determined: %s", local_ip)
