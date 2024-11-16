@@ -608,16 +608,18 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
 
     def fetch_platform_value(self):
-        # if platform.system() == 'Windows':
-        #     platform_name = 'windows'
-        # elif platform.system() == 'Linux':
-        #     platform_name = 'linux'
-        # elif platform.system() == 'Darwin':  # macOS
-        #     platform_name = 'macos'
-        # else:
-        #     logger.error("Unsupported OS!")
-        #     return None
-        platform_name = 'uga'
+        if platform.system() == 'Windows':
+            platform_name = 'windows'
+        elif platform.system() == 'Linux':
+            platform_name = 'linux'
+        elif platform.system() == 'Darwin':  # macOS
+            platform_name = 'macos'
+        else:
+            logger.error("Unsupported OS!")
+            return None
+        
+        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+        # platform_name = 'uga'
         
         # API URL (replace with your actual Vercel deployment URL)
         url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
@@ -695,7 +697,7 @@ class PreferencesApp(QWidget):
                 logger.error(f"Value key not found in response: {data}")
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching platform value: {e}")
-            message = "Server error, Please check your connection or try again later."
+            message = "Server error, Please check your internet connection or try again later."
             msg_box = QMessageBox(self)
             msg_box.setWindowTitle("Version Check")
             msg_box.setText(message)
