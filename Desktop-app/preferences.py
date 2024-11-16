@@ -612,7 +612,7 @@ class PreferencesApp(QWidget):
             platform_name = 'windows'
         elif platform.system() == 'Linux':
             platform_name = 'linux'
-        elif platform.system() == 'Darwin':  # macOS
+        elif platform.system() == 'Darwin':
             platform_name = 'macos'
         else:
             logger.error("Unsupported OS!")
@@ -621,7 +621,6 @@ class PreferencesApp(QWidget):
         # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
         # platform_name = 'uga'
         
-        # API URL (replace with your actual Vercel deployment URL)
         url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
         
         try:
