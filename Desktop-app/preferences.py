@@ -655,6 +655,11 @@ class PreferencesApp(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Information)
                 msg_box.setStandardButtons(buttons)
 
+                # Rename the "Open" button to "Open Downloads Page"
+                open_button = msg_box.button(QMessageBox.StandardButton.Open)
+                if open_button:
+                    open_button.setText("Open Downloads Page")
+
                 # Apply custom style with gradient background and transparent text area
                 msg_box.setStyleSheet("""
                     QMessageBox {
