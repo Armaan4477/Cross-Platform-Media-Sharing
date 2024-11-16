@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
-from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QDesktopServices
+from PyQt6.QtCore import Qt, QUrl
 import sys
 import platform
 from constant import get_config, write_config, get_default_path
@@ -638,18 +638,22 @@ class PreferencesApp(QWidget):
                 
                 if self.compare_versions(fetched_version, self.uga_version) == 0:
                     message = "You are on the latest version."
+                    buttons = QMessageBox.StandardButton.Ok
                 elif self.compare_versions(fetched_version, self.uga_version) > 0:
                     message = "You are on an older version. Please update."
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
                 elif self.compare_versions(fetched_version, self.uga_version) < 0:
                     message = "You are on a newer version. Please downgrade to the latest available version."
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
                 else:
                     message = "Server error, Please try again later."
+                    buttons = QMessageBox.StandardButton.Ok
 
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("Version Check")
                 msg_box.setText(message)
                 msg_box.setIcon(QMessageBox.Icon.Information)
-                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg_box.setStandardButtons(buttons)
 
                 # Apply custom style with gradient background and transparent text area
                 msg_box.setStyleSheet("""
@@ -692,7 +696,11 @@ class PreferencesApp(QWidget):
                         );
                     }
                 """)
-                msg_box.exec()
+                reply = msg_box.exec()
+
+                if reply == QMessageBox.StandardButton.Open:
+                    QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+
                 return fetched_version
             else:
                 logger.error(f"Value key not found in response: {data}")
