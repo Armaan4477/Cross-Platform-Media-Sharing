@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
 from constant import logger
 import requests
+import os
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -568,8 +569,18 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
 
     def fetch_platform_value(self):
+        if platform.system() == 'Windows':
+            platform_name = 'windows'
+        elif platform.system() == 'Linux':
+            platform_name = 'linux'
+        elif platform.system() == 'Darwin':  # macOS
+            platform_name = 'macos'
+        else:
+            logger.error("Unsupported OS!")
+            return None
+        
         # API URL (replace with your actual Vercel deployment URL)
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python"
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
         
         try:
             # Make a GET request to the API
