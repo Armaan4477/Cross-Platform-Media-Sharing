@@ -619,7 +619,8 @@ class PreferencesApp(QWidget):
             return None
         
         # API URL (replace with your actual Vercel deployment URL)
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        # url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_test_old"
         
         try:
             # Make a GET request to the API
@@ -630,7 +631,64 @@ class PreferencesApp(QWidget):
             data = response.json()
             if "value" in data:
                 logger.info(f"Value for python: {data['value']}")
-                return data['value']
+                fetched_version = data['value']
+                
+                if fetched_version == self.uga_version:
+                    message = "You are on the latest version."
+                elif fetched_version > self.uga_version:
+                    message = "You are on an older version. Please update."
+                else:
+                    message = "Version check error."
+
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Version Check")
+                msg_box.setText(message)
+                msg_box.setIcon(QMessageBox.Icon.Information)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background and transparent text area
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                        background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec()
+                return fetched_version
             else:
                 logger.error(f"Value key not found in response: {data}")
         except requests.exceptions.RequestException as e:
