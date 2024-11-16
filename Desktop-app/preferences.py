@@ -26,19 +26,26 @@ class PreferencesApp(QWidget):
 
         layout = QVBoxLayout()
 
-        # Help button layout at the top right
-        help_button_layout = QHBoxLayout()
-        help_button_layout.addStretch()  # Adds a spacer that pushes the button to the right
+        # Combined layout for version label and help button
+        top_layout = QHBoxLayout()
         
+        # Create the Version label
+        self.version_label = QLabel('Version Number: 4.0', self)
+        self.version_label.setFont(QFont("Arial", 14))
+        self.style_label(self.version_label)
+        top_layout.addWidget(self.version_label)
+        
+        top_layout.addStretch()  # Adds a spacer that pushes the button to the right
+
         # Create the Help button
         self.help_button = QPushButton('Help', self)
         self.help_button.setFont(QFont("Arial", 10))
         self.help_button.setFixedSize(80, 30)
         self.style_help_button(self.help_button)
         self.help_button.clicked.connect(self.show_help_dialog)
+        top_layout.addWidget(self.help_button)
 
-        help_button_layout.addWidget(self.help_button)
-        layout.addLayout(help_button_layout)
+        layout.addLayout(top_layout)
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
