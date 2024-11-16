@@ -1,14 +1,16 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication
 )
-from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QDesktopServices
+from PyQt6.QtCore import Qt, QUrl
 import sys
 import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
 from constant import logger
+import requests
+import os
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -23,22 +25,39 @@ class PreferencesApp(QWidget):
         self.center_window()
         #com.an.Datadash
         self.set_background()
+        self.displayversion()
+        #self.fetch_platform_value()
 
         layout = QVBoxLayout()
 
-        # Help button layout at the top right
-        help_button_layout = QHBoxLayout()
-        help_button_layout.addStretch()  # Adds a spacer that pushes the button to the right
+        # Combined layout for version label, check for update button, and help button
+        top_layout = QHBoxLayout()
         
+        # Create the Version label
+        self.version_label = QLabel('Version Number: ' + self.uga_version)
+        self.version_label.setFont(QFont("Arial", 14))
+        self.style_label(self.version_label)
+        top_layout.addWidget(self.version_label)
+        
+        top_layout.addStretch()  # Adds a spacer that pushes the buttons to the right
+
+        # Create the Check for Update button
+        self.update_button = QPushButton('Check for Update', self)
+        self.update_button.setFont(QFont("Arial", 10))
+        self.update_button.setFixedSize(250, 30)
+        self.style_update_button(self.update_button)
+        self.update_button.clicked.connect(self.fetch_platform_value)
+        top_layout.addWidget(self.update_button)
+
         # Create the Help button
         self.help_button = QPushButton('Help', self)
         self.help_button.setFont(QFont("Arial", 10))
         self.help_button.setFixedSize(80, 30)
         self.style_help_button(self.help_button)
         self.help_button.clicked.connect(self.show_help_dialog)
+        top_layout.addWidget(self.help_button)
 
-        help_button_layout.addWidget(self.help_button)
-        layout.addLayout(help_button_layout)
+        layout.addLayout(top_layout)
 
         # Device Name
         self.device_name_label = QLabel('Device Name:', self)
@@ -227,6 +246,38 @@ class PreferencesApp(QWidget):
         """)
         button.setGraphicsEffect(self.create_glow_effect())
 
+    def style_update_button(self, button):
+        button.setFixedSize(150, 30)
+        button.setFont(QFont("Arial", 12))
+        button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
+                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                );
+                color: white;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        button.setGraphicsEffect(self.create_glow_effect())
+
     def set_background(self):
         self.setStyleSheet("""
             QWidget {
@@ -258,17 +309,24 @@ class PreferencesApp(QWidget):
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
+    def displayversion(self):
+        config= get_config()
+        # self.version_label.setText('Version Number: ' + config["version"])
+        self.uga_version = config["app_version"]
+
     def loadPreferences(self):
         config = get_config()
         self.version = config["version"]
+        self.app_version = config["app_version"]
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.encryption_toggle.setChecked(config["encryption"])
         self.android_encryption=(config["android_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.original_preferences = config.copy()
-        logger.info("Loaded preferences: %s", self.version)
-        logger.info("Loaded preferences: %s", self.android_encryption)
+        logger.info("Loaded preferences- json_version: %s", self.version)
+        logger.info("Loaded preferences- app_version: %s", self.app_version)
+        logger.info("Loaded preferences- android_encryption: %s", self.android_encryption)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -329,6 +387,7 @@ class PreferencesApp(QWidget):
 
         preferences = {
             "version": self.version,
+            "app_version": self.app_version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
             "encryption": encryption,
@@ -470,6 +529,7 @@ class PreferencesApp(QWidget):
     def changes_made(self):
         current_preferences = {
             "version": self.version,
+            "app_version": self.app_version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
@@ -547,7 +607,171 @@ class PreferencesApp(QWidget):
         help_dialog.exec()
         #com.an.Datadash
 
+    def fetch_platform_value(self):
+        if platform.system() == 'Windows':
+            platform_name = 'windows'
+        elif platform.system() == 'Linux':
+            platform_name = 'linux'
+        elif platform.system() == 'Darwin':
+            platform_name = 'macos'
+        else:
+            logger.error("Unsupported OS!")
+            return None
+        
+        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+        # platform_name = 'auga'
+        # platform_name = 'buga'
+        # platform_name = 'cuga'
+        
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        
+        try:
+            # Make a GET request to the API
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
 
+            # Parse the JSON response
+            data = response.json()
+            if "value" in data:
+                logger.info(f"Value for python: {data['value']}")
+                fetched_version = data['value']
+                
+                if self.compare_versions(fetched_version, self.uga_version) == 0:
+                    message = "You are on the latest version."
+                    buttons = QMessageBox.StandardButton.Ok
+                elif self.compare_versions(fetched_version, self.uga_version) > 0:
+                    message = "You are on an older version. Please update."
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
+                elif self.compare_versions(fetched_version, self.uga_version) < 0:
+                    message = "You are on a newer version. Please downgrade to the latest available version."
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
+                else:
+                    message = "Server error, Please try again later."
+                    buttons = QMessageBox.StandardButton.Ok
+
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Version Check")
+                msg_box.setText(message)
+                msg_box.setIcon(QMessageBox.Icon.Information)
+                msg_box.setStandardButtons(buttons)
+
+                # Rename the "Open" button to "Open Downloads Page"
+                open_button = msg_box.button(QMessageBox.StandardButton.Open)
+                if open_button:
+                    open_button.setText("Open Downloads Page")
+
+                # Apply custom style with gradient background and transparent text area
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                        background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                reply = msg_box.exec()
+
+                if reply == QMessageBox.StandardButton.Open:
+                    QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+
+                return fetched_version
+            else:
+                logger.error(f"Value key not found in response: {data}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching platform value: {e}")
+            message = "Server error, Please check your internet connection or try again later."
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Version Check")
+            msg_box.setText(message)
+            msg_box.setIcon(QMessageBox.Icon.Critical)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+            # Apply custom style with gradient background and transparent text area
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+            msg_box.exec()
+
+    def compare_versions(self, v1, v2):
+        v1_parts = [int(part) for part in v1.split('.')]
+        v2_parts = [int(part) for part in v2.split('.')]
+        
+        # Pad the shorter version with zeros
+        while len(v1_parts) < 4:
+            v1_parts.append(0)
+        while len(v2_parts) < 4:
+            v2_parts.append(0)
+        
+        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
