@@ -8,7 +8,7 @@ class CreditsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Project Credits")
-        self.setFixedSize(600, 425)  # Increased window size to provide more space
+        self.setFixedSize(520, 425)  # Increased window size to provide more space
         self.set_background()  # Set the background style
         self.center_window()
 
@@ -24,7 +24,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(title_coder, 0, 0, 1, 3)  # Span across 3 columns
 
          # Samay's row
-        layout.addWidget(QLabel("Samay Pandey", font=QFont("Arial", 18)), 3, 0)  # Increased font size
+        layout.addWidget(QLabel("Samay P.", font=QFont("Arial", 18)), 3, 0)  # Increased font size
         samay_github = self.create_link_button("GitHub", "https://github.com/ChampionSamay1644")
         layout.addWidget(samay_github, 3, 1)
 
@@ -32,7 +32,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(samay_linkedin, 3, 2)
 
         # Nishal's row
-        layout.addWidget(QLabel("Nishal Poojary", font=QFont("Arial", 18)), 6, 0)  # Increased font size
+        layout.addWidget(QLabel("Nishal P.", font=QFont("Arial", 18)), 6, 0)  # Increased font size
         nishal_github = self.create_link_button("GitHub", "https://github.com/Ailover123")
         layout.addWidget(nishal_github, 6, 1)
 
@@ -40,7 +40,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(nishal_linkedin, 6, 2)
 
          # Urmi's row
-        layout.addWidget(QLabel("Urmi Joshi", font=QFont("Arial", 18)), 5, 0)  # Increased font size
+        layout.addWidget(QLabel("Urmi J.", font=QFont("Arial", 18)), 5, 0)  # Increased font size
         urmi_github = self.create_link_button("GitHub", "https://github.com/ura-dev04")
         layout.addWidget(urmi_github, 5, 1)
 
@@ -49,7 +49,7 @@ class CreditsDialog(QDialog):
         #com.an.Datadash
 
         # Armaan's row
-        layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 2, 0)  # Increased font size
+        layout.addWidget(QLabel("Armaan N.", font=QFont("Arial", 18)), 2, 0)  # Increased font size
         armaan_github = self.create_link_button("GitHub", "https://github.com/Armaan4477")
         layout.addWidget(armaan_github, 2, 1)
 
@@ -57,7 +57,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(armaan_linkedin, 2, 2)
 
         # Yash's row
-        layout.addWidget(QLabel("Yash Patil", font=QFont("Arial", 18)), 4, 0)  # Increased font size
+        layout.addWidget(QLabel("Yash P.", font=QFont("Arial", 18)), 4, 0)  # Increased font size
         yash_github = self.create_link_button("GitHub", "https://github.com/FrosT2k5")
         layout.addWidget(yash_github, 4, 1)
 
@@ -65,7 +65,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(yash_linkedin, 4, 2)
 
         # Adwait's row
-        layout.addWidget(QLabel("Adwait Patil", font=QFont("Arial", 18)), 7, 0)  # Increased font size
+        layout.addWidget(QLabel("Adwait P.", font=QFont("Arial", 18)), 7, 0)  # Increased font size
         adwait_github = self.create_link_button("GitHub", "https://github.com/Adwait0901")
         layout.addWidget(adwait_github, 7, 1)
 
@@ -148,7 +148,7 @@ class CreditsDialog(QDialog):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 600, 425
+        window_width, window_height = 520, 425
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
