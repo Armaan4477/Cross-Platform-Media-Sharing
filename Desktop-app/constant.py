@@ -21,7 +21,8 @@ logger.setLevel(logging.DEBUG)
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "4"  # Set the current version of the configuration
+current_version = "5"  # Set the current version of the configuration
+app_version = "3.0"  # Set the current version of the application
 
 def get_config_file_path():
     # Get the home directory and create a DataDash folder in the appropriate cache location
@@ -84,6 +85,7 @@ if not os.path.exists(config_file):
 
     default_config = {
         "version": current_version,  # Add version number
+        "app_version": app_version,
         "device_name": platform.node(),
         "save_to_directory": file_path,
         "max_filesize": 1000,
@@ -107,6 +109,7 @@ else:
         # Write the new default configuration
         default_config = {
             "version": current_version,  # Ensure the version number is included
+            "app_version": app_version,
             "device_name": platform.node(),
             "save_to_directory": file_path,
             "max_filesize": 1000,

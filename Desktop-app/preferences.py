@@ -30,7 +30,7 @@ class PreferencesApp(QWidget):
         top_layout = QHBoxLayout()
         
         # Create the Version label
-        self.version_label = QLabel('Version Number: 4.0', self)
+        self.version_label = QLabel('Version Number: 4.0')
         self.version_label.setFont(QFont("Arial", 14))
         self.style_label(self.version_label)
         top_layout.addWidget(self.version_label)
@@ -268,14 +268,16 @@ class PreferencesApp(QWidget):
     def loadPreferences(self):
         config = get_config()
         self.version = config["version"]
+        self.app_version = config["app_version"]
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.encryption_toggle.setChecked(config["encryption"])
         self.android_encryption=(config["android_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.original_preferences = config.copy()
-        logger.info("Loaded preferences: %s", self.version)
-        logger.info("Loaded preferences: %s", self.android_encryption)
+        logger.info("Loaded preferences- json_version: %s", self.version)
+        logger.info("Loaded preferences- app_version: %s", self.app_version)
+        logger.info("Loaded preferences- android_encryption: %s", self.android_encryption)
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
@@ -336,6 +338,7 @@ class PreferencesApp(QWidget):
 
         preferences = {
             "version": self.version,
+            "app_version": self.app_version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
             "encryption": encryption,
@@ -477,6 +480,7 @@ class PreferencesApp(QWidget):
     def changes_made(self):
         current_preferences = {
             "version": self.version,
+            "app_version": self.app_version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "encryption": self.encryption_toggle.isChecked(),
