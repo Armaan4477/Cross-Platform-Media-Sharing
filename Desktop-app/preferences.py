@@ -23,14 +23,16 @@ class PreferencesApp(QWidget):
         self.center_window()
         #com.an.Datadash
         self.set_background()
+        self.displayversion()
 
         layout = QVBoxLayout()
 
         # Combined layout for version label and help button
         top_layout = QHBoxLayout()
         
+    
         # Create the Version label
-        self.version_label = QLabel('Version Number: 4.0')
+        self.version_label= QLabel('Version Number: ' + self.uga_version)
         self.version_label.setFont(QFont("Arial", 14))
         self.style_label(self.version_label)
         top_layout.addWidget(self.version_label)
@@ -264,6 +266,11 @@ class PreferencesApp(QWidget):
 
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
+
+    def displayversion(self):
+        config= get_config()
+        # self.version_label.setText('Version Number: ' + config["version"])
+        self.uga_version = config["app_version"]
 
     def loadPreferences(self):
         config = get_config()
