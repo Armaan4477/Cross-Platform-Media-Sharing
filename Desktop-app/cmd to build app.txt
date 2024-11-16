@@ -1,4 +1,5 @@
 Macos:
+.app:
 pyinstaller --onefile --windowed \
 --icon=icon.icns \
 --paths=/Users/armaan/Developer/Cross-Platform-Media-Sharing/.venv/lib/python3.13/site-packages \
@@ -16,6 +17,19 @@ pyinstaller --onefile --windowed \
 --add-data "file_sender_java.py:." \
 --add-data "preferences.py:." \
 main.py
+
+dmg:
+create-dmg \
+  --volname "DataDash" 
+  --window-pos 200 120 \
+  --window-size 400 400 \
+  --icon-size 128 \
+  --icon "DataDash.app" 100 150 \
+  --app-drop-link 300 150 \
+  --no-internet-enable \
+  "DataDash.dmg" \
+  "DataDash"
+
 
 
 Windows:
