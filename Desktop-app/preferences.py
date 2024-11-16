@@ -9,6 +9,7 @@ from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
 from constant import logger
+import requests
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -24,6 +25,7 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
         self.set_background()
         self.displayversion()
+        self.fetch_platform_value()
 
         layout = QVBoxLayout()
 
@@ -564,6 +566,25 @@ class PreferencesApp(QWidget):
         """)
         help_dialog.exec()
         #com.an.Datadash
+
+    def fetch_platform_value(self):
+        # API URL (replace with your actual Vercel deployment URL)
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python"
+        
+        try:
+            # Make a GET request to the API
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+
+            # Parse the JSON response
+            data = response.json()
+            if "value" in data:
+                logger.info(f"Value for python: {data['value']}")
+                return data['value']
+            else:
+                logger.error(f"Value key not found in response: {data}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching platform value: {e}")
 
 
 
