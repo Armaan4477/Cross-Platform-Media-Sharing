@@ -247,7 +247,7 @@ class PreferencesApp(QWidget):
         button.setGraphicsEffect(self.create_glow_effect())
 
     def style_update_button(self, button):
-        button.setFixedSize(110, 30)
+        button.setFixedSize(150, 30)
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
