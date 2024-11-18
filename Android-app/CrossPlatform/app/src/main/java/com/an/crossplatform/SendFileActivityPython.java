@@ -574,12 +574,13 @@ public class SendFileActivityPython extends AppCompatActivity {
                 InputStream inputStream;
                 String finalRelativePath;
 
-                // Check if relativePath is null and initialize it based on the filePath
-                if (relativePath == null) {
+                // Initialize finalRelativePath based on relativePath or fallback to filePath
+                if (relativePath == null || relativePath.isEmpty()) {
                     finalRelativePath = new File(filePath).getName();
                 } else {
                     finalRelativePath = relativePath;
                 }
+                Log.d("SendFileActivity", "Initial relative path: " + finalRelativePath);
 
                 // Check if the filePath is a content URI
                 Uri fileUri = Uri.parse(filePath);
@@ -594,21 +595,33 @@ public class SendFileActivityPython extends AppCompatActivity {
                     if (cursor != null && cursor.moveToFirst()) {
                         // Retrieve the display name (actual file name)
                         int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                        finalRelativePath = cursor.getString(nameIndex);
+                        String contentUriFileName = cursor.getString(nameIndex);
                         cursor.close();
-                    } else {
+
+                        // Use contentUriFileName only if relativePath was null or empty
+                        if (relativePath == null || relativePath.isEmpty()) {
+                            finalRelativePath = contentUriFileName;
+                        }
+                    } else if (relativePath == null || relativePath.isEmpty()) {
+                        // Fallback to file name from URI path if cursor fails
                         finalRelativePath = new File(fileUri.getPath()).getName();
                     }
                 } else {
                     // If it's a file path, open it directly and extract the file name
                     File file = new File(fileUri.getPath());
                     inputStream = new FileInputStream(file);
-                    finalRelativePath = file.getName();
+
+                    // Use the file name only if relativePath was null or empty
+                    if (relativePath == null || relativePath.isEmpty()) {
+                        finalRelativePath = file.getName();
+                    }
                 }
 
                 // Make final variables to use inside AsyncTask
                 final InputStream finalInputStream = inputStream;
+                Log.d("SendFileActivity", "Sending final rel path: " + finalRelativePath);
                 final String finalPathToSend = finalRelativePath;
+                Log.d("SendFileActivity", "Sending final file: " + finalPathToSend);
                 final long fileSize = finalInputStream.available();
 
                 runOnUiThread(() -> {
@@ -709,8 +722,14 @@ public class SendFileActivityPython extends AppCompatActivity {
 
                 // Check if the DocumentFile is a directory (folder)
                 if (folderDocument.isDirectory()) {
+                    // Get the name of the top-level folder
+                    String topLevelFolderName = folderDocument.getName();
+                    if (topLevelFolderName == null) {
+                        topLevelFolderName = ""; // Fallback if name is null
+                    }
+
                     // Send the folder contents recursively
-                    sendDocumentFile(folderDocument, "", encryptionFlag);
+                    sendDocumentFile(folderDocument, "", encryptionFlag, topLevelFolderName);
                 } else {
                     Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
                 }
@@ -720,35 +739,46 @@ public class SendFileActivityPython extends AppCompatActivity {
         });
     }
 
-    // Recursive method to send the contents of a DocumentFile (folder or file)
-    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag) {
-        if (documentFile.isDirectory()) {
-            // Send the directory creation command
-            String directoryPath = parentPath + documentFile.getName() + "/";
-            Log.d("SendFileActivity", "Directory creation needed for: " + directoryPath);
+        // Modified recursive method to send the contents of a DocumentFile (folder or file)
+        private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag, String topLevelFolderName) {
+            if (documentFile.isDirectory()) {
+                // Construct the directory path without the top-level folder name
+                String directoryPath = parentPath.isEmpty() ? documentFile.getName() + "/"
+                        : parentPath + documentFile.getName() + "/";
 
-            // Recursively send the contents of the directory
-            for (DocumentFile file : documentFile.listFiles()) {
-                sendDocumentFile(file, directoryPath, encryptionFlag);
-            }
-        } else if (documentFile.isFile()) {
-            // It's a file, send the file
-            String relativeFilePath = parentPath + documentFile.getName();
-            Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
+                // Remove the top-level folder name from the path
+                String relativeDirectoryPath = directoryPath.startsWith(topLevelFolderName + "/")
+                        ? directoryPath.substring(topLevelFolderName.length() + 1)
+                        : directoryPath;
 
-            try {
-                InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
-                if (inputStream != null) {
-                    // Send the file data via your existing send logic
-                    sendFile(documentFile.getUri().toString(), relativeFilePath);
-                    inputStream.close();
+                Log.d("SendFileActivity", "Directory creation needed for: " + relativeDirectoryPath);
+
+                // Recursively send the contents of the directory
+                for (DocumentFile file : documentFile.listFiles()) {
+                    sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
                 }
-            } catch (IOException e) {
-                Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
+            } else if (documentFile.isFile()) {
+                String filePath = parentPath + documentFile.getName();
+
+                String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
+                        ? filePath.substring(topLevelFolderName.length() + 1)
+                        : filePath;
+                Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
+
+                try {
+                    InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
+                    if (inputStream != null) {
+                        // Send the file data via your existing send logic
+                        Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
+                        sendFile(documentFile.getUri().toString(), relativeFilePath);
+                        inputStream.close();
+                    }
+                } catch (IOException e) {
+                    Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
+                }
             }
         }
     }
-}
 
     @Override
     protected void onDestroy() {

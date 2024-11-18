@@ -41,6 +41,9 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.Looper;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.concurrent.CountDownLatch;
@@ -81,12 +84,13 @@ public class SendFileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
-        progressBar_send = findViewById(R.id.progressBar_send);
-        animationView = findViewById(R.id.transfer_animation);
 
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");
         selected_device_ip = getIntent().getStringExtra("selectedDeviceIP");
+        progressBar_send = findViewById(R.id.progressBar_send);
+        animationView = findViewById(R.id.transfer_animation);
+
         // Retrieve the OS type from the string with try catch block
         try {
             osType = new JSONObject(receivedJson).getString("os");
@@ -166,6 +170,7 @@ public class SendFileActivity extends AppCompatActivity {
 
     private void onSelectFileClicked() {
         Log.d("SendFileActivity", "Select File button clicked");
+        isFolder = false;
 
         // Launch file picker
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -194,7 +199,6 @@ public class SendFileActivity extends AppCompatActivity {
 
     private void onSendClicked() {
         Log.d("SendFileActivity", "Send button clicked");
-        isFolder = false;
 
         if (filePaths.isEmpty()) {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
@@ -209,31 +213,42 @@ public class SendFileActivity extends AppCompatActivity {
     }
 
     private void createMetadata() {
-        executorService.execute(() -> {
-            String result;
-            try {
-                if (isFolder) {
-                    result = createFolderMetadata();
-                } else {
-                    result = createFileMetadata();
+        Callable<String> task = new Callable<String>() {
+            @Override
+            public String call() {
+                try {
+                    // Create metadata based on the selected files or folder
+                    if (isFolder) {
+                        return createFolderMetadata();
+                    } else {
+                        return createFileMetadata();
+                    }
+                } catch (IOException | JSONException e) {
+                    Log.e("SendFileActivity", "Failed to create metadata", e);
+                    return null;  // Indicate failure
                 }
-            } catch (IOException | JSONException e) {
-                Log.e("SendFileActivity", "Failed to create metadata", e);
-                result = null;
             }
+        };
 
-            final String finalResult = result;
-            mainHandler.post(() -> {
-                if (finalResult != null) {
-                    metadataFilePath = finalResult;
-                    metadataCreated = true;
-//                    Toast.makeText(SendFileActivity.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
-                    new Thread(new SendFileActivity.ConnectionTask(selected_device_ip)).start();
-                } else {
-                    Toast.makeText(SendFileActivity.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
-                }
-            });
-        });
+        Future<String> future = executorService.submit(task);
+
+        new Thread(() -> {
+            try {
+                String result = future.get();
+                runOnUiThread(() -> {
+                    if (result != null) {
+                        metadataFilePath = result;
+                        metadataCreated = true;
+//                        Toast.makeText(SendFileActivityPython.this, "Metadata created: " + metadataFilePath, Toast.LENGTH_SHORT).show();
+                        new Thread(new SendFileActivity.ConnectionTask(selected_device_ip)).start();
+                    } else {
+                        Toast.makeText(SendFileActivity.this, "Failed to create metadata", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (Exception e) {
+                Log.e("SendFileActivity", "Error executing metadata task", e);
+            }
+        }).start();
     }
 
     private String createFileMetadata() throws IOException, JSONException {
@@ -290,6 +305,7 @@ public class SendFileActivity extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting folder metadata creation");
 
+        // Determine the target directory for metadata files
         File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
         Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
         ensureDirectoryExists(metadataDirectory);
@@ -301,14 +317,16 @@ public class SendFileActivity extends AppCompatActivity {
             Uri uri = Uri.parse(filePath);
 
             if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using DocumentFile
                 DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
                 if (documentFile != null) {
                     if (documentFile.isDirectory()) {
                         Log.d(TAG, "Processing directory from URI: " + filePath);
-                        addFolderMetadataFromDocumentFile(documentFile, metadata, "");
+                        addFolderMetadataFromDocumentFile(documentFile, metadata, ""); // Pass base path
                     } else if (documentFile.isFile()) {
+                        // Handle individual file
                         JSONObject fileMetadata = new JSONObject();
-                        String path = getPathFromUri(uri);
+                        String path = getPathFromUri(uri); // Get the relative path
                         fileMetadata.put("path", path);
                         fileMetadata.put("size", documentFile.length());
                         metadata.put(fileMetadata);
@@ -320,10 +338,12 @@ public class SendFileActivity extends AppCompatActivity {
                     Log.e(TAG, "Could not resolve content URI: " + filePath);
                 }
             } else {
+                // Handle file system paths
                 File file = new File(filePath);
                 if (file.isDirectory()) {
+                    // Process directory
                     Log.d(TAG, "Processing directory: " + filePath);
-                    addFolderMetadata(file, metadata, "");
+                    addFolderMetadata(file, metadata, ""); // Pass base path
                 } else {
                     Log.e(TAG, "File not found or not valid: " + filePath);
                 }
@@ -332,9 +352,16 @@ public class SendFileActivity extends AppCompatActivity {
 
         JSONObject base_folder_name = new JSONObject();
         base_folder_name_path = filePaths.get(0);
-        int lastSlashIndex = base_folder_name_path.lastIndexOf('/');
-        if (lastSlashIndex != -1) {
-            base_folder_name_path = base_folder_name_path.substring(lastSlashIndex + 1);
+        if (base_folder_name_path.startsWith("content://")) {
+            DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
+            if (baseFolderDocument != null) {
+                base_folder_name_path = baseFolderDocument.getName();
+            }
+        } else {
+            File baseFolder = new File(base_folder_name_path);
+            if (baseFolder.exists()) {
+                base_folder_name_path = baseFolder.getName();
+            }
         }
         base_folder_name.put("base_folder_name", base_folder_name_path);
         base_folder_name.put("path", ".delete");
@@ -343,7 +370,6 @@ public class SendFileActivity extends AppCompatActivity {
 
         Log.d(TAG, "Metadata before saving: " + metadata.toString());
 
-        Log.d(TAG, "Saving metadata to file: " + metadataFilePath);
         try {
             saveMetadataToFile(metadataFilePath, metadata);
             metadataCreated = true;
@@ -558,12 +584,13 @@ public class SendFileActivity extends AppCompatActivity {
                     InputStream inputStream;
                     String finalRelativePath;
 
-                    // Check if relativePath is null and initialize it based on the filePath
-                    if (relativePath == null) {
+                    // Initialize finalRelativePath based on relativePath or fallback to filePath
+                    if (relativePath == null || relativePath.isEmpty()) {
                         finalRelativePath = new File(filePath).getName();
                     } else {
                         finalRelativePath = relativePath;
                     }
+                    Log.d("SendFileActivity", "Initial relative path: " + finalRelativePath);
 
                     // Check if the filePath is a content URI
                     Uri fileUri = Uri.parse(filePath);
@@ -576,16 +603,28 @@ public class SendFileActivity extends AppCompatActivity {
                         // Get the file name from content URI
                         Cursor cursor = contentResolver.query(fileUri, null, null, null, null);
                         if (cursor != null && cursor.moveToFirst()) {
+                            // Retrieve the display name (actual file name)
                             int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                            finalRelativePath = cursor.getString(nameIndex);
+                            String contentUriFileName = cursor.getString(nameIndex);
                             cursor.close();
-                        } else {
+
+                            // Use contentUriFileName only if relativePath was null or empty
+                            if (relativePath == null || relativePath.isEmpty()) {
+                                finalRelativePath = contentUriFileName;
+                            }
+                        } else if (relativePath == null || relativePath.isEmpty()) {
+                            // Fallback to file name from URI path if cursor fails
                             finalRelativePath = new File(fileUri.getPath()).getName();
                         }
                     } else {
+                        // If it's a file path, open it directly and extract the file name
                         File file = new File(fileUri.getPath());
                         inputStream = new FileInputStream(file);
-                        finalRelativePath = file.getName();
+
+                        // Use the file name only if relativePath was null or empty
+                        if (relativePath == null || relativePath.isEmpty()) {
+                            finalRelativePath = file.getName();
+                        }
                     }
 
                     final InputStream finalInputStream = inputStream;
@@ -725,20 +764,18 @@ public class SendFileActivity extends AppCompatActivity {
                     sendDocumentFile(file, directoryPath, encryptionFlag, topLevelFolderName);
                 }
             } else if (documentFile.isFile()) {
-                // Construct the file path
                 String filePath = parentPath + documentFile.getName();
 
-                // Remove the top-level folder name from the path
                 String relativeFilePath = filePath.startsWith(topLevelFolderName + "/")
                         ? filePath.substring(topLevelFolderName.length() + 1)
                         : filePath;
-
                 Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
 
                 try {
                     InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
                     if (inputStream != null) {
                         // Send the file data via your existing send logic
+                        Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
                         sendFile(documentFile.getUri().toString(), relativeFilePath);
                         inputStream.close();
                     }
