@@ -81,20 +81,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void requestStoragePermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // For Android 11 and above
-            if (!Environment.isExternalStorageManager()) {
-                // Request MANAGE_EXTERNAL_STORAGE permission
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, REQUEST_CODE_MANAGE_STORAGE_PERMISSION);
-            }
-        } else {
-            // For Android 10 and below
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            }, REQUEST_CODE_STORAGE_PERMISSION);
+        if (!Environment.isExternalStorageManager()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Permission Required")
+                    .setMessage("This app needs access to manage all files on your device to save the transferred files. Please grant the permission by clicking the grant button then allowing access to the app.")
+                    .setPositiveButton("Grant Permission", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                Uri.parse("package:" + getPackageName()));
+                        startActivityForResult(intent, REQUEST_CODE_MANAGE_STORAGE_PERMISSION);
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        dialog.dismiss();
+                        Toast.makeText(this, "Storage permission is required. App will close.",
+                                Toast.LENGTH_SHORT).show();
+                        finish(); // Close the activity
+                    })
+                    .setCancelable(false)
+                    .show();
         }
     }
 
