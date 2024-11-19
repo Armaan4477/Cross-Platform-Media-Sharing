@@ -300,6 +300,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting folder metadata creation");
 
+        // Determine the target directory for metadata files
         File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
         Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
         ensureDirectoryExists(metadataDirectory);
@@ -311,14 +312,16 @@ public class SendFileActivityPython extends AppCompatActivity {
             Uri uri = Uri.parse(filePath);
 
             if ("content".equals(uri.getScheme())) {
+                // Handle content URIs using DocumentFile
                 DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
                 if (documentFile != null) {
                     if (documentFile.isDirectory()) {
                         Log.d(TAG, "Processing directory from URI: " + filePath);
-                        addFolderMetadataFromDocumentFile(documentFile, metadata, "");
+                        addFolderMetadataFromDocumentFile(documentFile, metadata, ""); // Pass base path
                     } else if (documentFile.isFile()) {
+                        // Handle individual file
                         JSONObject fileMetadata = new JSONObject();
-                        String path = getPathFromUri(uri);
+                        String path = getPathFromUri(uri); // Get the relative path
                         fileMetadata.put("path", path);
                         fileMetadata.put("size", documentFile.length());
                         metadata.put(fileMetadata);
@@ -330,10 +333,12 @@ public class SendFileActivityPython extends AppCompatActivity {
                     Log.e(TAG, "Could not resolve content URI: " + filePath);
                 }
             } else {
+                // Handle file system paths
                 File file = new File(filePath);
                 if (file.isDirectory()) {
+                    // Process directory
                     Log.d(TAG, "Processing directory: " + filePath);
-                    addFolderMetadata(file, metadata, "");
+                    addFolderMetadata(file, metadata, ""); // Pass base path
                 } else {
                     Log.e(TAG, "File not found or not valid: " + filePath);
                 }
