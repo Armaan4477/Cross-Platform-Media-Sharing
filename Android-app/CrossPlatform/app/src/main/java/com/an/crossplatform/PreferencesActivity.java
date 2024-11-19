@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.Looper;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import androidx.appcompat.app.AlertDialog;
 
 
 public class PreferencesActivity extends AppCompatActivity {
@@ -164,22 +165,22 @@ public class PreferencesActivity extends AppCompatActivity {
                     int appPart = Integer.parseInt(appParts[i]);
 
                     if (apiPart > appPart) {
-                        showMessage("App is older; please update.");
+                        showMessageDialog("App is older", "Your app version is outdated. Please update to the latest version.", true);
                         return;
                     } else if (apiPart < appPart) {
-                        showMessage("Please downgrade to a publicly available version.");
+                        showMessageDialog("Please downgrade", "Your app version is newer than the publicly available version. Downgrade to ensure compatibility.", true);
                         return;
                     }
                 }
 
                 // If all parts are equal
-                showMessage("Version is up to date.");
+                showMessageDialog("Version is up to date", "Your app is up to date.", false);
             } catch (Exception e) {
                 Log.e("CheckForUpdates", "Error parsing version", e);
-                showMessage("Error checking for updates.");
+                showMessageDialog("Error", "Error checking for updates.", false);
             }
         } else {
-            showMessage("Failed to check for updates.");
+            showMessageDialog("Error", "Failed to check for updates.", false);
         }
     }
 
@@ -188,6 +189,27 @@ public class PreferencesActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
+    private void showMessageDialog(String title, String message, boolean showDownloadsButton) {
+        // Build the dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Close", (dialog, which) -> {
+                    dialog.dismiss(); // Dismiss the dialog when "Close" is clicked
+                });
+
+        if (showDownloadsButton) {
+            builder.setNegativeButton("Open Downloads Page", (dialog, which) -> {
+                // Open the downloads page in a browser
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download.html"));
+                startActivity(browserIntent);
+            });
+        }
+
+        // Show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
 
     private void loadPreferences() {
