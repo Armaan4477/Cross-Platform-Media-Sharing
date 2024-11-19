@@ -25,6 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 import android.widget.ImageButton;
 
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.widget.TextView;
+
+
 public class PreferencesActivity extends AppCompatActivity {
 
     private EditText deviceNameInput;
@@ -64,6 +69,28 @@ public class PreferencesActivity extends AppCompatActivity {
             Intent intent = new Intent(PreferencesActivity.this, CreditsActivity.class);
             startActivity(intent);
         });
+
+        // Fetch version name and set it to the TextView
+        String versionName = getVersionName();
+    }
+
+    // Method to get version name dynamically
+    private String getVersionName() {
+        try {
+            // Fetch version name from the app's PackageInfo
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String versionName = packageInfo.versionName;
+
+            // Log the version name
+            Log.d("AppVersion", "Version Name: " + versionName);
+
+            return versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            Log.e("AppVersion", "Version Name not found", e);
+            return "Unknown";
+        }
+
     }
 
     private void loadPreferences() {
