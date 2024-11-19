@@ -29,6 +29,11 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.widget.TextView;
 
+import android.os.Handler;
+import android.os.Looper;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 
 public class PreferencesActivity extends AppCompatActivity {
 
@@ -79,9 +84,7 @@ public class PreferencesActivity extends AppCompatActivity {
 
         // Handle "Check for Update" button click
         Button checkForUpdateButton = findViewById(R.id.check_for_update_button);
-        checkForUpdateButton.setOnClickListener(v -> {
-            Toast.makeText(this, "Check for Update button pressed", Toast.LENGTH_SHORT).show();
-        });
+        checkForUpdateButton.setOnClickListener(v -> checkForUpdates());
     }
 
     // Method to get version name dynamically
@@ -102,6 +105,90 @@ public class PreferencesActivity extends AppCompatActivity {
         }
 
     }
+
+    private void checkForUpdates() {
+        // Create a new thread for the network operation
+        new Thread(() -> {
+            String apiVersion = null;
+            try {
+                // Define the API URL
+                URL url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
+
+                // Open a connection
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                // Check the response code
+                int responseCode = connection.getResponseCode();
+                if (responseCode == 200) { // Success
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+
+                    // Read the response
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    reader.close();
+
+                    // Parse the JSON response to extract the version value
+                    JSONObject jsonObject = new JSONObject(response.toString());
+                    apiVersion = jsonObject.getString("value");
+                } else {
+                    Log.e("CheckForUpdates", "Failed to fetch version, Response Code: " + responseCode);
+                }
+            } catch (Exception e) {
+                Log.e("CheckForUpdates", "Error fetching updates", e);
+            }
+
+            // Process the result on the main thread
+            String finalApiVersion = apiVersion;
+            new Handler(Looper.getMainLooper()).post(() -> processVersionCheckResult(finalApiVersion));
+        }).start();
+    }
+
+    // Method to process the version check result on the main thread
+    private void processVersionCheckResult(String apiVersion) {
+        if (apiVersion != null) {
+            try {
+                // Get the app's version
+                String appVersion = getVersionName();
+
+                // Split both versions into parts
+                String[] apiParts = apiVersion.split("\\.");
+                String[] appParts = appVersion.split("\\.");
+
+                // Compare the versions part by part
+                for (int i = 0; i < Math.min(apiParts.length, appParts.length); i++) {
+                    int apiPart = Integer.parseInt(apiParts[i]);
+                    int appPart = Integer.parseInt(appParts[i]);
+
+                    if (apiPart > appPart) {
+                        showMessage("App is older; please update.");
+                        return;
+                    } else if (apiPart < appPart) {
+                        showMessage("Please downgrade to a publicly available version.");
+                        return;
+                    }
+                }
+
+                // If all parts are equal
+                showMessage("Version is up to date.");
+            } catch (Exception e) {
+                Log.e("CheckForUpdates", "Error parsing version", e);
+                showMessage("Error checking for updates.");
+            }
+        } else {
+            showMessage("Failed to check for updates.");
+        }
+    }
+
+    // Helper method to show a message
+    private void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+
 
     private void loadPreferences() {
         String jsonString = readJsonFromFile();
