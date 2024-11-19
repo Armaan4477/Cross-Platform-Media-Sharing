@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
@@ -250,7 +251,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting file metadata creation");
 
-        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/metadata/");
         ensureDirectoryExists(metadataDirectory);
 
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
@@ -300,7 +301,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting folder metadata creation");
 
-        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/metadata/");
         Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
         ensureDirectoryExists(metadataDirectory);
 
