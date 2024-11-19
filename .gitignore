@@ -18,3 +18,5 @@ Desktop-app/DataDash.spec
 *.apk
 /Android-app/CrossPlatform/app/release
 .DS_Store
+Android-app/.DS_Store
+Desktop-app/.DS_Store

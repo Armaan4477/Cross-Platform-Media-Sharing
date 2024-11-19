@@ -327,8 +327,8 @@ class ReceiveAppP(QWidget):
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
         self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
 
-        # Start the file receiving process and set progress bar visibility
-        QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
+        # Start the file receiving process directly on the main thread
+        self.file_receiver.start()
 
     def initUI(self):
         self.setWindowTitle('Receive File')
