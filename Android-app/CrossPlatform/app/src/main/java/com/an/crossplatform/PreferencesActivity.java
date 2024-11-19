@@ -56,6 +56,10 @@ public class PreferencesActivity extends AppCompatActivity {
         Button mainMenuButton = findViewById(R.id.main_menu_button);
         Button btnCredits = findViewById(R.id.btn_credits);
 
+        // Set the app version
+        TextView appVersionLabel = findViewById(R.id.app_version_label);
+        appVersionLabel.setText("App Version: " + getVersionName());
+
         // Load saved preferences from internal storage
         loadPreferences();
 
