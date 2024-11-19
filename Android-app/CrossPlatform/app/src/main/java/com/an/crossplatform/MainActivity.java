@@ -122,12 +122,12 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_CODE_MANAGE_STORAGE_PERMISSION) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (Environment.isExternalStorageManager()) {
-                    Toast.makeText(this, "All files access granted", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "All files access permission denied", Toast.LENGTH_SHORT).show();
-                }
+            if (Environment.isExternalStorageManager()) {
+                Toast.makeText(this, "All files access granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "All files access permission denied. App will close.",
+                        Toast.LENGTH_SHORT).show();
+                finish(); // Close the app if permission was denied
             }
         }
     }
