@@ -76,6 +76,12 @@ public class PreferencesActivity extends AppCompatActivity {
 
         // Fetch version name and set it to the TextView
         String versionName = getVersionName();
+
+        // Handle "Check for Update" button click
+        Button checkForUpdateButton = findViewById(R.id.check_for_update_button);
+        checkForUpdateButton.setOnClickListener(v -> {
+            Toast.makeText(this, "Check for Update button pressed", Toast.LENGTH_SHORT).show();
+        });
     }
 
     // Method to get version name dynamically
