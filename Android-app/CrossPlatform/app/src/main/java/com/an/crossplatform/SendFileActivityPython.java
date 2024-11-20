@@ -328,6 +328,12 @@ public class SendFileActivityPython extends AppCompatActivity {
             }
         }
 
+        JSONObject base_folder_name = new JSONObject();
+        base_folder_name.put("base_folder_name", base_folder_name_path);
+        base_folder_name.put("path", ".delete");
+        base_folder_name.put("size", 0);
+        metadata.put(base_folder_name);
+
         Log.d(TAG, "Metadata before saving: " + metadata.toString());
 
         try {
