@@ -253,6 +253,22 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     Log.d("ReceiveFileActivity", "Created parent directory: " + created);
                 }
 
+                // Handle duplicate file names
+                String fileNameWithoutExt = receivedFile.getName();
+                String extension = "";
+                int dotIndex = fileNameWithoutExt.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = fileNameWithoutExt.substring(dotIndex);
+                    fileNameWithoutExt = fileNameWithoutExt.substring(0, dotIndex);
+                }
+
+                int counter = 1;
+                while (receivedFile.exists()) {
+                    String newFileName = fileNameWithoutExt + " (" + counter + ")" + extension;
+                    receivedFile = new File(parentDir, newFileName);
+                    counter++;
+                }
+
                 Log.d("ReceiveFileActivity", "Writing file to: " + receivedFile.getAbsolutePath());
 
                 // Write file data
@@ -273,7 +289,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     }
                 }
 
-                Log.d("ReceiveFileActivity", "File written successfully: " + fileName);
+                Log.d("ReceiveFileActivity", "File written successfully: " + receivedFile.getName());
 
             } catch (IOException | JSONException e) {
                 Log.e("ReceiveFileActivity", "Error handling file path: " + fileName, e);
