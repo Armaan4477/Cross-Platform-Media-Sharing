@@ -80,13 +80,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         }
 
         if(osType.equals("Windows")) {
-            txt_waiting.setText("Receiving files from Windows PC");
+            txt_waiting.setText("Waiting to Receive files from Windows");
         } else if (osType.equals("Linux")) {
-            txt_waiting.setText("Receiving files from Linux PC");
-        } else if (osType.equals("Mac")) {
-            txt_waiting.setText("Receiving files from Mac");
+            txt_waiting.setText("Waiting to Receive files from Linux");
+        } else if (osType.equals("Darwin")) {
+            txt_waiting.setText("Waiting to Receive files from Mac");
         } else {
-            txt_waiting.setText("Receiving files from Python");
+            txt_waiting.setText("Waiting to Receive files from Python");
         }
         startConnectionTask();
     }
@@ -98,7 +98,15 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             runOnUiThread(() -> {
                 if (connectionSuccessful) {
                     Log.d("ReceiveFileActivityPython", "Connection established with the sender.");
-                    txt_waiting.setText("Receiving files from " + deviceType);
+                    if(osType.equals("Windows")) {
+                        txt_waiting.setText("Receiving files from Windows");
+                    } else if (osType.equals("Linux")) {
+                        txt_waiting.setText("Receiving files from Linux");
+                    } else if (osType.equals("Darwin")) {
+                        txt_waiting.setText("Receiving files from Mac");
+                    } else {
+                        txt_waiting.setText("Receiving files from Python");
+                    }
                     executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
                 } else {
                     Log.e("ReceiveFileActivityPython", "Failed to establish connection.");

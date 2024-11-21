@@ -79,7 +79,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             Log.e("ReceiveFileActivity", "Failed to retrieve OS type", e);
         }
 
-        txt_waiting.setText("Waiting to receive file from Android");
+        txt_waiting.setText("Waiting to Receive files from Android");
 
         startConnectionTask();
     }
@@ -94,7 +94,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             boolean connectionSuccessful = initializeConnection();
             if (connectionSuccessful) {
                 Log.d("ReceiveFileActivity", "Connection established with the sender.");
-                txt_waiting.setText("Receiving files from " + deviceType);
+                txt_waiting.setText("Receiving files from Android");
                 startReceiveFilesTask();
             } else {
                 Log.e("ReceiveFileActivity", "Failed to establish connection.");
