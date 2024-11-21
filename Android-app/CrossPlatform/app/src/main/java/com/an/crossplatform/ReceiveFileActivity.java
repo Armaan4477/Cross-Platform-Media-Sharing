@@ -278,7 +278,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             try {
                 JSONObject fileInfo = metadataArray.getJSONObject(i);
                 String path = fileInfo.optString("path", "");
-                if (path.endsWith(fileName)) {
+                if (!path.endsWith("/") && path.endsWith(fileName)) {
                     return path;
                 }
             } catch (JSONException e) {
@@ -337,82 +337,68 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private String createFolderStructure(JSONArray metadataArray, String defaultDir) {
         if (metadataArray.length() == 0) {
             Log.e("ReceiveFileActivity", "No metadata provided for folder structure.");
-            return defaultDir; // Return default if no metadata
+            return defaultDir;
         }
 
-        String topLevelFolder = ""; // Variable to hold the top-level folder name
+        // Get first folder entry from metadata to determine top folder name
+        String topLevelFolder = null;
         try {
-            // Extract the base folder name from the last entry
-            JSONObject lastMetadata = metadataArray.getJSONObject(metadataArray.length() - 1);
-            // Check if the base_folder_name has the word primary in it
-            if (lastMetadata.optString("base_folder_name", "").contains("primary")) {
-                topLevelFolder = lastMetadata.optString("base_folder_name", "").replace("primary%3A", "");
-            } else {
-                topLevelFolder = lastMetadata.optString("base_folder_name", "");
+            for (int i = 0; i < metadataArray.length(); i++) {
+                JSONObject fileInfo = metadataArray.getJSONObject(i);
+                String path = fileInfo.optString("path", "");
+                if (path.endsWith("/")) {  // This is a folder entry
+                    topLevelFolder = path.split("/")[0];
+                    break;
+                }
             }
-            if (topLevelFolder.isEmpty()) {
-                Log.e("ReceiveFileActivity", "Base folder name not found in metadata");
-                return defaultDir; // Return default if no base folder
+
+            if (topLevelFolder == null) {
+                Log.e("ReceiveFileActivity", "No folder structure found in metadata");
+                return defaultDir;
             }
+
+            String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
+            File destinationDir = new File(destinationFolder);
+
+            // Handle existing folder case
+            if (destinationDir.exists()) {
+                int i = 1;
+                while (new File(defaultDir, topLevelFolder + " (" + i + ")").exists()) {
+                    i++;
+                }
+                destinationFolder = new File(defaultDir, topLevelFolder + " (" + i + ")").getPath();
+                destinationDir = new File(destinationFolder);
+            }
+
+            destinationDir.mkdirs();
+            Log.d("ReceiveFileActivity", "Created base folder: " + destinationFolder);
+
+            // Create all folder structures from metadata
+            for (int i = 0; i < metadataArray.length(); i++) {
+                JSONObject fileInfo = metadataArray.getJSONObject(i);
+                String path = fileInfo.optString("path", "");
+
+                if (path.endsWith("/")) { // This is a folder
+                    File folder = new File(destinationFolder, path);
+                    if (!folder.exists()) {
+                        folder.mkdirs();
+                        Log.d("ReceiveFileActivity", "Created folder: " + folder.getPath());
+                    }
+                } else { // This is a file
+                    File parentFolder = new File(destinationFolder, new File(path).getParent());
+                    if (!parentFolder.exists()) {
+                        parentFolder.mkdirs();
+                        Log.d("ReceiveFileActivity", "Created parent folder: " + parentFolder.getPath());
+                    }
+                }
+            }
+
+            return destinationFolder;
 
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivity", "Error processing metadata JSON to extract base folder name", e);
-            return defaultDir; // Return default if any error occurs
+            Log.e("ReceiveFileActivity", "Error processing metadata JSON", e);
+            return defaultDir;
         }
-
-        // Check if the top-level folder has primary in it
-        if (topLevelFolder.contains("primary")) {
-            topLevelFolder = topLevelFolder.replace("primary%3A", ""); // Remove primary%3A from the folder name
-        }
-        if(topLevelFolder.contains("%2F")) {
-            // Keep string after last instance of %2F
-            topLevelFolder = topLevelFolder.substring(topLevelFolder.lastIndexOf("%2F") + 3);
-        }
-
-        // Construct the destination folder path
-        String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
-        Log.d("ReceiveFileActivity", "Destination folder: " + destinationFolder);
-
-        File destinationDir = new File(destinationFolder);
-        if (!destinationDir.exists()) {
-            destinationDir.mkdirs(); // Create the base folder if it doesn't exist
-            Log.d("ReceiveFileActivity", "Created base folder: " + destinationFolder);
-        } else {
-            // If the folder already exists, rename it by appending (i)
-            int i = 1;
-            String newFolderName = topLevelFolder + " (" + i + ")";
-            File renamedFolder = new File(defaultDir, newFolderName);
-            while (renamedFolder.exists()) {
-                i++;
-                newFolderName = topLevelFolder + " (" + i + ")";
-                renamedFolder = new File(defaultDir, newFolderName);
-            }
-            // Create the new folder with the incremented name
-            renamedFolder.mkdirs();
-            Log.d("ReceiveFileActivity", "Renamed existing folder and created new folder: " + renamedFolder.getPath());
-            destinationFolder = renamedFolder.getPath(); // Update destinationFolder to the new path
-        }
-
-        // Process each file info in the metadata array
-        for (int i = 0; i < metadataArray.length() - 1; i++) { // Exclude the last entry
-            try {
-                JSONObject fileInfo = metadataArray.getJSONObject(i);
-                String filePath = fileInfo.optString("path", "");
-                if (filePath.equals(".delete")) {
-                    continue; // Skip paths marked for deletion
-                }
-
-                // Handle creating the folder structure for files
-                File folderPath = new File(destinationFolder, filePath).getParentFile();
-                if (folderPath != null && !folderPath.exists()) {
-                    folderPath.mkdirs(); // Create the folder structure if it doesn't exist
-                    Log.d("ReceiveFileActivity", "Created folder: " + folderPath.getPath());}
-            } catch (JSONException e) {
-                Log.e("ReceiveFileActivity", "Error processing file info in metadata", e);
-                // Continue to the next file if there's an error with the current one
-            }
-        }
-        return destinationFolder;
     }
 
     @Override
