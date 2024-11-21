@@ -29,6 +29,7 @@ class ReceiveWorkerJava(QThread):
         self.metadata = None
         self.destination_folder = None
         self.store_client_ip = client_ip
+        self.base_folder_name = ''
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
 
     def initialize_connection(self):
@@ -116,14 +117,18 @@ class ReceiveWorkerJava(QThread):
 
                 # Convert Windows-style backslashes to Unix-style forward slashes
                 file_name = file_name.replace('\\', '/')
-                logger.debug("Normalized file name: %s", file_name)
+                logger.debug("Original file name: %s", file_name)
+
+                # Remove base folder name from the file path
+                relative_file_path = file_name
+                if self.base_folder_name and relative_file_path.startswith(self.base_folder_name + '/'):
+                    relative_file_path = relative_file_path[len(self.base_folder_name) + 1:]
+                    logger.debug("Adjusted relative file path: %s", relative_file_path)
 
                 # Receive file size
                 file_size_data = self.client_skt.recv(8)
                 file_size = struct.unpack('<Q', file_size_data)[0]
-                logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
-
-                logger.debug("Reached 1")
+                logger.debug("Receiving file %s, size: %d bytes", relative_file_path, file_size)
 
                 received_size = 0
 
@@ -131,77 +136,40 @@ class ReceiveWorkerJava(QThread):
                 if file_name == 'metadata.json':
                     logger.debug("Receiving metadata file.")
                     self.metadata = self.receive_metadata(file_size)
-                    ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
-                    if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
-                        self.destination_folder = self.create_folder_structure(self.metadata)
-                        logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
-                    else:
-                        ## If not, set the destination folder to the default directory
-                        self.destination_folder = get_config()["save_to_directory"]
+                    # Process the metadata to create folder structure
+                    self.destination_folder = self.create_folder_structure(self.metadata)
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
                     try:
-                        # Determine the correct path using metadata
-                        if self.metadata:
-                            relative_path = self.get_relative_path_from_metadata(file_name)
-                            file_path = os.path.join(self.destination_folder, relative_path)
-                            logger.debug("Constructed file path from metadata: %s", file_path)
+                        # Reconstruct the full file path
+                        full_file_path = os.path.join(self.destination_folder, relative_file_path)
+                        full_file_path = os.path.normpath(full_file_path)
 
-                            # Ensure that the directory exists for the file
-                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                            logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
-                        else:
-                            # Fallback if metadata is not available
-                            file_path = self.get_file_path(file_name)
-                            logger.debug("Constructed file path without metadata: %s", file_path)
-                            #com.an.Datadash
+                        # Ensure the directory exists
+                        os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
 
-                        # Check if file exists in the receiving directory
-                        original_name, extension = os.path.splitext(file_name)
-                        logger.debug("Original name: %s, Extension: %s", original_name, extension)
+                        # Handle duplicate files
+                        full_file_path = self._get_unique_file_name(full_file_path)
 
-                        # Handle file name conflict
-                        i = 1
-                        while os.path.exists(file_path):
-                            # Update the file name to avoid conflict
-                            file_name = f"{original_name} ({i}){extension}"
-                            logger.debug("File name already exists. Trying new name: %s", file_name)
+                        logger.debug(f"Saving file to: {full_file_path}")
 
-                            # Re-construct the file path with the new name
-                            if self.metadata:
-                                relative_path = self.get_relative_path_from_metadata(file_name)
-                                file_path = os.path.join(self.destination_folder, relative_path)
-                            else:
-                                file_path = self.get_file_path(file_name)
-                                
-                            # Ensure the directory exists for the new file path
-                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                            i += 1
+                        # Receive file data in chunks
+                        with open(full_file_path, "wb") as f:
+                            remaining = file_size
+                            while remaining > 0:
+                                data = self.client_skt.recv(min(4096, remaining))
+                                if not data:
+                                    raise ConnectionError("Connection lost during file reception.")
+                                f.write(data)
+                                received_size += len(data)
+                                remaining -= len(data)
+                                progress = int((received_size) * 100 / file_size)
+                                self.progress_update.emit(progress)
+                        if encrypted_transfer:
+                            self.encrypted_files.append(full_file_path)
 
                     except Exception as e:
-                        logger.error("Error while checking file existence: %s", str(e))
-                        pass
-
-                    # Normalize the final file path
-                    file_path = os.path.normpath(file_path)
-
-                    # Check for encrypted transfer
-                    if encrypted_transfer:
-                        self.encrypted_files.append(file_path)
-                        logger.debug("File marked for decryption: %s", file_path)
-
-                    # Receive file data in chunks
-                    with open(file_path, "wb") as f:
-                        while received_size < file_size:
-                            chunk_size = min(4096, file_size - received_size)
-                            data = self._receive_data(self.client_skt, chunk_size)
-                            if not data:
-                                logger.error("Failed to receive data. Connection may have been closed.")
-                                break
-                            f.write(data)
-                            received_size += len(data)
-                            logger.debug("Received %d/%d bytes for file %s", received_size, file_size, file_name)
-                            self.progress_update.emit(received_size * 100 // file_size)
+                        logger.error(f"Error saving file {file_name}: {str(e)}")
 
             except Exception as e:
                 logger.error("Error during file reception: %s", str(e))
@@ -209,8 +177,6 @@ class ReceiveWorkerJava(QThread):
 
         self.broadcasting = True  # Resume broadcasting
         logger.debug("File reception completed.")
-        #com.an.Datadash
-
 
     def _receive_data(self, socket, size):
         """Helper function to receive a specific amount of data."""
@@ -237,66 +203,41 @@ class ReceiveWorkerJava(QThread):
 
     def create_folder_structure(self, metadata):
         """Create folder structure based on metadata."""
-        # Get the default directory from configuration
         default_dir = get_config()["save_to_directory"]
         
         if not default_dir:
             raise ValueError("No save_to_directory configured")
-        #com.an.Datadash
         
-        # Extract the base folder name from the last metadata entry
-        top_level_folder = metadata[-1].get('base_folder_name', '')
-        if not top_level_folder:
+        # Extract base folder name from paths
+        base_folder_name = None
+        for file_info in metadata:
+            path = file_info.get('path', '')
+            if path.endswith('/'):
+                base_folder_name = path.rstrip('/').split('/')[0]
+                logger.debug("Found base folder name: %s", base_folder_name)
+                break
+
+        # If base folder name not found, use the last entry
+        if not base_folder_name:
+            base_folder_name = metadata[-1].get('base_folder_name', '')
+            logger.debug("Base folder name from last metadata entry: %s", base_folder_name)
+
+        if not base_folder_name:
             raise ValueError("Base folder name not found in metadata")
         
-        if "primary" in top_level_folder:
-            top_level_folder = top_level_folder.replace("primary%3A", "")
-            top_level_folder = top_level_folder.replace("%2F", "")
-        
-        top_level_folder = top_level_folder.split('/')[-1]
-
-        # Define the initial destination folder path
-        destination_folder = os.path.join(default_dir, top_level_folder)
-
-        # Check if the destination folder already exists, and if it does, add a "(i)" suffix
+        # Handle duplicate root folder name
+        destination_folder = os.path.join(default_dir, base_folder_name)
         destination_folder = self._get_unique_folder_name(destination_folder)
-
         logger.debug("Destination folder: %s", destination_folder)
-
-        # Create the destination folder if it does not exist
+        
+        # Create the root folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
-            logger.debug("Created base folder: %s", destination_folder)
-
-        # Track created folders to avoid duplicates
-        created_folders = set()
-        created_folders.add(destination_folder)
-
-        # Process each file info in metadata (excluding the last entry)
-        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
-            # Skip any paths marked for deletion
-            if file_info['path'] == '.delete':
-                continue
-            
-            # Get the folder path from the file info
-            folder_path = os.path.dirname(file_info['path'])
-            if folder_path:
-                # Create the full folder path
-                full_folder_path = os.path.join(destination_folder, folder_path)
-                
-                # Check if the folder has already been created
-                if full_folder_path not in created_folders:
-                    # Ensure that the directory does not override existing data by getting a unique folder name
-                    unique_folder_path = self._get_unique_folder_name(full_folder_path)
-                    
-                    # Create the directory if it does not exist
-                    if not os.path.exists(unique_folder_path):
-                        os.makedirs(unique_folder_path)
-                        logger.debug("Created folder: %s", unique_folder_path)
-
-                    # Add the folder to the set of created folders
-                    created_folders.add(unique_folder_path)
-
+            logger.debug("Created root folder: %s", destination_folder)
+        
+        # Store base folder name for use in receive_files
+        self.base_folder_name = base_folder_name
+        
         return destination_folder
 
     def _get_unique_folder_name(self, folder_path):
@@ -307,6 +248,16 @@ class ReceiveWorkerJava(QThread):
             folder_path = f"{base_folder_path} ({i})"
             i += 1
         return folder_path
+
+    def _get_unique_file_name(self, file_path):
+        """Append a unique (i) to file name if it already exists."""
+        base, extension = os.path.splitext(file_path)
+        i = 1
+        new_file_path = file_path
+        while os.path.exists(new_file_path):
+            new_file_path = f"{base} ({i}){extension}"
+            i += 1
+        return new_file_path
     #com.an.Datadash
 
 
