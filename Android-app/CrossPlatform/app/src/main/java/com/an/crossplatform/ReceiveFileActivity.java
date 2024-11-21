@@ -152,9 +152,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 animationView.setVisibility(LottieAnimationView.VISIBLE);
                 animationView.playAnimation();
             });
-            Log.d("ReceiveFileActivity", "File reception started.");
+
             try {
-                File configFile = new File(getFilesDir(), "config/config.json");
                 saveToDirectory = loadSaveDirectoryFromConfig();
                 Log.d("ReceiveFileActivity", "Save directory: " + saveToDirectory);
 
@@ -162,12 +161,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 File targetDir = new File(baseDir, saveToDirectory);
 
                 if (!targetDir.exists() && !targetDir.mkdirs()) {
-                    Log.e("ReceiveFileActivityPython", "Failed to create directory: " + targetDir.getPath());
+                    Log.e("ReceiveFileActivity", "Failed to create directory: " + targetDir.getPath());
                     return;
                 }
 
-                destinationFolder = targetDir.getPath();
                 JSONArray metadataArray = null;
+                String rootFolderName = null;
 
                 while (true) {
                     byte[] encryptionFlagBytes = new byte[8];
@@ -175,7 +174,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
 
                     if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
-                        // After file reception is complete, update the UI accordingly
                         runOnUiThread(() -> {
                             txt_waiting.setText("File transfer completed");
                             progressBar.setProgress(0);
@@ -191,62 +189,36 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     clientSocket.getInputStream().read(fileNameSizeBytes);
                     long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 
-                    if (fileNameSize == 0) {
-                        break;
-                    }
+                    if (fileNameSize == 0) break;
 
                     byte[] fileNameBytes = new byte[(int) fileNameSize];
                     clientSocket.getInputStream().read(fileNameBytes);
-                    String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
+                    String fileName = new String(fileNameBytes, StandardCharsets.UTF_8);
 
                     byte[] fileSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileSizeBytes);
                     long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 
-                    if (fileSize < 0) {
-                        continue;
-                    }
+                    if (fileSize < 0) continue;
 
                     if (fileName.equals("metadata.json")) {
                         metadataArray = receiveMetadata(fileSize);
                         if (metadataArray != null) {
                             destinationFolder = createFolderStructure(metadataArray, targetDir.getPath());
+                            continue;
                         }
-                        continue;
                     }
 
+                    // Get the relative path from metadata and remove root folder name
                     String filePath = (metadataArray != null) ? getFilePathFromMetadata(metadataArray, fileName) : fileName;
-                    File receivedFile = new File(destinationFolder, filePath);
-
-                    if (receivedFile.isDirectory()) {
-                        Log.e("ReceiveFileActivity", "Received path is a directory, removing filename from path.");
-                        receivedFile = new File(destinationFolder, filePath + File.separator + fileName);
+                    if (filePath.startsWith(rootFolderName + "/")) {
+                        filePath = filePath.substring(rootFolderName.length() + 1);
                     }
-                    Log.d("ReceiveFileActivity", "Receiving file: " + receivedFile.getPath());
 
-                    try {
-                        String originalName = receivedFile.getName();
-                        String nameWithoutExt;
-                        String extension = "";
-
-                        int dotIndex = originalName.lastIndexOf('.');
-                        if (dotIndex == -1) {
-                            // No extension found
-                            nameWithoutExt = originalName;
-                        } else {
-                            // Split name and extension
-                            nameWithoutExt = originalName.substring(0, dotIndex);
-                            extension = originalName.substring(dotIndex);
-                        }
-
-                        int i = 1;
-                        while (receivedFile.exists()) {
-                            String newFileName = nameWithoutExt + " (" + i + ")" + extension;
-                            receivedFile = new File(destinationFolder, newFileName);
-                            i++;
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    File receivedFile = new File(destinationFolder, filePath);
+                    File parentDir = receivedFile.getParentFile();
+                    if (parentDir != null && !parentDir.exists()) {
+                        parentDir.mkdirs();
                     }
 
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
@@ -254,21 +226,20 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {
-                            int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
-                            if (bytesRead == -1) {
-                                break;
-                            }
+                            int bytesRead = clientSocket.getInputStream().read(buffer, 0,
+                                    (int) Math.min(buffer.length, fileSize - receivedSize));
+                            if (bytesRead == -1) break;
+
                             fos.write(buffer, 0, bytesRead);
                             receivedSize += bytesRead;
 
                             int progress = (int) ((receivedSize * 100) / fileSize);
-                            Log.d("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
                             runOnUiThread(() -> progressBar.setProgress(progress));
                         }
                     }
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivityPython", "Error receiving files", e);
+                Log.e("ReceiveFileActivity", "Error receiving files", e);
             }
         }
     }
@@ -336,59 +307,49 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     private String createFolderStructure(JSONArray metadataArray, String defaultDir) {
         if (metadataArray.length() == 0) {
-            Log.e("ReceiveFileActivity", "No metadata provided for folder structure.");
             return defaultDir;
         }
 
-        // Get first folder entry from metadata to determine top folder name
-        String topLevelFolder = null;
         try {
-            for (int i = 0; i < metadataArray.length(); i++) {
-                JSONObject fileInfo = metadataArray.getJSONObject(i);
-                String path = fileInfo.optString("path", "");
-                if (path.endsWith("/")) {  // This is a folder entry
-                    topLevelFolder = path.split("/")[0];
-                    break;
-                }
-            }
-
-            if (topLevelFolder == null) {
-                Log.e("ReceiveFileActivity", "No folder structure found in metadata");
+            // Extract base folder name from metadata
+            String baseFolderName = metadataArray.getJSONObject(0).optString("base_folder_name");
+            if (baseFolderName.isEmpty()) {
                 return defaultDir;
             }
 
-            String destinationFolder = new File(defaultDir, topLevelFolder).getPath();
+            // Create destination folder with number suffix if needed
+            String destinationFolder = new File(defaultDir, baseFolderName).getPath();
             File destinationDir = new File(destinationFolder);
 
-            // Handle existing folder case
             if (destinationDir.exists()) {
                 int i = 1;
-                while (new File(defaultDir, topLevelFolder + " (" + i + ")").exists()) {
+                while (new File(defaultDir, baseFolderName + " (" + i + ")").exists()) {
                     i++;
                 }
-                destinationFolder = new File(defaultDir, topLevelFolder + " (" + i + ")").getPath();
+                baseFolderName = baseFolderName + " (" + i + ")";
+                destinationFolder = new File(defaultDir, baseFolderName).getPath();
                 destinationDir = new File(destinationFolder);
             }
 
+            // Create the root folder
             destinationDir.mkdirs();
-            Log.d("ReceiveFileActivity", "Created base folder: " + destinationFolder);
+            Log.d("ReceiveFileActivity", "Created root folder: " + destinationFolder);
 
-            // Create all folder structures from metadata
-            for (int i = 0; i < metadataArray.length(); i++) {
+            // Create folder structure (skip first entry as it's the base folder info)
+            for (int i = 1; i < metadataArray.length(); i++) {
                 JSONObject fileInfo = metadataArray.getJSONObject(i);
                 String path = fileInfo.optString("path", "");
 
-                if (path.endsWith("/")) { // This is a folder
-                    File folder = new File(destinationFolder, path);
-                    if (!folder.exists()) {
-                        folder.mkdirs();
-                        Log.d("ReceiveFileActivity", "Created folder: " + folder.getPath());
-                    }
-                } else { // This is a file
-                    File parentFolder = new File(destinationFolder, new File(path).getParent());
-                    if (!parentFolder.exists()) {
-                        parentFolder.mkdirs();
-                        Log.d("ReceiveFileActivity", "Created parent folder: " + parentFolder.getPath());
+                // Strip base folder name from path
+                if (path.startsWith(baseFolderName + "/")) {
+                    path = path.substring(baseFolderName.length() + 1);
+                }
+
+                if (!path.isEmpty()) {
+                    File newPath = new File(destinationFolder, path);
+                    if (path.endsWith("/")) {
+                        newPath.mkdirs();
+                        Log.d("ReceiveFileActivity", "Created folder: " + newPath.getPath());
                     }
                 }
             }
