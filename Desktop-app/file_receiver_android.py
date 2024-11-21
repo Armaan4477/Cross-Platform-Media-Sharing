@@ -78,8 +78,9 @@ class ReceiveWorkerJava(QThread):
 
 
     def receive_files(self):
-        self.broadcasting = False  # Stop broadcasting
+        self.broadcasting = False
         logger.debug("File reception started.")
+        is_folder_transfer = False
 
         while True:
             try:
@@ -94,7 +95,6 @@ class ReceiveWorkerJava(QThread):
                 if encryption_flag[-1] == 't':
                     encrypted_transfer = True
                 elif encryption_flag[-1] == 'h':
-                    # Halting signal, break transfer and decrypt files
                     if self.encrypted_files:
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
@@ -110,72 +110,76 @@ class ReceiveWorkerJava(QThread):
                 
                 if file_name_size == 0:
                     logger.debug("End of transfer signal received.")
-                    break  # End of transfer signal
+                    break
 
                 # Receive file name and normalize the path
                 file_name = self._receive_data(self.client_skt, file_name_size).decode()
-
-                # Convert Windows-style backslashes to Unix-style forward slashes
                 file_name = file_name.replace('\\', '/')
                 logger.debug("Original file name: %s", file_name)
-
-                # Remove base folder name from the file path
-                relative_file_path = file_name
-                if self.base_folder_name and relative_file_path.startswith(self.base_folder_name + '/'):
-                    relative_file_path = relative_file_path[len(self.base_folder_name) + 1:]
-                    logger.debug("Adjusted relative file path: %s", relative_file_path)
 
                 # Receive file size
                 file_size_data = self.client_skt.recv(8)
                 file_size = struct.unpack('<Q', file_size_data)[0]
-                logger.debug("Receiving file %s, size: %d bytes", relative_file_path, file_size)
 
-                received_size = 0
+                try:
+                    # Handle metadata.json
+                    if file_name == 'metadata.json':
+                        logger.debug("Receiving metadata file.")
+                        self.metadata = self.receive_metadata(file_size)
+                        
+                        # Check if this is a folder transfer
+                        is_folder_transfer = any(file_info.get('path', '').endswith('/') 
+                                            for file_info in self.metadata)
+                        
+                        if is_folder_transfer:
+                            self.destination_folder = self.create_folder_structure(self.metadata)
+                        else:
+                            # For single files, use default directory
+                            self.destination_folder = get_config()["save_to_directory"]
+                        continue
 
-                # Check if it's metadata
-                if file_name == 'metadata.json':
-                    logger.debug("Receiving metadata file.")
-                    self.metadata = self.receive_metadata(file_size)
-                    # Process the metadata to create folder structure
-                    self.destination_folder = self.create_folder_structure(self.metadata)
-                    logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
-                else:
-                    try:
-                        # Reconstruct the full file path
+                    # Determine file path based on transfer type
+                    if is_folder_transfer and self.metadata:
+                        # Handle folder structure
+                        relative_file_path = file_name
+                        if self.base_folder_name and relative_file_path.startswith(self.base_folder_name + '/'):
+                            relative_file_path = relative_file_path[len(self.base_folder_name) + 1:]
                         full_file_path = os.path.join(self.destination_folder, relative_file_path)
-                        full_file_path = os.path.normpath(full_file_path)
+                    else:
+                        # Handle single file
+                        full_file_path = os.path.join(self.destination_folder, os.path.basename(file_name))
 
-                        # Ensure the directory exists
-                        os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+                    # Ensure directory exists and handle duplicates
+                    os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+                    full_file_path = self._get_unique_file_name(full_file_path)
+                    logger.debug(f"Saving file to: {full_file_path}")
 
-                        # Handle duplicate files
-                        full_file_path = self._get_unique_file_name(full_file_path)
+                    # Receive file data
+                    with open(full_file_path, "wb") as f:
+                        received_size = 0
+                        remaining = file_size
+                        while remaining > 0:
+                            chunk_size = min(4096, remaining)
+                            data = self.client_skt.recv(chunk_size)
+                            if not data:
+                                raise ConnectionError("Connection lost during file reception.")
+                            f.write(data)
+                            received_size += len(data)
+                            remaining -= len(data)
+                            progress = int(received_size * 100 / file_size)
+                            self.progress_update.emit(progress)
 
-                        logger.debug(f"Saving file to: {full_file_path}")
+                    if encrypted_transfer:
+                        self.encrypted_files.append(full_file_path)
 
-                        # Receive file data in chunks
-                        with open(full_file_path, "wb") as f:
-                            remaining = file_size
-                            while remaining > 0:
-                                data = self.client_skt.recv(min(4096, remaining))
-                                if not data:
-                                    raise ConnectionError("Connection lost during file reception.")
-                                f.write(data)
-                                received_size += len(data)
-                                remaining -= len(data)
-                                progress = int((received_size) * 100 / file_size)
-                                self.progress_update.emit(progress)
-                        if encrypted_transfer:
-                            self.encrypted_files.append(full_file_path)
-
-                    except Exception as e:
-                        logger.error(f"Error saving file {file_name}: {str(e)}")
+                except Exception as e:
+                    logger.error(f"Error saving file {file_name}: {str(e)}")
 
             except Exception as e:
                 logger.error("Error during file reception: %s", str(e))
                 break
 
-        self.broadcasting = True  # Resume broadcasting
+        self.broadcasting = True
         logger.debug("File reception completed.")
 
     def _receive_data(self, socket, size):
