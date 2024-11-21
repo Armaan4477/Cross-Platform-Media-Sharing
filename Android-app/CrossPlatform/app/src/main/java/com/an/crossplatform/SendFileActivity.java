@@ -304,10 +304,22 @@ public class SendFileActivity extends AppCompatActivity {
 
     private String createFolderMetadata() throws IOException, JSONException {
         JSONArray metadata = new JSONArray();
+
+        // Add base folder info as first element
         JSONObject baseInfo = new JSONObject();
         baseInfo.put("base_folder_name", base_folder_name_path);
         metadata.put(baseInfo);
+        Log.d(TAG, "Added base folder info: " + baseInfo.toString());
 
+        // Create metadata directory in app's external storage
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(),
+                "Android/media/" + getPackageName() + "/metadata/");
+        if (!metadataDirectory.exists()) {
+            boolean created = metadataDirectory.mkdirs();
+            Log.d(TAG, "Metadata directory creation result: " + created);
+        }
+
+        // Rest of metadata creation
         Uri uri = Uri.parse(filePaths.get(0));
         DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
         if (documentFile != null) {
@@ -315,11 +327,10 @@ public class SendFileActivity extends AppCompatActivity {
         }
 
         // Save metadata
-        File metadataDirectory = new File(Environment.getExternalStorageDirectory(),
-                "Android/media/" + getPackageName() + "/metadata/");
-        ensureDirectoryExists(metadataDirectory);
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
         saveMetadataToFile(metadataFilePath, metadata);
+        Log.d(TAG, "Metadata saved to: " + metadataFilePath);
+
         return metadataFilePath;
     }
 
