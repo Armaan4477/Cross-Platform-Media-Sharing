@@ -304,70 +304,56 @@ public class SendFileActivity extends AppCompatActivity {
 
     private String createFolderMetadata() throws IOException, JSONException {
         JSONArray metadata = new JSONArray();
-        Log.d(TAG, "Starting folder metadata creation");
 
-        File metadataDirectory = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/metadata/");
-        ensureDirectoryExists(metadataDirectory);
+        // Add base folder info as first element
+        JSONObject baseInfo = new JSONObject();
+        baseInfo.put("base_folder_name", base_folder_name_path);
+        metadata.put(baseInfo);
+        Log.d(TAG, "Added base folder info: " + baseInfo.toString());
 
+        // Create metadata directory in app's external storage
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(),
+                "Android/media/" + getPackageName() + "/metadata/");
+        if (!metadataDirectory.exists()) {
+            boolean created = metadataDirectory.mkdirs();
+            Log.d(TAG, "Metadata directory creation result: " + created);
+        }
+
+        // Rest of metadata creation
+        Uri uri = Uri.parse(filePaths.get(0));
+        DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
+        if (documentFile != null) {
+            addFolderMetadataFromDocumentFile(documentFile, metadata, "");
+        }
+
+        // Save metadata
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
-
-        // Get the base folder URI or path
-        String baseFolderUriOrPath = filePaths.get(0);
-        Uri uri = Uri.parse(baseFolderUriOrPath);
-
-        if ("content".equals(uri.getScheme())) {
-            DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
-            if (documentFile != null) {
-                base_folder_name_path = documentFile.getName();  // Store the name of the base folder
-                addFolderMetadataFromDocumentFile(documentFile, metadata, "");
-            } else {
-                Log.e(TAG, "Could not resolve content URI: " + baseFolderUriOrPath);
-            }
-        } else {
-            File baseFolder = new File(baseFolderUriOrPath);
-            if (baseFolder.exists()) {
-                base_folder_name_path = baseFolder.getName();  // Store the name of the base folder
-                addFolderMetadata(baseFolder, metadata, "");
-            } else {
-                Log.e(TAG, "File not found or not valid: " + baseFolderUriOrPath);
-            }
-        }
-
-        Log.d(TAG, "Metadata before saving: " + metadata.toString());
-
-        try {
-            saveMetadataToFile(metadataFilePath, metadata);
-            metadataCreated = true;
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create metadata: " + e.getMessage(), e);
-            metadataCreated = false;
-        }
+        saveMetadataToFile(metadataFilePath, metadata);
+        Log.d(TAG, "Metadata saved to: " + metadataFilePath);
 
         return metadataFilePath;
     }
 
     private void addFolderMetadataFromDocumentFile(DocumentFile folder, JSONArray metadata, String relativePath) throws JSONException {
         String folderName = folder.getName();
+        // Don't append folderName if relativePath is empty
         String currentRelativePath = relativePath.isEmpty() ? folderName : relativePath + "/" + folderName;
 
-        // Add metadata for the current folder
+        // Add folder entry
         JSONObject folderMetadata = new JSONObject();
         folderMetadata.put("path", currentRelativePath + "/");
-        folderMetadata.put("size", 0); // Directories have size 0
+        folderMetadata.put("size", 0);
         metadata.put(folderMetadata);
-        Log.d(TAG, "Added folder metadata: " + folderMetadata.toString());
 
-        // Recursively process contents
+        // Process contents
         for (DocumentFile file : folder.listFiles()) {
             if (file.isDirectory()) {
                 addFolderMetadataFromDocumentFile(file, metadata, currentRelativePath);
             } else if (file.isFile()) {
-                String fileRelativePath = currentRelativePath + "/" + file.getName();
                 JSONObject fileMetadata = new JSONObject();
-                fileMetadata.put("path", fileRelativePath);
+                fileMetadata.put("path", currentRelativePath + "/" + file.getName());
                 fileMetadata.put("size", file.length());
                 metadata.put(fileMetadata);
-                Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
             }
         }
     }
