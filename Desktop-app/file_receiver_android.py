@@ -1,27 +1,24 @@
 import os
 import socket
 import struct
-import sys
 import json
-import platform
 from PyQt6 import QtCore
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject, QTimer
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication, QPushButton
-from PyQt6.QtGui import QScreen, QMovie, QFont, QKeyEvent
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject,QTimer
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QPushButton,QHBoxLayout
+from PyQt6.QtGui import QScreen,QMovie,QFont,QKeySequence,QKeyEvent
 from constant import get_config, logger
-from crypt_handler import Decryptor
+from crypt_handler import decrypt_file, Decryptor
+import subprocess
+import platform
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
 
 class ReceiveWorkerJava(QThread):
-    # Existing signals
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
     receiving_started = pyqtSignal()
-    
-    # New signal for errors
-    error_occurred = pyqtSignal(str, str, str)  # title, message, detailed text
+    password = None
 
     def __init__(self, client_ip):
         super().__init__()
@@ -32,7 +29,6 @@ class ReceiveWorkerJava(QThread):
         self.metadata = None
         self.destination_folder = None
         self.store_client_ip = client_ip
-        self.base_folder_name = ''
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
 
     def initialize_connection(self):
@@ -49,9 +45,7 @@ class ReceiveWorkerJava(QThread):
             self.server_skt.listen(1)
             print("Waiting for a connection...")
         except Exception as e:
-            error_message = f"Failed to initialize the server: {str(e)}"
-            logger.error(error_message)
-            self.error_occurred.emit("Server Error", error_message, "")
+            QMessageBox.critical(None, "Server Error", f"Failed to initialize the server: {str(e)}")
             return None
 
     def accept_connection(self):
@@ -62,9 +56,7 @@ class ReceiveWorkerJava(QThread):
             self.client_skt, self.client_address = self.server_skt.accept()
             print(f"Connected to {self.client_address}")
         except Exception as e:
-            error_message = f"Failed to accept connection: {str(e)}"
-            logger.error(error_message)
-            self.error_occurred.emit("Connection Error", error_message, "")
+            QMessageBox.critical(None, "Connection Error", f"Failed to accept connection: {str(e)}")
             return None
 
     def run(self):
@@ -73,6 +65,7 @@ class ReceiveWorkerJava(QThread):
         if self.client_skt:
             self.receiving_started.emit()
             self.receive_files()
+            #com.an.Datadash
         else:
             logger.error("Failed to establish a connection.")
 
@@ -81,6 +74,7 @@ class ReceiveWorkerJava(QThread):
             self.client_skt.close()
         if self.server_skt:
             self.server_skt.close()
+
 
     def receive_files(self):
         self.broadcasting = False  # Stop broadcasting
@@ -122,18 +116,14 @@ class ReceiveWorkerJava(QThread):
 
                 # Convert Windows-style backslashes to Unix-style forward slashes
                 file_name = file_name.replace('\\', '/')
-                logger.debug("Original file name: %s", file_name)
-
-                # Remove base folder name from the file path
-                relative_file_path = file_name
-                if self.base_folder_name and relative_file_path.startswith(self.base_folder_name + '/'):
-                    relative_file_path = relative_file_path[len(self.base_folder_name) + 1:]
-                    logger.debug("Adjusted relative file path: %s", relative_file_path)
+                logger.debug("Normalized file name: %s", file_name)
 
                 # Receive file size
                 file_size_data = self.client_skt.recv(8)
                 file_size = struct.unpack('<Q', file_size_data)[0]
-                logger.debug("Receiving file %s, size: %d bytes", relative_file_path, file_size)
+                logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
+
+                logger.debug("Reached 1")
 
                 received_size = 0
 
@@ -141,51 +131,86 @@ class ReceiveWorkerJava(QThread):
                 if file_name == 'metadata.json':
                     logger.debug("Receiving metadata file.")
                     self.metadata = self.receive_metadata(file_size)
-                    # Process the metadata to create folder structure
-                    self.destination_folder = self.create_folder_structure(self.metadata)
+                    ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
+                    if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
+                        self.destination_folder = self.create_folder_structure(self.metadata)
+                        logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
+                    else:
+                        ## If not, set the destination folder to the default directory
+                        self.destination_folder = get_config()["save_to_directory"]
                     logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
                 else:
                     try:
-                        # Reconstruct the full file path
-                        full_file_path = os.path.join(self.destination_folder, relative_file_path)
-                        full_file_path = os.path.normpath(full_file_path)
+                        # Determine the correct path using metadata
+                        if self.metadata:
+                            relative_path = self.get_relative_path_from_metadata(file_name)
+                            file_path = os.path.join(self.destination_folder, relative_path)
+                            logger.debug("Constructed file path from metadata: %s", file_path)
 
-                        # Ensure the directory exists
-                        os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+                            # Ensure that the directory exists for the file
+                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                            logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+                        else:
+                            # Fallback if metadata is not available
+                            file_path = self.get_file_path(file_name)
+                            logger.debug("Constructed file path without metadata: %s", file_path)
+                            #com.an.Datadash
 
-                        # Handle duplicate files
-                        full_file_path = self._get_unique_file_name(full_file_path)
+                        # Check if file exists in the receiving directory
+                        original_name, extension = os.path.splitext(file_name)
+                        logger.debug("Original name: %s, Extension: %s", original_name, extension)
 
-                        logger.debug(f"Saving file to: {full_file_path}")
+                        # Handle file name conflict
+                        i = 1
+                        while os.path.exists(file_path):
+                            # Update the file name to avoid conflict
+                            file_name = f"{original_name} ({i}){extension}"
+                            logger.debug("File name already exists. Trying new name: %s", file_name)
 
-                        # Receive file data in chunks
-                        with open(full_file_path, "wb") as f:
-                            remaining = file_size
-                            while remaining > 0:
-                                data = self.client_skt.recv(min(4096, remaining))
-                                if not data:
-                                    raise ConnectionError("Connection lost during file reception.")
-                                f.write(data)
-                                received_size += len(data)
-                                remaining -= len(data)
-                                progress = int((received_size) * 100 / file_size)
-                                self.progress_update.emit(progress)
-                        if encrypted_transfer:
-                            self.encrypted_files.append(full_file_path)
+                            # Re-construct the file path with the new name
+                            if self.metadata:
+                                relative_path = self.get_relative_path_from_metadata(file_name)
+                                file_path = os.path.join(self.destination_folder, relative_path)
+                            else:
+                                file_path = self.get_file_path(file_name)
+                                
+                            # Ensure the directory exists for the new file path
+                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                            i += 1
 
                     except Exception as e:
-                        error_message = f"Error saving file {file_name}: {str(e)}"
-                        logger.error(error_message)
-                        self.error_occurred.emit("File Save Error", error_message, "")
+                        logger.error("Error while checking file existence: %s", str(e))
+                        pass
+
+                    # Normalize the final file path
+                    file_path = os.path.normpath(file_path)
+
+                    # Check for encrypted transfer
+                    if encrypted_transfer:
+                        self.encrypted_files.append(file_path)
+                        logger.debug("File marked for decryption: %s", file_path)
+
+                    # Receive file data in chunks
+                    with open(file_path, "wb") as f:
+                        while received_size < file_size:
+                            chunk_size = min(4096, file_size - received_size)
+                            data = self._receive_data(self.client_skt, chunk_size)
+                            if not data:
+                                logger.error("Failed to receive data. Connection may have been closed.")
+                                break
+                            f.write(data)
+                            received_size += len(data)
+                            logger.debug("Received %d/%d bytes for file %s", received_size, file_size, file_name)
+                            self.progress_update.emit(received_size * 100 // file_size)
 
             except Exception as e:
-                error_message = f"Error during file reception: {str(e)}"
-                logger.error(error_message)
-                self.error_occurred.emit("Reception Error", error_message, "")
+                logger.error("Error during file reception: %s", str(e))
                 break
 
         self.broadcasting = True  # Resume broadcasting
         logger.debug("File reception completed.")
+        #com.an.Datadash
+
 
     def _receive_data(self, socket, size):
         """Helper function to receive a specific amount of data."""
@@ -204,62 +229,74 @@ class ReceiveWorkerJava(QThread):
             metadata_json = received_data.decode('utf-8')
             return json.loads(metadata_json)
         except UnicodeDecodeError as e:
-            error_message = f"Unicode decode error: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
+            logger.error("Unicode decode error: %s", e)
             raise
         except json.JSONDecodeError as e:
-            error_message = f"JSON decode error: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
+            logger.error("JSON decode error: %s", e)
             raise
 
     def create_folder_structure(self, metadata):
         """Create folder structure based on metadata."""
+        # Get the default directory from configuration
         default_dir = get_config()["save_to_directory"]
         
         if not default_dir:
             raise ValueError("No save_to_directory configured")
+        #com.an.Datadash
         
-        # Extract base folder name from paths
-        base_folder_name = None
-        for file_info in metadata:
-            path = file_info.get('path', '')
-            if path.endswith('/'):
-                base_folder_name = path.rstrip('/').split('/')[0]
-                logger.debug("Found base folder name: %s", base_folder_name)
-                break
-
-        # If base folder name not found, use the last entry
-        if not base_folder_name:
-            base_folder_name = metadata[-1].get('base_folder_name', '')
-            logger.debug("Base folder name from last metadata entry: %s", base_folder_name)
-
-        if not base_folder_name:
-            error_message = "Base folder name not found in metadata"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
-            raise ValueError(error_message)
+        # Extract the base folder name from the last metadata entry
+        top_level_folder = metadata[-1].get('base_folder_name', '')
+        if not top_level_folder:
+            raise ValueError("Base folder name not found in metadata")
         
-        # Handle duplicate root folder name
-        destination_folder = os.path.join(default_dir, base_folder_name)
+        if "primary" in top_level_folder:
+            top_level_folder = top_level_folder.replace("primary%3A", "")
+            top_level_folder = top_level_folder.replace("%2F", "")
+        
+        top_level_folder = top_level_folder.split('/')[-1]
+
+        # Define the initial destination folder path
+        destination_folder = os.path.join(default_dir, top_level_folder)
+
+        # Check if the destination folder already exists, and if it does, add a "(i)" suffix
         destination_folder = self._get_unique_folder_name(destination_folder)
-        logger.debug("Destination folder: %s", destination_folder)
-        
-        # Create the root folder if it does not exist
-        try:
-            if not os.path.exists(destination_folder):
-                os.makedirs(destination_folder)
-                logger.debug("Created root folder: %s", destination_folder)
-        except Exception as e:
-            error_message = f"Failed to create directory {destination_folder}: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Directory Error", error_message, "")
-            raise
 
-        # Store base folder name for use in receive_files
-        self.base_folder_name = base_folder_name
-        
+        logger.debug("Destination folder: %s", destination_folder)
+
+        # Create the destination folder if it does not exist
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+            logger.debug("Created base folder: %s", destination_folder)
+
+        # Track created folders to avoid duplicates
+        created_folders = set()
+        created_folders.add(destination_folder)
+
+        # Process each file info in metadata (excluding the last entry)
+        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
+            # Skip any paths marked for deletion
+            if file_info['path'] == '.delete':
+                continue
+            
+            # Get the folder path from the file info
+            folder_path = os.path.dirname(file_info['path'])
+            if folder_path:
+                # Create the full folder path
+                full_folder_path = os.path.join(destination_folder, folder_path)
+                
+                # Check if the folder has already been created
+                if full_folder_path not in created_folders:
+                    # Ensure that the directory does not override existing data by getting a unique folder name
+                    unique_folder_path = self._get_unique_folder_name(full_folder_path)
+                    
+                    # Create the directory if it does not exist
+                    if not os.path.exists(unique_folder_path):
+                        os.makedirs(unique_folder_path)
+                        logger.debug("Created folder: %s", unique_folder_path)
+
+                    # Add the folder to the set of created folders
+                    created_folders.add(unique_folder_path)
+
         return destination_folder
 
     def _get_unique_folder_name(self, folder_path):
@@ -270,17 +307,23 @@ class ReceiveWorkerJava(QThread):
             folder_path = f"{base_folder_path} ({i})"
             i += 1
         return folder_path
+    #com.an.Datadash
 
-    def _get_unique_file_name(self, file_path):
-        """Append a unique (i) to file name if it already exists."""
-        base, extension = os.path.splitext(file_path)
-        i = 1
-        new_file_path = file_path
-        while os.path.exists(new_file_path):
-            new_file_path = f"{base} ({i}){extension}"
-            i += 1
-        return new_file_path
 
+    def get_relative_path_from_metadata(self, file_name):
+        """Get the relative path of a file from the metadata."""
+        for file_info in self.metadata:
+            if os.path.basename(file_info['path']) == file_name:
+                return file_info['path']
+        return file_name
+
+    def get_file_path(self, file_name):
+        """Get the file path for saving the received file."""
+        default_dir = get_config()["save_to_directory"]
+        if not default_dir:
+            raise NotImplementedError("Unsupported OS")
+        return os.path.join(default_dir, file_name)
+    
     def close_connection(self):
         if self.client_skt:
             self.client_skt.close()
@@ -304,15 +347,16 @@ class ReceiveAppPJava(QWidget):
         self.file_receiver = ReceiveWorkerJava(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.receiving_started.connect(self.show_progress_bar)
-        self.file_receiver.error_occurred.connect(self.show_error_message)
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+        #com.an.Datadash
+       
         
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
         self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
 
-        # Start the file receiving process
+        # Start the file receiving process and set progress bar visibility
         QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
 
     def initUI(self):
@@ -334,16 +378,16 @@ class ReceiveAppPJava(QWidget):
         success_gif_path = os.path.join(os.path.dirname(__file__), "assets", "mark.gif")
 
         layout = QVBoxLayout()
-        layout.setSpacing(10)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)  # Set spacing between widgets
+        layout.setContentsMargins(10, 10, 10, 10)  # Add some margins around the layout
 
         # Loading label with the movie (GIF)
         self.loading_label = QLabel(self)
         self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
         self.receiving_movie = QMovie(receiving_gif_path)
-        self.success_movie = QMovie(success_gif_path)
+        self.success_movie = QMovie(success_gif_path)  # New success GIF
         self.receiving_movie.setScaledSize(QtCore.QSize(100, 100))
-        self.success_movie.setScaledSize(QtCore.QSize(100, 100))
+        self.success_movie.setScaledSize(QtCore.QSize(100, 100))  # Set size for success GIF
         self.loading_label.setMovie(self.receiving_movie)
         self.receiving_movie.start()
         layout.addWidget(self.loading_label, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter)
@@ -363,6 +407,7 @@ class ReceiveAppPJava(QWidget):
 
         # Progress bar
         self.progress_bar = QProgressBar()
+        #com.an.Datadash
         self.progress_bar.setStyleSheet("""
             QProgressBar {
                 background-color: #2f3642;
@@ -380,14 +425,19 @@ class ReceiveAppPJava(QWidget):
         # Open directory button
         self.open_dir_button = self.create_styled_button('Open Receiving Directory')
         self.open_dir_button.clicked.connect(self.open_receiving_directory)
-        self.open_dir_button.setVisible(False)
+        self.open_dir_button.setVisible(False)  # Initially hidden
         layout.addWidget(self.open_dir_button)
 
-        # Close button
-        self.close_button = self.create_styled_button('Close')
+        # Keep them disabled until the file transfer is completed
+        self.close_button = self.create_styled_button('Close')  # Apply styling here
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         layout.addWidget(self.close_button)
+
+        self.mainmenu_button = self.create_styled_button('Main Menu')
+        self.mainmenu_button.setVisible(False)
+        self.mainmenu_button.clicked.connect(self.openMainWindow)
+        layout.addWidget(self.mainmenu_button)
 
         self.setLayout(layout)
 
@@ -441,6 +491,7 @@ class ReceiveAppPJava(QWidget):
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
         window_width, window_height = 853, 480
+        #com.an.Datadash
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -448,6 +499,7 @@ class ReceiveAppPJava(QWidget):
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
 
+    
     def update_typewriter_effect(self):
         """Updates the label text one character at a time."""
         if self.char_index < len(self.current_text):
@@ -462,9 +514,10 @@ class ReceiveAppPJava(QWidget):
         self.progress_bar.setValue(value)
         if value >= 100:
             self.label.setText("File received successfully!")
-            self.open_dir_button.setVisible(True)
-            self.change_gif_to_success()
+            self.open_dir_button.setVisible(True)  # Show the button when file is received
+            self.change_gif_to_success()  # Change GIF to success animation
             self.close_button.setVisible(True)
+            # self.mainmenu_button.setVisible(True)
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
@@ -478,24 +531,24 @@ class ReceiveAppPJava(QWidget):
             self.decryptor.show()
 
     def open_receiving_directory(self):
+
         receiving_dir = get_config()["save_to_directory"]
         
         if receiving_dir:
             try:
                 current_os = platform.system()
+                
                 if current_os == 'Windows':
                     os.startfile(receiving_dir)
                 elif current_os == 'Linux':
-                    os.system(f'xdg-open "{receiving_dir}"')
-                elif current_os == 'Darwin':
-                    os.system(f'open "{receiving_dir}"')
+                    subprocess.Popen(["xdg-open", receiving_dir])
+                elif current_os == 'Darwin':  # macOS
+                    subprocess.Popen(["open", receiving_dir])
                 else:
-                    logger.error("Unsupported OS")
+                    raise NotImplementedError(f"Unsupported OS: {current_os}")
+            
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
-
-    def show_error_message(self, title, message, detailed_text):
-        QMessageBox.critical(self, title, message)
 
     def closeEvent(self, event):
         try:
@@ -521,6 +574,7 @@ class ReceiveAppPJava(QWidget):
                 logger.error(f"Error while closing socket: {e}")
 
 if __name__ == '__main__':
+    import sys
     app = QApplication(sys.argv)
     receive_app = ReceiveAppPJava()
     receive_app.show()
