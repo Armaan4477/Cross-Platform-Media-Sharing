@@ -15,13 +15,10 @@ SENDER_DATA = 57000
 RECEIVER_DATA = 58000
 
 class ReceiveWorkerJava(QThread):
-    # Existing signals
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
     receiving_started = pyqtSignal()
-    
-    # New signal for errors
-    error_occurred = pyqtSignal(str, str, str)  # title, message, detailed text
+    password = None
 
     def __init__(self, client_ip):
         super().__init__()
@@ -49,9 +46,7 @@ class ReceiveWorkerJava(QThread):
             self.server_skt.listen(1)
             print("Waiting for a connection...")
         except Exception as e:
-            error_message = f"Failed to initialize the server: {str(e)}"
-            logger.error(error_message)
-            self.error_occurred.emit("Server Error", error_message, "")
+            QMessageBox.critical(None, "Server Error", f"Failed to initialize the server: {str(e)}")
             return None
 
     def accept_connection(self):
@@ -62,9 +57,7 @@ class ReceiveWorkerJava(QThread):
             self.client_skt, self.client_address = self.server_skt.accept()
             print(f"Connected to {self.client_address}")
         except Exception as e:
-            error_message = f"Failed to accept connection: {str(e)}"
-            logger.error(error_message)
-            self.error_occurred.emit("Connection Error", error_message, "")
+            QMessageBox.critical(None, "Connection Error", f"Failed to accept connection: {str(e)}")
             return None
 
     def run(self):
@@ -174,14 +167,10 @@ class ReceiveWorkerJava(QThread):
                             self.encrypted_files.append(full_file_path)
 
                     except Exception as e:
-                        error_message = f"Error saving file {file_name}: {str(e)}"
-                        logger.error(error_message)
-                        self.error_occurred.emit("File Save Error", error_message, "")
+                        logger.error(f"Error saving file {file_name}: {str(e)}")
 
             except Exception as e:
-                error_message = f"Error during file reception: {str(e)}"
-                logger.error(error_message)
-                self.error_occurred.emit("Reception Error", error_message, "")
+                logger.error("Error during file reception: %s", str(e))
                 break
 
         self.broadcasting = True  # Resume broadcasting
@@ -204,14 +193,10 @@ class ReceiveWorkerJava(QThread):
             metadata_json = received_data.decode('utf-8')
             return json.loads(metadata_json)
         except UnicodeDecodeError as e:
-            error_message = f"Unicode decode error: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
+            logger.error("Unicode decode error: %s", e)
             raise
         except json.JSONDecodeError as e:
-            error_message = f"JSON decode error: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
+            logger.error("JSON decode error: %s", e)
             raise
 
     def create_folder_structure(self, metadata):
@@ -236,10 +221,7 @@ class ReceiveWorkerJava(QThread):
             logger.debug("Base folder name from last metadata entry: %s", base_folder_name)
 
         if not base_folder_name:
-            error_message = "Base folder name not found in metadata"
-            logger.error(error_message)
-            self.error_occurred.emit("Metadata Error", error_message, "")
-            raise ValueError(error_message)
+            raise ValueError("Base folder name not found in metadata")
         
         # Handle duplicate root folder name
         destination_folder = os.path.join(default_dir, base_folder_name)
@@ -247,16 +229,10 @@ class ReceiveWorkerJava(QThread):
         logger.debug("Destination folder: %s", destination_folder)
         
         # Create the root folder if it does not exist
-        try:
-            if not os.path.exists(destination_folder):
-                os.makedirs(destination_folder)
-                logger.debug("Created root folder: %s", destination_folder)
-        except Exception as e:
-            error_message = f"Failed to create directory {destination_folder}: {e}"
-            logger.error(error_message)
-            self.error_occurred.emit("Directory Error", error_message, "")
-            raise
-
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+            logger.debug("Created root folder: %s", destination_folder)
+        
         # Store base folder name for use in receive_files
         self.base_folder_name = base_folder_name
         
@@ -305,7 +281,6 @@ class ReceiveAppPJava(QWidget):
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
         self.file_receiver.receiving_started.connect(self.show_progress_bar)
-        self.file_receiver.error_occurred.connect(self.show_error_message)
         
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
@@ -393,13 +368,7 @@ class ReceiveAppPJava(QWidget):
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
-            self.openMainWindow()
-
-    def openMainWindow(self):
-        from main import MainApp
-        self.main_window = MainApp()
-        self.main_window.show()
-        self.close()
+            self.close()
 
     def create_styled_button(self, text):
         button = QPushButton(text)
@@ -494,9 +463,6 @@ class ReceiveAppPJava(QWidget):
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
 
-    def show_error_message(self, title, message, detailed_text):
-        QMessageBox.critical(self, title, message)
-
     def closeEvent(self, event):
         try:
             """Override the close event to ensure everything is stopped properly."""
@@ -508,20 +474,20 @@ class ReceiveAppPJava(QWidget):
 
     def stop(self):
         """Sets the stop signal to True and closes the socket if it's open."""
-        self.stop_signal = True
-        if self.client_skt:
+        self.file_receiver.terminate()
+        if self.file_receiver.client_skt:
             try:
-                self.client_skt.close()
+                self.file_receiver.client_skt.close()
             except Exception as e:
-                logger.error(f"Error while closing socket: {e}")
-        if self.server_skt:
+                logger.error(f"Error while closing client socket: {e}")
+        if self.file_receiver.server_skt:
             try:
-                self.server_skt.close()
+                self.file_receiver.server_skt.close()
             except Exception as e:
-                logger.error(f"Error while closing socket: {e}")
+                logger.error(f"Error while closing server socket: {e}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    receive_app = ReceiveAppPJava()
+    receive_app = ReceiveAppPJava(client_ip='0.0.0.0')  # Replace with appropriate IP
     receive_app.show()
     app.exec()
