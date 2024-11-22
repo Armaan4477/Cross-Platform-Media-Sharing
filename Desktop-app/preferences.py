@@ -633,11 +633,8 @@ class PreferencesApp(QWidget):
         logger.info(f"Fetching platform value from: {url}")
         
         try:
-            # Make a GET request to the API
             response = requests.get(url)
-            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-
-            # Parse the JSON response
+            response.raise_for_status()
             data = response.json()
             if "value" in data:
                 logger.info(f"Value for python: {data['value']}")
@@ -648,10 +645,10 @@ class PreferencesApp(QWidget):
                     buttons = QMessageBox.StandardButton.Ok
                 elif self.compare_versions(fetched_version, self.uga_version) > 0:
                     message = "You are on an older version. Please update."
-                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Apply
                 elif self.compare_versions(fetched_version, self.uga_version) < 0:
                     message = "You are on a newer version. Please downgrade to the latest available version."
-                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
+                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Apply
                 else:
                     message = "Server error, Please try again later."
                     buttons = QMessageBox.StandardButton.Ok
@@ -662,12 +659,15 @@ class PreferencesApp(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Information)
                 msg_box.setStandardButtons(buttons)
 
-                # Rename the "Open" button to "Open Downloads Page"
                 open_button = msg_box.button(QMessageBox.StandardButton.Open)
                 if open_button:
                     open_button.setText("Open Downloads Page")
 
-                # Apply custom style with gradient background and transparent text area
+                download_button = msg_box.button(QMessageBox.StandardButton.Apply)
+                if download_button:
+                    download_button.setText("Download Latest Version")
+
+                # Apply the same styling as before
                 msg_box.setStyleSheet("""
                     QMessageBox {
                         background: qlineargradient(
@@ -708,12 +708,22 @@ class PreferencesApp(QWidget):
                         );
                     }
                 """)
+                
                 reply = msg_box.exec()
 
                 if reply == QMessageBox.StandardButton.Open:
                     QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
-
+                elif reply == QMessageBox.StandardButton.Apply:
+                    if platform.system() == 'Windows':
+                            logger.info("Downloading file for windows")
+                    elif platform.system() == 'Linux':
+                            logger.info("Downloading file for linux")
+                    elif platform.system() == 'Darwin':
+                            logger.info("Downloading file for macos")
+                    else:
+                            logger.error("Unsupported OS!")
                 return fetched_version
+
             else:
                 logger.error(f"Value key not found in response: {data}")
         except requests.exceptions.RequestException as e:

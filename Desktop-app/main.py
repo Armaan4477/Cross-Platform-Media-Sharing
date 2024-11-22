@@ -446,11 +446,15 @@ class MainApp(QWidget):
                     msg_box.setWindowTitle("Version Check")
                     msg_box.setText(message)
                     msg_box.setIcon(QMessageBox.Icon.Information)
-                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
+                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Apply)
 
                     open_button = msg_box.button(QMessageBox.StandardButton.Open)
                     if open_button:
                         open_button.setText("Open Downloads Page")
+
+                    download_button = msg_box.button(QMessageBox.StandardButton.Apply)
+                    if download_button:
+                      download_button.setText("Download Latest Version")
 
                     msg_box.setStyleSheet("""
                         QMessageBox {
@@ -496,6 +500,15 @@ class MainApp(QWidget):
 
                     if reply == QMessageBox.StandardButton.Open:
                         QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+                    elif reply == QMessageBox.StandardButton.Apply:
+                        if platform.system() == 'Windows':
+                                logger.info("Downloading file for windows")
+                        elif platform.system() == 'Linux':
+                                logger.info("Downloading file for linux")
+                        elif platform.system() == 'Darwin':
+                                logger.info("Downloading file for macos")
+                        else:
+                                logger.error("Unsupported OS!")
 
                 return fetched_version
             else:
