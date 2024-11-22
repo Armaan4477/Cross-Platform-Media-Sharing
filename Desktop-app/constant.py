@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.4"  # Set the current version of the json config file
+current_version = "5.5.2"  # Set the current version of the json config file
 app_version = "3.3.0"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 def get_config_file_path():
@@ -87,7 +87,9 @@ if not os.path.exists(config_file):
         "max_filesize": 1000,
         "encryption": False,
         "android_encryption": False,
-        "show_warning": True
+        "show_warning": True,
+        "check_update": True
+
     }
 
     write_config(default_config, config_file)
@@ -108,7 +110,8 @@ else:
             "max_filesize": 1000,
             "encryption": False,
             "android_encryption": False,
-            "show_warning": True
+            "show_warning": True,
+            "check_update": True
         }
         
         write_config(default_config, config_file)

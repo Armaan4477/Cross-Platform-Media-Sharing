@@ -126,6 +126,12 @@ class PreferencesApp(QWidget):
         self.style_checkbox(self.show_warning_toggle)
         layout.addWidget(self.show_warning_toggle)
 
+        # Show Warning Toggle
+        self.show_update_toggle = QCheckBox('Auto-check for updates', self)
+        self.show_update_toggle.setFont(QFont("Arial", 18))
+        self.style_checkbox(self.show_update_toggle)
+        layout.addWidget(self.show_update_toggle)
+
         # Submit and Main Menu buttons
         buttons_layout = QHBoxLayout()
 
@@ -320,19 +326,24 @@ class PreferencesApp(QWidget):
         self.app_version = config["app_version"]
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
+        self.max_filesize = config["max_filesize"]
         self.encryption_toggle.setChecked(config["encryption"])
         self.android_encryption=(config["android_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
+        self.show_update_toggle.setChecked(config["check_update"])
         self.original_preferences = config.copy()
         logger.info("Loaded preferences- json_version: %s", self.version)
         logger.info("Loaded preferences- app_version: %s", self.app_version)
         logger.info("Loaded preferences- android_encryption: %s", self.android_encryption)
+        logger.info("Loaded preferences- show_warning: %s", self.show_warning_toggle.isChecked())
+        logger.info("Loaded preferences- check_update: %s", self.show_update_toggle.isChecked())
 
     def submitPreferences(self):
         device_name = self.device_name_input.text()
         save_to_path = self.save_to_path_input.text()
         encryption = self.encryption_toggle.isChecked()
         show_warning = self.show_warning_toggle.isChecked()  # Get show_warning toggle state
+        check_update = self.show_update_toggle.isChecked()
 
         if not device_name:
             msg_box = QMessageBox(self)
@@ -390,9 +401,11 @@ class PreferencesApp(QWidget):
             "app_version": self.app_version,
             "device_name": device_name,
             "save_to_directory": save_to_path,
+            "max_filesize": self.max_filesize,
             "encryption": encryption,
             "android_encryption": self.android_encryption,
-            "show_warning": show_warning  # Save show_warning state
+            "show_warning": show_warning,  # Save show_warning state
+            "check_update": check_update
         }
 
         write_config(preferences)
@@ -532,9 +545,11 @@ class PreferencesApp(QWidget):
             "app_version": self.app_version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
+            "max_filesize": self.max_filesize,
             "encryption": self.encryption_toggle.isChecked(),
             "android_encryption": self.android_encryption,
-            "show_warning": self.show_warning_toggle.isChecked()  # Get show_warning toggle state
+            "show_warning": self.show_warning_toggle.isChecked(),  # Get show_warning toggle state
+            "check_update": self.show_update_toggle.isChecked()
         }
         return current_preferences != self.original_preferences
     
