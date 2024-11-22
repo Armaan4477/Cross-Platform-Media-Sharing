@@ -144,9 +144,29 @@ def get_broadcast():
     return broadcast_address
 #com.an.Datadash
 
+def get_platform_link():
+    if platform.system() == 'Windows':
+            platform_name = 'windows'
+    elif platform.system() == 'Linux':
+            platform_name = 'linux'
+    elif platform.system() == 'Darwin':
+            platform_name = 'macos'
+    else:
+            logger.error("Unsupported OS!")
+            return None
+
+    # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+    # platform_name = 'auga'
+    # platform_name = 'buga'
+    # platform_name = 'cuga'
+        
+    url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+    return url
+
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
+PLATFORM_LINK = get_platform_link()
 
 logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash

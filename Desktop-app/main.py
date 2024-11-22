@@ -9,7 +9,7 @@ from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
-from constant import logger, get_config
+from constant import logger, get_config, PLATFORM_LINK
 from PyQt6.QtSvg import QSvgRenderer
 import math
 import platform
@@ -430,22 +430,7 @@ class MainApp(QWidget):
 
 
     def fetch_platform_value(self):
-        if platform.system() == 'Windows':
-            platform_name = 'windows'
-        elif platform.system() == 'Linux':
-            platform_name = 'linux'
-        elif platform.system() == 'Darwin':
-            platform_name = 'macos'
-        else:
-            logger.error("Unsupported OS!")
-            return None
-
-        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
-        # platform_name = 'auga'
-        # platform_name = 'buga'
-        # platform_name = 'cuga'
-        
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        url = PLATFORM_LINK
         
         try:
             response = requests.get(url)
