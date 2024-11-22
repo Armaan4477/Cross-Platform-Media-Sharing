@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.widget.Button;
@@ -250,7 +251,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         Log.d(TAG, "Starting file metadata creation");
 
-        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/metadata/");
         ensureDirectoryExists(metadataDirectory);
 
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
@@ -298,114 +299,86 @@ public class SendFileActivityPython extends AppCompatActivity {
 
     private String createFolderMetadata() throws IOException, JSONException {
         JSONArray metadata = new JSONArray();
-        Log.d(TAG, "Starting folder metadata creation");
 
-        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
-        Log.d(TAG, "Metadata directory path: " + metadataDirectory.getAbsolutePath());
-        ensureDirectoryExists(metadataDirectory);
+        // Add base folder info as first element
+        JSONObject baseInfo = new JSONObject();
+        baseInfo.put("base_folder_name", base_folder_name_path);
+        metadata.put(baseInfo);
+        Log.d(TAG, "Added base folder info: " + baseInfo.toString());
 
+        // Create metadata directory in app's external storage
+        File metadataDirectory = new File(Environment.getExternalStorageDirectory(),
+                "Android/media/" + getPackageName() + "/metadata/");
+        if (!metadataDirectory.exists()) {
+            boolean created = metadataDirectory.mkdirs();
+            Log.d(TAG, "Metadata directory creation result: " + created);
+        }
+
+        // Rest of metadata creation
+        Uri uri = Uri.parse(filePaths.get(0));
+        DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
+        if (documentFile != null) {
+            addFolderMetadataFromDocumentFile(documentFile, metadata, "");
+        }
+
+        // Save metadata
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
-        Log.d(TAG, "Metadata file path: " + metadataFilePath);
-
-        for (String filePath : filePaths) {
-            Uri uri = Uri.parse(filePath);
-
-            if ("content".equals(uri.getScheme())) {
-                DocumentFile documentFile = DocumentFile.fromTreeUri(this, uri);
-                if (documentFile != null) {
-                    if (documentFile.isDirectory()) {
-                        Log.d(TAG, "Processing directory from URI: " + filePath);
-                        addFolderMetadataFromDocumentFile(documentFile, metadata, "");
-                    } else if (documentFile.isFile()) {
-                        JSONObject fileMetadata = new JSONObject();
-                        String path = getPathFromUri(uri);
-                        fileMetadata.put("path", path);
-                        fileMetadata.put("size", documentFile.length());
-                        metadata.put(fileMetadata);
-                        Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
-                    } else {
-                        Log.e(TAG, "Unsupported content URI: " + filePath);
-                    }
-                } else {
-                    Log.e(TAG, "Could not resolve content URI: " + filePath);
-                }
-            } else {
-                File file = new File(filePath);
-                if (file.isDirectory()) {
-                    Log.d(TAG, "Processing directory: " + filePath);
-                    addFolderMetadata(file, metadata, "");
-                } else {
-                    Log.e(TAG, "File not found or not valid: " + filePath);
-                }
-            }
-        }
-
-        JSONObject base_folder_name = new JSONObject();
-        base_folder_name_path = filePaths.get(0);
-        if (base_folder_name_path.startsWith("content://")) {
-            DocumentFile baseFolderDocument = DocumentFile.fromTreeUri(this, Uri.parse(base_folder_name_path));
-            if (baseFolderDocument != null) {
-                base_folder_name_path = baseFolderDocument.getName();
-            }
-        } else {
-            File baseFolder = new File(base_folder_name_path);
-            if (baseFolder.exists()) {
-                base_folder_name_path = baseFolder.getName();
-            }
-        }
-        base_folder_name.put("base_folder_name", base_folder_name_path);
-        base_folder_name.put("path", ".delete");
-        base_folder_name.put("size", 0);
-        metadata.put(base_folder_name);
-
-        Log.d(TAG, "Metadata before saving: " + metadata.toString());
-
-        try {
-            saveMetadataToFile(metadataFilePath, metadata);
-            metadataCreated = true;
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create metadata: " + e.getMessage(), e);
-            metadataCreated = false;
-        }
+        saveMetadataToFile(metadataFilePath, metadata);
+        Log.d(TAG, "Metadata saved to: " + metadataFilePath);
 
         return metadataFilePath;
     }
 
-    private void addFolderMetadataFromDocumentFile(DocumentFile folder, JSONArray metadata, String basePath) throws JSONException {
-        Log.d(TAG, "Traversing DocumentFile folder: " + folder.getUri().toString());
-        DocumentFile[] files = folder.listFiles();
-        if (files != null) {
-            for (DocumentFile file : files) {
-                JSONObject fileMetadata = new JSONObject();
-                String path = basePath + file.getName();
-                fileMetadata.put("path", path + (file.isDirectory() ? "/" : ""));
-                fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
-                metadata.put(fileMetadata);
-                Log.d(TAG, "Added metadata: " + fileMetadata.toString());
+    private void addFolderMetadataFromDocumentFile(DocumentFile folder, JSONArray metadata, String relativePath) throws JSONException {
+        String folderName = folder.getName();
+        String currentRelativePath = relativePath.isEmpty() ? folderName : relativePath + "/" + folderName;
 
-                if (file.isDirectory()) {
-                    addFolderMetadataFromDocumentFile(file, metadata, path + "/");
-                }
+        // Add metadata for the current folder
+        JSONObject folderMetadata = new JSONObject();
+        folderMetadata.put("path", currentRelativePath + "/");
+        folderMetadata.put("size", 0); // Directories have size 0
+        metadata.put(folderMetadata);
+        Log.d(TAG, "Added folder metadata: " + folderMetadata.toString());
+
+        // Recursively process contents
+        for (DocumentFile file : folder.listFiles()) {
+            if (file.isDirectory()) {
+                addFolderMetadataFromDocumentFile(file, metadata, currentRelativePath);
+            } else if (file.isFile()) {
+                String fileRelativePath = currentRelativePath + "/" + file.getName();
+                JSONObject fileMetadata = new JSONObject();
+                fileMetadata.put("path", fileRelativePath);
+                fileMetadata.put("size", file.length());
+                metadata.put(fileMetadata);
+                Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
             }
-        } else {
-            Log.e(TAG, "Could not list files for directory: " + folder.getUri().toString());
         }
     }
 
-    private void addFolderMetadata(File folder, JSONArray metadata, String basePath) throws IOException, JSONException {
-        Log.d(TAG, "Traversing folder: " + folder.getAbsolutePath());
+    private void addFolderMetadata(File folder, JSONArray metadata, String relativePath) throws IOException, JSONException {
+        String folderName = folder.getName();
+        String currentRelativePath = relativePath.isEmpty() ? folderName : relativePath + "/" + folderName;
+
+        // Add metadata for the current folder
+        JSONObject folderMetadata = new JSONObject();
+        folderMetadata.put("path", currentRelativePath + "/");
+        folderMetadata.put("size", 0); // Directories have size 0
+        metadata.put(folderMetadata);
+        Log.d(TAG, "Added folder metadata: " + folderMetadata.toString());
+
+        // Recursively process contents
         File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {
-                JSONObject fileMetadata = new JSONObject();
-                String relativePath = basePath + file.getName();
-                fileMetadata.put("path", relativePath + (file.isDirectory() ? "/" : ""));
-                fileMetadata.put("size", file.isDirectory() ? 0 : file.length());
-                metadata.put(fileMetadata);
-                Log.d(TAG, "Added metadata: " + fileMetadata.toString());
-
                 if (file.isDirectory()) {
-                    addFolderMetadata(file, metadata, relativePath + "/");
+                    addFolderMetadata(file, metadata, currentRelativePath);
+                } else if (file.isFile()) {
+                    String fileRelativePath = currentRelativePath + "/" + file.getName();
+                    JSONObject fileMetadata = new JSONObject();
+                    fileMetadata.put("path", fileRelativePath);
+                    fileMetadata.put("size", file.length());
+                    metadata.put(fileMetadata);
+                    Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
                 }
             }
         } else {
@@ -574,12 +547,13 @@ public class SendFileActivityPython extends AppCompatActivity {
                 InputStream inputStream;
                 String finalRelativePath;
 
-                // Check if relativePath is null and initialize it based on the filePath
-                if (relativePath == null) {
+                // Initialize finalRelativePath based on relativePath or fallback to filePath
+                if (relativePath == null || relativePath.isEmpty()) {
                     finalRelativePath = new File(filePath).getName();
                 } else {
                     finalRelativePath = relativePath;
                 }
+                Log.d("SendFileActivity", "Initial relative path: " + finalRelativePath);
 
                 // Check if the filePath is a content URI
                 Uri fileUri = Uri.parse(filePath);
@@ -594,21 +568,33 @@ public class SendFileActivityPython extends AppCompatActivity {
                     if (cursor != null && cursor.moveToFirst()) {
                         // Retrieve the display name (actual file name)
                         int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                        finalRelativePath = cursor.getString(nameIndex);
+                        String contentUriFileName = cursor.getString(nameIndex);
                         cursor.close();
-                    } else {
+
+                        // Use contentUriFileName only if relativePath was null or empty
+                        if (relativePath == null || relativePath.isEmpty()) {
+                            finalRelativePath = contentUriFileName;
+                        }
+                    } else if (relativePath == null || relativePath.isEmpty()) {
+                        // Fallback to file name from URI path if cursor fails
                         finalRelativePath = new File(fileUri.getPath()).getName();
                     }
                 } else {
                     // If it's a file path, open it directly and extract the file name
                     File file = new File(fileUri.getPath());
                     inputStream = new FileInputStream(file);
-                    finalRelativePath = file.getName();
+
+                    // Use the file name only if relativePath was null or empty
+                    if (relativePath == null || relativePath.isEmpty()) {
+                        finalRelativePath = file.getName();
+                    }
                 }
 
                 // Make final variables to use inside AsyncTask
                 final InputStream finalInputStream = inputStream;
+                Log.d("SendFileActivity", "Sending final rel path: " + finalRelativePath);
                 final String finalPathToSend = finalRelativePath;
+                Log.d("SendFileActivity", "Sending final file: " + finalPathToSend);
                 final long fileSize = finalInputStream.available();
 
                 runOnUiThread(() -> {
@@ -681,74 +667,63 @@ public class SendFileActivityPython extends AppCompatActivity {
         }
     }
 
-    private void sendFolder(String folderPath) {
-        boolean encryptionFlag = false;  // Set to true if you want to encrypt the files before sending
+        private void sendFolder(String folderPath) {
+            // Convert the String folderPath to a Uri
+            Uri folderUri = Uri.parse(folderPath);  // Assuming folderPath is a content URI string
 
-        // Convert the String folderPath to a Uri
-        Uri folderUri = Uri.parse(folderPath);  // Assuming folderPath is a content URI string
+            executorService.execute(() -> {
+                try {
+                    // Create a DocumentFile from the tree URI to traverse the folder
+                    DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivityPython.this, folderUri);
 
-        // Ensure metadataFilePath is set and not null
-        if (metadataFilePath != null) {
-            // Send the metadata file first
-            sendFile(metadataFilePath, "");
-            metadataSent = true;
-        } else {
-            Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
-            return;
+                    if (folderDocument == null) {
+                        Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
+                        return;
+                    }
+
+                    // Send the metadata file first
+                    if (metadataFilePath != null) {
+                        sendFile(metadataFilePath, "");
+                        metadataSent = true;
+                    } else {
+                        Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
+                        return;
+                    }
+
+                    // Start recursion with empty relative path (top-level folder will be included)
+                    sendDocumentFile(folderDocument, "");
+                } catch (Exception e) {
+                    Log.e("SendFileActivity", "Error sending folder", e);
+                }
+            });
         }
 
-        executorService.execute(() -> {
-            try {
-                // Create a DocumentFile from the tree URI to traverse the folder
-                DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivityPython.this, folderUri);
+        // Modified recursive method to send the contents of a DocumentFile (folder or file)
+        private void sendDocumentFile(DocumentFile documentFile, String relativePath) {
+            if (documentFile.isDirectory()) {
+                String folderName = documentFile.getName();
+                String currentRelativePath = relativePath.isEmpty() ? folderName : relativePath + "/" + folderName;
 
-                if (folderDocument == null) {
-                    Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
-                    return;
+                // Recursively send contents
+                for (DocumentFile file : documentFile.listFiles()) {
+                    sendDocumentFile(file, currentRelativePath);
                 }
+            } else if (documentFile.isFile()) {
+                String fileRelativePath = relativePath.isEmpty() ? documentFile.getName() : relativePath + "/" + documentFile.getName();
+                Log.d("SendFileActivity", "Sending file: " + fileRelativePath);
 
-                // Check if the DocumentFile is a directory (folder)
-                if (folderDocument.isDirectory()) {
-                    // Send the folder contents recursively
-                    sendDocumentFile(folderDocument, "", encryptionFlag);
-                } else {
-                    Log.e("SendFileActivity", "Error: The provided URI is not a folder.");
+                try {
+                    InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
+                    if (inputStream != null) {
+                        sendFile(documentFile.getUri().toString(), fileRelativePath);
+                        inputStream.close();
+                    }
+                } catch (IOException e) {
+                    Log.e("SendFileActivity", "Error sending file: " + fileRelativePath, e);
                 }
-            } catch (Exception e) {
-                Log.e("SendFileActivity", "Error sending folder", e);
-            }
-        });
-    }
-
-    // Recursive method to send the contents of a DocumentFile (folder or file)
-    private void sendDocumentFile(DocumentFile documentFile, String parentPath, boolean encryptionFlag) {
-        if (documentFile.isDirectory()) {
-            // Send the directory creation command
-            String directoryPath = parentPath + documentFile.getName() + "/";
-            Log.d("SendFileActivity", "Directory creation needed for: " + directoryPath);
-
-            // Recursively send the contents of the directory
-            for (DocumentFile file : documentFile.listFiles()) {
-                sendDocumentFile(file, directoryPath, encryptionFlag);
-            }
-        } else if (documentFile.isFile()) {
-            // It's a file, send the file
-            String relativeFilePath = parentPath + documentFile.getName();
-            Log.d("SendFileActivity", "Sending file: " + relativeFilePath);
-
-            try {
-                InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
-                if (inputStream != null) {
-                    // Send the file data via your existing send logic
-                    sendFile(documentFile.getUri().toString(), relativeFilePath);
-                    inputStream.close();
-                }
-            } catch (IOException e) {
-                Log.e("SendFileActivity", "Error sending file: " + relativeFilePath, e);
             }
         }
     }
-}
 
     @Override
     protected void onDestroy() {

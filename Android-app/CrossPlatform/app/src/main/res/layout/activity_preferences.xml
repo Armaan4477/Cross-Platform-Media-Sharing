@@ -119,6 +119,29 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/app_version_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:text="App Version: "
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_to_path_reset_button" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/check_for_update_button"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/state_list_drawable"
+        android:text="Check for Update"
+        android:textColor="@android:color/white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/app_version_label" />
+
+
     <!-- Reset Device Name Button -->
 
     <!-- Save to Path Label -->

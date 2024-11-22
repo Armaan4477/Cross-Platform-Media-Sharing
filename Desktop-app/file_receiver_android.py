@@ -10,6 +10,7 @@ from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 import subprocess
 import platform
+import time
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -29,24 +30,48 @@ class ReceiveWorkerJava(QThread):
         self.metadata = None
         self.destination_folder = None
         self.store_client_ip = client_ip
+        self.base_folder_name = ''
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
 
     def initialize_connection(self):
-        # Close all previous server_sockets
-        if self.server_skt:
-            self.server_skt.close()
-        if self.client_skt:
-            self.client_skt.close()
-        self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        """Initialize server socket with proper reuse settings"""
         try:
-            # Bind the server socket to a local port
+            # Close existing sockets
+            if self.server_skt:
+                try:
+                    self.server_skt.shutdown(socket.SHUT_RDWR)
+                    self.server_skt.close()
+                except:
+                    pass
+                
+            self.server_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            
+            # Set socket options
+            self.server_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if platform.system() != 'Windows':
+                try:
+                    self.server_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                except AttributeError:
+                    logger.debug("SO_REUSEPORT not available on this platform")
+            
+            # Configure timeout
+            self.server_skt.settimeout(60)
+            
+            # Bind and listen
             self.server_skt.bind(('', RECEIVER_DATA))
-            # Start listening for incoming connections
             self.server_skt.listen(1)
-            print("Waiting for a connection...")
+            logger.debug("Server initialized on port %d", RECEIVER_DATA)
+            
+        except OSError as e:
+            if e.errno == 48:  # Address already in use
+                logger.error("Port %d is in use, waiting to retry...", RECEIVER_DATA)
+                time.sleep(1)
+                self.initialize_connection()
+            else:
+                raise
         except Exception as e:
-            QMessageBox.critical(None, "Server Error", f"Failed to initialize the server: {str(e)}")
-            return None
+            logger.error("Failed to initialize server: %s", str(e))
+            raise
 
     def accept_connection(self):
         if self.client_skt:
@@ -56,7 +81,9 @@ class ReceiveWorkerJava(QThread):
             self.client_skt, self.client_address = self.server_skt.accept()
             print(f"Connected to {self.client_address}")
         except Exception as e:
-            QMessageBox.critical(None, "Connection Error", f"Failed to accept connection: {str(e)}")
+            error_message = f"Failed to accept connection: {str(e)}"
+            logger.error(error_message)
+            self.error_occurred.emit("Connection Error", error_message, "")
             return None
 
     def run(self):
@@ -77,8 +104,9 @@ class ReceiveWorkerJava(QThread):
 
 
     def receive_files(self):
-        self.broadcasting = False  # Stop broadcasting
+        self.broadcasting = False
         logger.debug("File reception started.")
+        is_folder_transfer = False
 
         while True:
             try:
@@ -93,7 +121,6 @@ class ReceiveWorkerJava(QThread):
                 if encryption_flag[-1] == 't':
                     encrypted_transfer = True
                 elif encryption_flag[-1] == 'h':
-                    # Halting signal, break transfer and decrypt files
                     if self.encrypted_files:
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
@@ -109,108 +136,77 @@ class ReceiveWorkerJava(QThread):
                 
                 if file_name_size == 0:
                     logger.debug("End of transfer signal received.")
-                    break  # End of transfer signal
+                    break
 
                 # Receive file name and normalize the path
                 file_name = self._receive_data(self.client_skt, file_name_size).decode()
-
-                # Convert Windows-style backslashes to Unix-style forward slashes
                 file_name = file_name.replace('\\', '/')
-                logger.debug("Normalized file name: %s", file_name)
+                logger.debug("Original file name: %s", file_name)
 
                 # Receive file size
                 file_size_data = self.client_skt.recv(8)
                 file_size = struct.unpack('<Q', file_size_data)[0]
-                logger.debug("Receiving file %s, size: %d bytes", file_name, file_size)
 
-                logger.debug("Reached 1")
-
-                received_size = 0
-
-                # Check if it's metadata
-                if file_name == 'metadata.json':
-                    logger.debug("Receiving metadata file.")
-                    self.metadata = self.receive_metadata(file_size)
-                    ## Check if the 2nd last position of metadata is "base_folder_name" and it exists
-                    if self.metadata[-1].get('base_folder_name', '') and self.metadata[-1]['base_folder_name'] != '':
-                        self.destination_folder = self.create_folder_structure(self.metadata)
-                        logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
-                    else:
-                        ## If not, set the destination folder to the default directory
-                        self.destination_folder = get_config()["save_to_directory"]
-                    logger.debug("Metadata processed. Destination folder set to: %s", self.destination_folder)
-                else:
-                    try:
-                        # Determine the correct path using metadata
-                        if self.metadata:
-                            relative_path = self.get_relative_path_from_metadata(file_name)
-                            file_path = os.path.join(self.destination_folder, relative_path)
-                            logger.debug("Constructed file path from metadata: %s", file_path)
-
-                            # Ensure that the directory exists for the file
-                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                            logger.debug("Directory structure created or verified for: %s", os.path.dirname(file_path))
+                try:
+                    # Handle metadata.json
+                    if file_name == 'metadata.json':
+                        logger.debug("Receiving metadata file.")
+                        self.metadata = self.receive_metadata(file_size)
+                        
+                        # Check if this is a folder transfer
+                        is_folder_transfer = any(file_info.get('path', '').endswith('/') 
+                                            for file_info in self.metadata)
+                        
+                        if is_folder_transfer:
+                            self.destination_folder = self.create_folder_structure(self.metadata)
                         else:
-                            # Fallback if metadata is not available
-                            file_path = self.get_file_path(file_name)
-                            logger.debug("Constructed file path without metadata: %s", file_path)
-                            #com.an.Datadash
+                            # For single files, use default directory
+                            self.destination_folder = get_config()["save_to_directory"]
+                        continue
 
-                        # Check if file exists in the receiving directory
-                        original_name, extension = os.path.splitext(file_name)
-                        logger.debug("Original name: %s, Extension: %s", original_name, extension)
+                    # Determine file path based on transfer type
+                    if is_folder_transfer and self.metadata:
+                        # Handle folder structure
+                        relative_file_path = file_name
+                        if self.base_folder_name and relative_file_path.startswith(self.base_folder_name + '/'):
+                            relative_file_path = relative_file_path[len(self.base_folder_name) + 1:]
+                        full_file_path = os.path.join(self.destination_folder, relative_file_path)
+                    else:
+                        # Handle single file
+                        full_file_path = os.path.join(self.destination_folder, os.path.basename(file_name))
 
-                        # Handle file name conflict
-                        i = 1
-                        while os.path.exists(file_path):
-                            # Update the file name to avoid conflict
-                            file_name = f"{original_name} ({i}){extension}"
-                            logger.debug("File name already exists. Trying new name: %s", file_name)
+                    # Ensure directory exists and handle duplicates
+                    os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+                    full_file_path = self._get_unique_file_name(full_file_path)
+                    logger.debug(f"Saving file to: {full_file_path}")
 
-                            # Re-construct the file path with the new name
-                            if self.metadata:
-                                relative_path = self.get_relative_path_from_metadata(file_name)
-                                file_path = os.path.join(self.destination_folder, relative_path)
-                            else:
-                                file_path = self.get_file_path(file_name)
-                                
-                            # Ensure the directory exists for the new file path
-                            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                            i += 1
-
-                    except Exception as e:
-                        logger.error("Error while checking file existence: %s", str(e))
-                        pass
-
-                    # Normalize the final file path
-                    file_path = os.path.normpath(file_path)
-
-                    # Check for encrypted transfer
-                    if encrypted_transfer:
-                        self.encrypted_files.append(file_path)
-                        logger.debug("File marked for decryption: %s", file_path)
-
-                    # Receive file data in chunks
-                    with open(file_path, "wb") as f:
-                        while received_size < file_size:
-                            chunk_size = min(4096, file_size - received_size)
-                            data = self._receive_data(self.client_skt, chunk_size)
+                    # Receive file data
+                    with open(full_file_path, "wb") as f:
+                        received_size = 0
+                        remaining = file_size
+                        while remaining > 0:
+                            chunk_size = min(4096, remaining)
+                            data = self.client_skt.recv(chunk_size)
                             if not data:
-                                logger.error("Failed to receive data. Connection may have been closed.")
-                                break
+                                raise ConnectionError("Connection lost during file reception.")
                             f.write(data)
                             received_size += len(data)
-                            logger.debug("Received %d/%d bytes for file %s", received_size, file_size, file_name)
-                            self.progress_update.emit(received_size * 100 // file_size)
+                            remaining -= len(data)
+                            progress = int(received_size * 100 / file_size)
+                            self.progress_update.emit(progress)
+
+                    if encrypted_transfer:
+                        self.encrypted_files.append(full_file_path)
+
+                except Exception as e:
+                    logger.error(f"Error saving file {file_name}: {str(e)}")
 
             except Exception as e:
                 logger.error("Error during file reception: %s", str(e))
                 break
 
-        self.broadcasting = True  # Resume broadcasting
+        self.broadcasting = True
         logger.debug("File reception completed.")
-        #com.an.Datadash
-
 
     def _receive_data(self, socket, size):
         """Helper function to receive a specific amount of data."""
@@ -237,66 +233,41 @@ class ReceiveWorkerJava(QThread):
 
     def create_folder_structure(self, metadata):
         """Create folder structure based on metadata."""
-        # Get the default directory from configuration
         default_dir = get_config()["save_to_directory"]
         
         if not default_dir:
             raise ValueError("No save_to_directory configured")
-        #com.an.Datadash
         
-        # Extract the base folder name from the last metadata entry
-        top_level_folder = metadata[-1].get('base_folder_name', '')
-        if not top_level_folder:
+        # Extract base folder name from paths
+        base_folder_name = None
+        for file_info in metadata:
+            path = file_info.get('path', '')
+            if path.endswith('/'):
+                base_folder_name = path.rstrip('/').split('/')[0]
+                logger.debug("Found base folder name: %s", base_folder_name)
+                break
+
+        # If base folder name not found, use the last entry
+        if not base_folder_name:
+            base_folder_name = metadata[-1].get('base_folder_name', '')
+            logger.debug("Base folder name from last metadata entry: %s", base_folder_name)
+
+        if not base_folder_name:
             raise ValueError("Base folder name not found in metadata")
         
-        if "primary" in top_level_folder:
-            top_level_folder = top_level_folder.replace("primary%3A", "")
-            top_level_folder = top_level_folder.replace("%2F", "")
-        
-        top_level_folder = top_level_folder.split('/')[-1]
-
-        # Define the initial destination folder path
-        destination_folder = os.path.join(default_dir, top_level_folder)
-
-        # Check if the destination folder already exists, and if it does, add a "(i)" suffix
+        # Handle duplicate root folder name
+        destination_folder = os.path.join(default_dir, base_folder_name)
         destination_folder = self._get_unique_folder_name(destination_folder)
-
         logger.debug("Destination folder: %s", destination_folder)
-
-        # Create the destination folder if it does not exist
+        
+        # Create the root folder if it does not exist
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
-            logger.debug("Created base folder: %s", destination_folder)
-
-        # Track created folders to avoid duplicates
-        created_folders = set()
-        created_folders.add(destination_folder)
-
-        # Process each file info in metadata (excluding the last entry)
-        for file_info in metadata[:-1]:  # Exclude the last entry (base folder info)
-            # Skip any paths marked for deletion
-            if file_info['path'] == '.delete':
-                continue
-            
-            # Get the folder path from the file info
-            folder_path = os.path.dirname(file_info['path'])
-            if folder_path:
-                # Create the full folder path
-                full_folder_path = os.path.join(destination_folder, folder_path)
-                
-                # Check if the folder has already been created
-                if full_folder_path not in created_folders:
-                    # Ensure that the directory does not override existing data by getting a unique folder name
-                    unique_folder_path = self._get_unique_folder_name(full_folder_path)
-                    
-                    # Create the directory if it does not exist
-                    if not os.path.exists(unique_folder_path):
-                        os.makedirs(unique_folder_path)
-                        logger.debug("Created folder: %s", unique_folder_path)
-
-                    # Add the folder to the set of created folders
-                    created_folders.add(unique_folder_path)
-
+            logger.debug("Created root folder: %s", destination_folder)
+        
+        # Store base folder name for use in receive_files
+        self.base_folder_name = base_folder_name
+        
         return destination_folder
 
     def _get_unique_folder_name(self, folder_path):
@@ -307,6 +278,16 @@ class ReceiveWorkerJava(QThread):
             folder_path = f"{base_folder_path} ({i})"
             i += 1
         return folder_path
+
+    def _get_unique_file_name(self, file_path):
+        """Append a unique (i) to file name if it already exists."""
+        base, extension = os.path.splitext(file_path)
+        i = 1
+        new_file_path = file_path
+        while os.path.exists(new_file_path):
+            new_file_path = f"{base} ({i}){extension}"
+            i += 1
+        return new_file_path
     #com.an.Datadash
 
 
@@ -325,10 +306,34 @@ class ReceiveWorkerJava(QThread):
         return os.path.join(default_dir, file_name)
     
     def close_connection(self):
-        if self.client_skt:
-            self.client_skt.close()
-        if self.server_skt:
-            self.server_skt.close()
+        """Safely close all network connections"""
+        for sock in [self.client_skt, self.server_skt]:
+            if sock:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except:
+                    pass
+                finally:
+                    try:
+                        sock.close()
+                    except:
+                        pass
+        
+        self.client_skt = None
+        self.server_skt = None
+        logger.debug("All connections closed")
+
+    def stop(self):
+        """Stop all operations and cleanup resources"""
+        try:
+            self.broadcasting = False
+            self.close_connection()
+            self.quit()
+            self.wait(2000)  # Wait up to 2 seconds for thread to finish
+            if self.isRunning():
+                self.terminate()
+        except Exception as e:
+            logger.error(f"Error during worker stop: {e}")
 
 class ReceiveAppPJava(QWidget):
     progress_update = pyqtSignal(int)
@@ -550,28 +555,45 @@ class ReceiveAppPJava(QWidget):
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
 
+    def show_error_message(self, title, message, detailed_text):
+        QMessageBox.critical(self, title, message)
+
     def closeEvent(self, event):
+        """Handle application close event"""
         try:
-            """Override the close event to ensure everything is stopped properly."""
-            self.stop()
+            # Stop the typewriter effect
+            if hasattr(self, 'typewriter_timer'):
+                self.typewriter_timer.stop()
+                
+            # Stop file receiver and cleanup
+            if hasattr(self, 'file_receiver'):
+                self.file_receiver.stop()
+                self.file_receiver.close_connection()
+                
+                # Ensure thread is properly terminated
+                if not self.file_receiver.wait(3000):  # Wait up to 3 seconds
+                    self.file_receiver.terminate()
+                    self.file_receiver.wait()
+                    
+            # Stop any running movies
+            if hasattr(self, 'receiving_movie'):
+                self.receiving_movie.stop()
+            if hasattr(self, 'success_movie'):
+                self.success_movie.stop()
+                
         except Exception as e:
-            pass
+            logger.error(f"Error during shutdown: {e}")
         finally:
             event.accept()
 
-    def stop(self):
-        """Sets the stop signal to True and closes the socket if it's open."""
-        self.stop_signal = True
-        if self.client_skt:
-            try:
-                self.client_skt.close()
-            except Exception as e:
-                logger.error(f"Error while closing socket: {e}")
-        if self.server_skt:
-            try:
-                self.server_skt.close()
-            except Exception as e:
-                logger.error(f"Error while closing socket: {e}")
+    def __del__(self):
+        """Ensure cleanup on object destruction"""
+        try:
+            if hasattr(self, 'file_receiver'):
+                self.file_receiver.stop()
+                self.file_receiver.close_connection()
+        except:
+            pass
 
 if __name__ == '__main__':
     import sys

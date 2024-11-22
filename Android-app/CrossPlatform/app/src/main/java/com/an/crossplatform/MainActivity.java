@@ -1,14 +1,20 @@
 package com.an.crossplatform;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageButton;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import org.json.JSONObject;
 
@@ -18,13 +24,20 @@ import android.content.Context;
 import android.app.AlertDialog;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.widget.Toast;
+
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int REQUEST_CODE_STORAGE_PERMISSION = 1;
+    private static final int REQUEST_CODE_MANAGE_STORAGE_PERMISSION = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        requestStoragePermissions();
 
         createConfigFileIfNotExists();
         //createdownloadfolder();
@@ -65,6 +78,58 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
+    }
+
+    private void requestStoragePermissions() {
+        if (!Environment.isExternalStorageManager()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Permission Required")
+                    .setMessage("This app needs access to manage all files on your device to save the transferred files. Please grant the permission by clicking the grant button then allowing access to the app.")
+                    .setPositiveButton("Grant Permission", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                Uri.parse("package:" + getPackageName()));
+                        startActivityForResult(intent, REQUEST_CODE_MANAGE_STORAGE_PERMISSION);
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        dialog.dismiss();
+                        Toast.makeText(this, "Storage permission is required. App will close.",
+                                Toast.LENGTH_SHORT).show();
+                        finish(); // Close the activity
+                    })
+                    .setCancelable(false)
+                    .show();
+        }
+    }
+
+    // Handle the result from permissions dialog
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            // Check if permissions are granted
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Storage permission granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // Handle result for Android 11 MANAGE_EXTERNAL_STORAGE request
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_CODE_MANAGE_STORAGE_PERMISSION) {
+            if (Environment.isExternalStorageManager()) {
+                Toast.makeText(this, "All files access granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "All files access permission denied. App will close.",
+                        Toast.LENGTH_SHORT).show();
+                finish(); // Close the app if permission was denied
+            }
+        }
     }
 
     private void createConfigFileIfNotExists() {

@@ -25,6 +25,17 @@ import java.util.HashMap;
 import java.util.Map;
 import android.widget.ImageButton;
 
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.widget.TextView;
+
+import android.os.Handler;
+import android.os.Looper;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import androidx.appcompat.app.AlertDialog;
+
+
 public class PreferencesActivity extends AppCompatActivity {
 
     private EditText deviceNameInput;
@@ -51,6 +62,10 @@ public class PreferencesActivity extends AppCompatActivity {
         Button mainMenuButton = findViewById(R.id.main_menu_button);
         Button btnCredits = findViewById(R.id.btn_credits);
 
+        // Set the app version
+        TextView appVersionLabel = findViewById(R.id.app_version_label);
+        appVersionLabel.setText("App Version: " + getVersionName());
+
         // Load saved preferences from internal storage
         loadPreferences();
 
@@ -64,7 +79,138 @@ public class PreferencesActivity extends AppCompatActivity {
             Intent intent = new Intent(PreferencesActivity.this, CreditsActivity.class);
             startActivity(intent);
         });
+
+        // Fetch version name and set it to the TextView
+        String versionName = getVersionName();
+
+        // Handle "Check for Update" button click
+        Button checkForUpdateButton = findViewById(R.id.check_for_update_button);
+        checkForUpdateButton.setOnClickListener(v -> checkForUpdates());
     }
+
+    // Method to get version name dynamically
+    private String getVersionName() {
+        try {
+            // Fetch version name from the app's PackageInfo
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String versionName = packageInfo.versionName;
+
+            // Log the version name
+            Log.d("AppVersion", "Version Name: " + versionName);
+
+            return versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            Log.e("AppVersion", "Version Name not found", e);
+            return "Unknown";
+        }
+
+    }
+
+    private void checkForUpdates() {
+        // Create a new thread for the network operation
+        new Thread(() -> {
+            String apiVersion = null;
+            try {
+                // Define the API URL
+                URL url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
+
+                // Open a connection
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                // Check the response code
+                int responseCode = connection.getResponseCode();
+                if (responseCode == 200) { // Success
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+
+                    // Read the response
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    reader.close();
+
+                    // Parse the JSON response to extract the version value
+                    JSONObject jsonObject = new JSONObject(response.toString());
+                    apiVersion = jsonObject.getString("value");
+                } else {
+                    Log.e("CheckForUpdates", "Failed to fetch version, Response Code: " + responseCode);
+                }
+            } catch (Exception e) {
+                Log.e("CheckForUpdates", "Error fetching updates", e);
+            }
+
+            // Process the result on the main thread
+            String finalApiVersion = apiVersion;
+            new Handler(Looper.getMainLooper()).post(() -> processVersionCheckResult(finalApiVersion));
+        }).start();
+    }
+
+    // Method to process the version check result on the main thread
+    private void processVersionCheckResult(String apiVersion) {
+        if (apiVersion != null) {
+            try {
+                // Get the app's version
+                String appVersion = getVersionName();
+
+                // Split both versions into parts
+                String[] apiParts = apiVersion.split("\\.");
+                String[] appParts = appVersion.split("\\.");
+
+                // Compare the versions part by part
+                for (int i = 0; i < Math.min(apiParts.length, appParts.length); i++) {
+                    int apiPart = Integer.parseInt(apiParts[i]);
+                    int appPart = Integer.parseInt(appParts[i]);
+
+                    if (apiPart > appPart) {
+                        showMessageDialog("App is older", "Your app version is outdated. Please update to the latest version.", true);
+                        return;
+                    } else if (apiPart < appPart) {
+                        showMessageDialog("Please downgrade", "Your app version is newer than the publicly available version. Downgrade to ensure compatibility.", true);
+                        return;
+                    }
+                }
+
+                // If all parts are equal
+                showMessageDialog("Version is up to date", "Your app is up to date.", false);
+            } catch (Exception e) {
+                Log.e("CheckForUpdates", "Error parsing version", e);
+                showMessageDialog("Error", "Error checking for updates.", false);
+            }
+        } else {
+            showMessageDialog("Error", "Failed to check for updates.", false);
+        }
+    }
+
+    // Helper method to show a message
+    private void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void showMessageDialog(String title, String message, boolean showDownloadsButton) {
+        // Build the dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Close", (dialog, which) -> {
+                    dialog.dismiss(); // Dismiss the dialog when "Close" is clicked
+                });
+
+        if (showDownloadsButton) {
+            builder.setNegativeButton("Open Downloads Page", (dialog, which) -> {
+                // Open the downloads page in a browser
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download.html"));
+                startActivity(browserIntent);
+            });
+        }
+
+        // Show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
 
     private void loadPreferences() {
         String jsonString = readJsonFromFile();

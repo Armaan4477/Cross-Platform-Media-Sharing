@@ -1,2 +1,4 @@
+wheel
 PyQt6
 cryptography
+requests

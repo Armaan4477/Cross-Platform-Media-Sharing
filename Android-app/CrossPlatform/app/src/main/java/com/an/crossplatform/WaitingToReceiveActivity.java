@@ -45,7 +45,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         setContentView(R.layout.activity_waiting_to_receive);
 
         TextView txtWaiting = findViewById(R.id.txt_waiting);
-        txtWaiting.setText("Waiting to receive file...");
+        txtWaiting.setText("Waiting to connect to sender...");
 
         // Get the device name from config.json in the internal storage
         String rawJson = readJsonFromFile();
