@@ -11,6 +11,8 @@ from credits_dialog import CreditsDialog
 from constant import logger,PLATFORM_LINK
 import requests
 import os
+import time
+from PyQt6.QtWidgets import QProgressDialog
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -831,13 +833,39 @@ class PreferencesApp(QWidget):
         try:
             response = requests.get(download_link, stream=True)
             response.raise_for_status()
+            total_size = int(response.headers.get('content-length', 0))
+            block_size = 8192  # 8 KB
+            progress_dialog = QProgressDialog("Downloading update...", "Cancel", 0, total_size, self)
+            progress_dialog.setWindowTitle("Download Progress")
+            progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+            progress_dialog.show()
+            downloaded_size = 0
+            start_time = time.time()
             filename = os.path.join(download_path, 'DataDash' + file_extension)
             with open(filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            print(f"File downloaded to {filename}")
+                for data in response.iter_content(block_size):
+                    if progress_dialog.wasCanceled():
+                        logger.info("Download canceled by user")
+                        f.close()
+                        os.remove(filename)
+                        return None
+                    f.write(data)
+                    downloaded_size += len(data)
+                    elapsed_time = time.time() - start_time
+                    speed = downloaded_size / elapsed_time if elapsed_time > 0 else 0
+                    remaining_time = (total_size - downloaded_size) / speed if speed > 0 else 0
+                    progress_dialog.setValue(downloaded_size)
+                    progress_dialog.setLabelText(
+                        f"Downloading update...\n"
+                        f"Speed: {speed / 1024:.2f} KB/s\n"
+                        f"Estimated time remaining: {remaining_time:.2f} seconds"
+                    )
+                    QApplication.processEvents()
+            progress_dialog.close()
+            QMessageBox.information(self, "Download Complete", f"File downloaded to {filename}")
         except Exception as e:
             logger.error(f"Failed to download file: {e}")
+            QMessageBox.critical(self, "Download Failed", "Failed to download the update.")
             return None
 
         return filename
