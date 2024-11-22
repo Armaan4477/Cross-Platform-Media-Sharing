@@ -161,10 +161,24 @@ def get_platform_link():
     url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
     return url
 
+def get_download_path():
+    #if condition to check the operating system, then get the location to the download folder
+    if platform.system() == 'Windows':
+        download_path = os.path.join(os.getenv('USERPROFILE'), 'Downloads')
+    elif platform.system() == 'Linux':
+        download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+    elif platform.system() == 'Darwin':
+        download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+    else:
+        logger.error("Unsupported OS!")
+        download_path = None 
+    return download_path
+
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
 PLATFORM_LINK = get_platform_link()
+DOWNLOAD_PATH = get_download_path()
 
 logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash

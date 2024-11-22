@@ -8,7 +8,7 @@ import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
-from constant import logger,PLATFORM_LINK
+from constant import logger,PLATFORM_LINK,DOWNLOAD_PATH
 import requests
 import os
 
@@ -716,10 +716,14 @@ class PreferencesApp(QWidget):
                 elif reply == QMessageBox.StandardButton.Apply:
                     if platform.system() == 'Windows':
                             logger.info("Downloading file for windows")
+                            logger.info(f"Download path: {DOWNLOAD_PATH}")
                     elif platform.system() == 'Linux':
                             logger.info("Downloading file for linux")
+                            logger.info(f"Download path: {DOWNLOAD_PATH}")
                     elif platform.system() == 'Darwin':
                             logger.info("Downloading file for macos")
+                            logger.info(f"Download path: {DOWNLOAD_PATH}")
+
                     else:
                             logger.error("Unsupported OS!")
                 return fetched_version

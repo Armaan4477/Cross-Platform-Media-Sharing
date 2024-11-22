@@ -9,7 +9,7 @@ from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
-from constant import logger, get_config, PLATFORM_LINK
+from constant import logger, get_config, PLATFORM_LINK, DOWNLOAD_PATH
 from PyQt6.QtSvg import QSvgRenderer
 import math
 import platform
@@ -503,10 +503,13 @@ class MainApp(QWidget):
                     elif reply == QMessageBox.StandardButton.Apply:
                         if platform.system() == 'Windows':
                                 logger.info("Downloading file for windows")
+                                logger.info(f"Download path: {DOWNLOAD_PATH}")
                         elif platform.system() == 'Linux':
                                 logger.info("Downloading file for linux")
+                                logger.info(f"Download path: {DOWNLOAD_PATH}")
                         elif platform.system() == 'Darwin':
                                 logger.info("Downloading file for macos")
+                                logger.info(f"Download path: {DOWNLOAD_PATH}")
                         else:
                                 logger.error("Unsupported OS!")
 
