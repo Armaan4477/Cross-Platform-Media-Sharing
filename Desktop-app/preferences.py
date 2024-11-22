@@ -127,7 +127,7 @@ class PreferencesApp(QWidget):
         layout.addWidget(self.show_warning_toggle)
 
         # Show Warning Toggle
-        self.show_update_toggle = QCheckBox('Auto-check for updates', self)
+        self.show_update_toggle = QCheckBox('Auto-check for updates during app launch', self)
         self.show_update_toggle.setFont(QFont("Arial", 18))
         self.style_checkbox(self.show_update_toggle)
         layout.addWidget(self.show_update_toggle)
