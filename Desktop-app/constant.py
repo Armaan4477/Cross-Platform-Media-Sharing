@@ -35,7 +35,6 @@ def get_config_file_path():
     os.makedirs(cache_dir, exist_ok=True)
     logger.info("Config directory created/ensured: %s", cache_dir)
     return os.path.join(cache_dir, config_file_name)
-#com.an.Datadash
 
 config_file = get_config_file_path()
 if config_file is None:
@@ -73,8 +72,6 @@ def get_config(filename=config_file):
     except FileNotFoundError:
         logger.warning("Configuration file %s not found. Returning empty config.", filename)
         return {}
-    #com.an.Datadash
-
 
 if not os.path.exists(config_file):
     file_path = get_default_path()
@@ -89,7 +86,6 @@ if not os.path.exists(config_file):
         "android_encryption": False,
         "show_warning": True,
         "check_update": True
-
     }
 
     write_config(default_config, config_file)
@@ -100,24 +96,27 @@ else:
 
     if "version" not in config_data or config_data["version"] != current_version:
         logger.warning("Configuration version mismatch or missing. Overwriting with default config.")
-        file_path = get_default_path()
-        
+
+        # Carry over existing values
+        device_name = config_data.get("device_name", platform.node())
+        save_to_directory = config_data.get("save_to_directory", get_default_path())
+        encryption = config_data.get("encryption", False)
+
         default_config = {
             "version": current_version,
             "app_version": app_version,
-            "device_name": platform.node(),
-            "save_to_directory": file_path,
+            "device_name": device_name,
+            "save_to_directory": save_to_directory,
             "max_filesize": 1000,
-            "encryption": False,
+            "encryption": encryption,
             "android_encryption": False,
             "show_warning": True,
             "check_update": True
         }
-        
+
         write_config(default_config, config_file)
     else:
         logger.info("Loaded configuration: %s", config_data)
-        #com.an.Datadash
 
 def get_broadcast():
     try:
@@ -142,7 +141,6 @@ def get_broadcast():
     broadcast_address = '.'.join(ip_parts)
     logger.info("Broadcast address determined: %s", broadcast_address)
     return broadcast_address
-#com.an.Datadash
 
 def get_platform_link():
     if platform.system() == 'Windows':
