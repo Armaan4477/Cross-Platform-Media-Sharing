@@ -9,7 +9,7 @@ from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
-from constant import logger, get_config, PLATFORM_LINK, UPDATE_DOWNLOAD
+from constant import logger, get_config, PLATFORM_LINK
 from PyQt6.QtSvg import QSvgRenderer
 import math
 import platform
@@ -441,20 +441,12 @@ class MainApp(QWidget):
                 fetched_version = data['value']
                 
                 if self.compare_versions(fetched_version, self.uga_version) > 0:
-                    message = "You are on an older version. Please update."
+                    message = "You are on an older version. Please go to app settings to update."
                     msg_box = QMessageBox(self)
                     msg_box.setWindowTitle("Version Check")
                     msg_box.setText(message)
                     msg_box.setIcon(QMessageBox.Icon.Information)
-                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Apply)
-
-                    open_button = msg_box.button(QMessageBox.StandardButton.Open)
-                    if open_button:
-                        open_button.setText("Open Downloads Page")
-
-                    download_button = msg_box.button(QMessageBox.StandardButton.Apply)
-                    if download_button:
-                      download_button.setText("Download Latest Version")
+                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
                     msg_box.setStyleSheet("""
                         QMessageBox {
@@ -496,12 +488,7 @@ class MainApp(QWidget):
                             );
                         }
                     """)
-                    reply = msg_box.exec()
-
-                    if reply == QMessageBox.StandardButton.Open:
-                        QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
-                    elif reply == QMessageBox.StandardButton.Apply:
-                            logger.info(f"Download path: {UPDATE_DOWNLOAD}")
+                    msg_box.exec()
 
                 return fetched_version
             else:

@@ -8,7 +8,7 @@ import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
-from constant import logger,PLATFORM_LINK,UPDATE_DOWNLOAD
+from constant import logger,PLATFORM_LINK
 import requests
 import os
 
@@ -714,7 +714,7 @@ class PreferencesApp(QWidget):
                 if reply == QMessageBox.StandardButton.Open:
                     QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
                 elif reply == QMessageBox.StandardButton.Apply:
-                    logger.info(f"Download path: {UPDATE_DOWNLOAD}")
+                    logger.info(f"Download path: {self.get_update_download()}")
                 return fetched_version
 
             else:
@@ -782,6 +782,64 @@ class PreferencesApp(QWidget):
             v2_parts.append(0)
         
         return (v1_parts > v2_parts) - (v1_parts < v2_parts)
+    
+    def get_update_download(self):
+        # Determine platform OS and download path
+        if platform.system() == 'Windows':
+            platform_os = 'windows'
+            download_path = os.path.join(os.getenv('USERPROFILE'), 'Downloads')
+        elif platform.system() == 'Linux':
+            platform_os = 'linux'
+            download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+        elif platform.system() == 'Darwin':
+            platform_os = 'macos'
+            download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+        else:
+            logger.error("Unsupported OS!")
+            return None
+
+        # Determine platform type
+        if platform.machine() == 'arm64':
+            platform_type = 'arm'
+        elif platform.machine() == 'x86_64':
+            platform_type = 'x64'
+        else:
+            logger.error("Unsupported platform type!")
+            return None
+
+        # Map platform combinations to download links
+        download_links = {
+            ('windows', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
+            ('windows', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
+            ('linux', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20x64)',
+            ('linux', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20arm)',
+            ('macos', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
+            ('macos', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
+        }
+
+        key = (platform_os, platform_type)
+        download_link = download_links.get(key)
+
+        if not download_link:
+            logger.error("Unsupported OS or architecture!")
+            return None
+
+        # Download the file into the download folder
+        try:
+            response = requests.get(download_link, stream=True)
+            response.raise_for_status()
+            filename = os.path.join(download_path, os.path.basename(download_link))
+            with open(filename, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            print(f"File downloaded to {filename}")
+        except Exception as e:
+            logger.error(f"Failed to download file: {e}")
+            return None
+
+        return filename
+        
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
