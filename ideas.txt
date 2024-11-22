@@ -1,6 +1,17 @@
-Overall IDEAS:
+Pending priority work:
+1) Android Encryption.
+2) Send more files button and go to main menu button in python and Android.
+3) Auto Check for Updates during app launch with option for user to enable/disable that feature
+4) Make config in python carry over important fields such as device name, path, encryption and show warnings to the new version when it updates itself.
+5) Make a inbuilt updater in android and python to download the latest versions and place it in the downloads folder.
+6) Redo windows built app to avoid Defender blocking the whole app.
+7) Bug fix in android app for self discovery(kill sender if receiver is activated and vice versa).
+8) Implement new config json overwrite feature like it is in python.
+9) Stable and Beta channels for users to test out.
 
-Future Ideas:
+
+
+Overall FUTURE IDEAS:
 1) Device discovery using bluetooth- Python/Android/IOS
 2) File transfer over bluetooth- Python/Android (bluetooth doesnt work well with non apple devices)
 3) File transfer over wifi direct- Python/Android/IOS
