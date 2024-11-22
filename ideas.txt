@@ -2,7 +2,7 @@ Pending priority work:
 1) Android Encryption.
 2) Send more files button and go to main menu button in python and Android.
 3) Auto Check for Updates in android app during app launch with option for user to enable/disable that feature
-4) Make a inbuilt updater in android and python to download the latest versions and place it in the downloads folder.
+4) Make a inbuilt updater in android to download the latest versions and place it in the downloads folder.
 5) Redo windows built app to avoid Defender blocking the whole app.
 6) Bug fix in android app for self discovery(kill sender if receiver is activated and vice versa).
 7) Implement new config json overwrite feature like it is in python.
