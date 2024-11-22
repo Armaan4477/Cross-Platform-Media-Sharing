@@ -402,8 +402,6 @@ class MainApp(QWidget):
             self.receive_app.show()
 
 
-
-
     def preferences_handler(self):
         logger.info("Started Preferences handler menu")
         self.hide()
@@ -431,6 +429,7 @@ class MainApp(QWidget):
 
     def fetch_platform_value(self):
         url = PLATFORM_LINK
+        logger.info(f"Fetching platform value from: {url}")
         
         try:
             response = requests.get(url)

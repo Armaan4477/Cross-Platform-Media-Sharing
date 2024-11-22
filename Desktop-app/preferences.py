@@ -624,6 +624,7 @@ class PreferencesApp(QWidget):
 
     def fetch_platform_value(self):
         url = PLATFORM_LINK
+        logger.info(f"Fetching platform value from: {url}")
         
         try:
             # Make a GET request to the API
