@@ -1,7 +1,7 @@
 Pending priority work:
 1) Android Encryption.
 2) Send more files button and go to main menu button in python and Android.
-3) Auto Check for Updates during app launch with option for user to enable/disable that feature
+3) Auto Check for Updates in android app during app launch with option for user to enable/disable that feature
 4) Make config in python carry over important fields such as device name, path, encryption and show warnings to the new version when it updates itself.
 5) Make a inbuilt updater in android and python to download the latest versions and place it in the downloads folder.
 6) Redo windows built app to avoid Defender blocking the whole app.
