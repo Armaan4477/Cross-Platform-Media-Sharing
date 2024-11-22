@@ -439,7 +439,7 @@ class MainApp(QWidget):
         else:
             logger.error("Unsupported OS!")
             return None
-        
+
         # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
         # platform_name = 'auga'
         # platform_name = 'buga'
@@ -448,85 +448,70 @@ class MainApp(QWidget):
         url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
         
         try:
-            # Make a GET request to the API
             response = requests.get(url)
-            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+            response.raise_for_status()
 
-            # Parse the JSON response
             data = response.json()
             if "value" in data:
                 logger.info(f"Value for python: {data['value']}")
                 fetched_version = data['value']
                 
-                if self.compare_versions(fetched_version, self.uga_version) == 0:
-                    message = "You are on the latest version."
-                    buttons = QMessageBox.StandardButton.Ok
-                elif self.compare_versions(fetched_version, self.uga_version) > 0:
+                if self.compare_versions(fetched_version, self.uga_version) > 0:
                     message = "You are on an older version. Please update."
-                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
-                elif self.compare_versions(fetched_version, self.uga_version) < 0:
-                    message = "You are on a newer version. Please downgrade to the latest available version."
-                    buttons = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open
-                else:
-                    message = "Server error, Please try again later."
-                    buttons = QMessageBox.StandardButton.Ok
+                    msg_box = QMessageBox(self)
+                    msg_box.setWindowTitle("Version Check")
+                    msg_box.setText(message)
+                    msg_box.setIcon(QMessageBox.Icon.Information)
+                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
 
-                msg_box = QMessageBox(self)
-                msg_box.setWindowTitle("Version Check")
-                msg_box.setText(message)
-                msg_box.setIcon(QMessageBox.Icon.Information)
-                msg_box.setStandardButtons(buttons)
+                    open_button = msg_box.button(QMessageBox.StandardButton.Open)
+                    if open_button:
+                        open_button.setText("Open Downloads Page")
 
-                # Rename the "Open" button to "Open Downloads Page"
-                open_button = msg_box.button(QMessageBox.StandardButton.Open)
-                if open_button:
-                    open_button.setText("Open Downloads Page")
+                    msg_box.setStyleSheet("""
+                        QMessageBox {
+                            background: qlineargradient(
+                                x1: 0, y1: 0, x2: 1, y2: 1,
+                                stop: 0 #b0b0b0,
+                                stop: 1 #505050
+                            );
+                            color: #FFFFFF;
+                            font-size: 16px;
+                        }
+                        QLabel {
+                            background-color: transparent;
+                        }
+                        QPushButton {
+                            background: qlineargradient(
+                                x1: 0, y1: 0, x2: 1, y2: 0,
+                                stop: 0 rgba(47, 54, 66, 255),
+                                stop: 1 rgba(75, 85, 98, 255)
+                            );
+                            color: white;
+                            border-radius: 10px;
+                            border: 1px solid rgba(0, 0, 0, 0.5);
+                            padding: 4px;
+                            font-size: 16px;
+                        }
+                        QPushButton:hover {
+                            background: qlineargradient(
+                                x1: 0, y1: 0, x2: 1, y2: 0,
+                                stop: 0 rgba(60, 68, 80, 255),
+                                stop: 1 rgba(90, 100, 118, 255)
+                            );
+                        }
+                        QPushButton:pressed {
+                            background: qlineargradient(
+                                x1: 0, y1: 0, x2: 1, y2: 0,
+                                stop: 0 rgba(35, 41, 51, 255),
+                                stop: 1 rgba(65, 75, 88, 255)
+                            );
+                        }
+                    """)
+                    reply = msg_box.exec()
 
-                # Apply custom style with gradient background and transparent text area
-                msg_box.setStyleSheet("""
-                    QMessageBox {
-                        background: qlineargradient(
-                            x1: 0, y1: 0, x2: 1, y2: 1,
-                            stop: 0 #b0b0b0,
-                            stop: 1 #505050
-                        );
-                        color: #FFFFFF;
-                        font-size: 16px;
-                    }
-                    QLabel {
-                        background-color: transparent; /* Make the label background transparent */
-                    }
-                    QPushButton {
-                        background: qlineargradient(
-                            x1: 0, y1: 0, x2: 1, y2: 0,
-                            stop: 0 rgba(47, 54, 66, 255),
-                            stop: 1 rgba(75, 85, 98, 255)
-                        );
-                        color: white;
-                        border-radius: 10px;
-                        border: 1px solid rgba(0, 0, 0, 0.5);
-                        padding: 4px;
-                        font-size: 16px;
-                    }
-                    QPushButton:hover {
-                        background: qlineargradient(
-                            x1: 0, y1: 0, x2: 1, y2: 0,
-                            stop: 0 rgba(60, 68, 80, 255),
-                            stop: 1 rgba(90, 100, 118, 255)
-                        );
-                    }
-                    QPushButton:pressed {
-                        background: qlineargradient(
-                            x1: 0, y1: 0, x2: 1, y2: 0,
-                            stop: 0 rgba(35, 41, 51, 255),
-                            stop: 1 rgba(65, 75, 88, 255)
-                        );
-                    }
-                """)
-                reply = msg_box.exec()
-
-                if reply == QMessageBox.StandardButton.Open:
-                    QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+                    if reply == QMessageBox.StandardButton.Open:
+                        QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
 
                 return fetched_version
             else:
@@ -540,7 +525,6 @@ class MainApp(QWidget):
             msg_box.setIcon(QMessageBox.Icon.Critical)
             msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-            # Apply custom style with gradient background and transparent text area
             msg_box.setStyleSheet("""
                 QMessageBox {
                     background: qlineargradient(
@@ -552,7 +536,7 @@ class MainApp(QWidget):
                     font-size: 16px;
                 }
                 QLabel {
-                    background-color: transparent; /* Make the label background transparent */
+                    background-color: transparent;
                 }
                 QPushButton {
                     background: qlineargradient(
