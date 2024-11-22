@@ -18,8 +18,8 @@ logger.setLevel(logging.DEBUG)
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.4"  # Set the current version of the json config file
-app_version = "3.3.0"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "5.5.3"  # Set the current version of the json config file
+app_version = "3.3.1"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 def get_config_file_path():
     if platform.system() == 'Windows':
@@ -35,7 +35,6 @@ def get_config_file_path():
     os.makedirs(cache_dir, exist_ok=True)
     logger.info("Config directory created/ensured: %s", cache_dir)
     return os.path.join(cache_dir, config_file_name)
-#com.an.Datadash
 
 config_file = get_config_file_path()
 if config_file is None:
@@ -73,8 +72,6 @@ def get_config(filename=config_file):
     except FileNotFoundError:
         logger.warning("Configuration file %s not found. Returning empty config.", filename)
         return {}
-    #com.an.Datadash
-
 
 if not os.path.exists(config_file):
     file_path = get_default_path()
@@ -87,7 +84,8 @@ if not os.path.exists(config_file):
         "max_filesize": 1000,
         "encryption": False,
         "android_encryption": False,
-        "show_warning": True
+        "show_warning": True,
+        "check_update": True
     }
 
     write_config(default_config, config_file)
@@ -98,23 +96,27 @@ else:
 
     if "version" not in config_data or config_data["version"] != current_version:
         logger.warning("Configuration version mismatch or missing. Overwriting with default config.")
-        file_path = get_default_path()
-        
+
+        # Carry over existing values
+        device_name = config_data.get("device_name", platform.node())
+        save_to_directory = config_data.get("save_to_directory", get_default_path())
+        encryption = config_data.get("encryption", False)
+
         default_config = {
             "version": current_version,
             "app_version": app_version,
-            "device_name": platform.node(),
-            "save_to_directory": file_path,
+            "device_name": device_name,
+            "save_to_directory": save_to_directory,
             "max_filesize": 1000,
-            "encryption": False,
+            "encryption": encryption,
             "android_encryption": False,
-            "show_warning": True
+            "show_warning": True,
+            "check_update": True
         }
-        
+
         write_config(default_config, config_file)
     else:
         logger.info("Loaded configuration: %s", config_data)
-        #com.an.Datadash
 
 def get_broadcast():
     try:
@@ -139,11 +141,30 @@ def get_broadcast():
     broadcast_address = '.'.join(ip_parts)
     logger.info("Broadcast address determined: %s", broadcast_address)
     return broadcast_address
-#com.an.Datadash
+
+def get_platform_link():
+    if platform.system() == 'Windows':
+            platform_name = 'windows'
+    elif platform.system() == 'Linux':
+            platform_name = 'linux'
+    elif platform.system() == 'Darwin':
+            platform_name = 'macos'
+    else:
+            logger.error("Unsupported OS!")
+            return None
+
+    # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+    # platform_name = 'auga'
+    # platform_name = 'buga'
+    # platform_name = 'cuga'
+        
+    url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+    return url
 
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
+PLATFORM_LINK = get_platform_link()
 
 logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash
