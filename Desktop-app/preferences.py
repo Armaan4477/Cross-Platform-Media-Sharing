@@ -563,6 +563,10 @@ class PreferencesApp(QWidget):
         help_dialog = QMessageBox(self)
         help_dialog.setWindowTitle("Help")
         help_dialog.setText("""
+        <b>version Number:</b> The version number of the application.
+        <br><br>
+        <b>Check for Update:</b> Check for the latest version of the application.
+        <br><br>
         <b>Device Name:</b> The name assigned to this device. You can reset it to the system's default.
         <br><br>
         <b>Save to Path:</b> Choose a directory to save your files. You can also reset it to the default path.
@@ -570,6 +574,8 @@ class PreferencesApp(QWidget):
         <b>Encryption:</b> Enable or disable AES256 encryption for files being sent.
         <br><br>
         <b>Show Warnings:</b> Enable or disable warning messages before sending or receiving files.
+        <br><br>
+        <b>Auto-check for updates during app launch:</b> Enable or disable automatic version checks when the application is launched.
         <br><br>
         <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
         <br><br>
