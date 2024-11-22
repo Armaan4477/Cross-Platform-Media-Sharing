@@ -8,7 +8,7 @@ import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
-from constant import logger,PLATFORM_LINK,DOWNLOAD_PATH
+from constant import logger,PLATFORM_LINK,UPDATE_DOWNLOAD
 import requests
 import os
 
@@ -714,18 +714,7 @@ class PreferencesApp(QWidget):
                 if reply == QMessageBox.StandardButton.Open:
                     QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
                 elif reply == QMessageBox.StandardButton.Apply:
-                    if platform.system() == 'Windows':
-                            logger.info("Downloading file for windows")
-                            logger.info(f"Download path: {DOWNLOAD_PATH}")
-                    elif platform.system() == 'Linux':
-                            logger.info("Downloading file for linux")
-                            logger.info(f"Download path: {DOWNLOAD_PATH}")
-                    elif platform.system() == 'Darwin':
-                            logger.info("Downloading file for macos")
-                            logger.info(f"Download path: {DOWNLOAD_PATH}")
-
-                    else:
-                            logger.error("Unsupported OS!")
+                    logger.info(f"Download path: {UPDATE_DOWNLOAD}")
                 return fetched_version
 
             else:

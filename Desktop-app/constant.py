@@ -174,11 +174,55 @@ def get_download_path():
         download_path = None 
     return download_path
 
+def get_platform_type():
+    #get the platform of the system if its arm or x64
+    if platform.machine() == 'arm64':
+        platform_type = 'arm'
+    elif platform.machine() == 'x86_64':
+        platform_type = 'x64'
+    else:
+        logger.error("Unsupported OS!")
+        platform_type = None
+    return platform_type
+
+def get_platform_os():
+    #get the platform of the system if its arm or x64
+    if platform.system() == 'Windows':
+        platform_os = 'windows'
+    elif platform.system() == 'Linux':
+        platform_os = 'linux'
+    elif platform.system() == 'Darwin':
+        platform_os = 'macos'
+    else:
+        logger.error("Unsupported OS!")
+        platform_os = None
+    return platform_os
+
+ #use get_platform_os, get_platform_type, get_download_path, get_platform_link to form 6 if conditions to get the link for the download page
+def get_update_download():
+    if get_platform_os() == 'windows' and get_platform_type() == 'x64':
+        platform_download= 'windows x64'
+    elif get_platform_os() == 'windows' and get_platform_type() == 'arm':
+        platform_download= 'windows arm'
+    elif get_platform_os() == 'linux' and get_platform_type() == 'x64':
+        platform_download= 'linux x64'
+    elif get_platform_os() == 'linux' and get_platform_type() == 'arm':
+        platform_download= 'linux arm'
+    elif get_platform_os() == 'macos' and get_platform_type() == 'x64':
+        platform_download= 'macos x64'
+    elif get_platform_os() == 'macos' and get_platform_type() == 'arm':
+        platform_download= 'macos arm'
+    else:
+        logger.error("Unsupported OS!")
+    return platform_download
+    
+
+
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
 PLATFORM_LINK = get_platform_link()
-DOWNLOAD_PATH = get_download_path()
+UPDATE_DOWNLOAD = get_update_download()
 
 logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash
