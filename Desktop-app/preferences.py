@@ -788,12 +788,15 @@ class PreferencesApp(QWidget):
         if platform.system() == 'Windows':
             platform_os = 'windows'
             download_path = os.path.join(os.getenv('USERPROFILE'), 'Downloads')
+            file_extension = '.exe'
         elif platform.system() == 'Linux':
             platform_os = 'linux'
             download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+            file_extension = ''
         elif platform.system() == 'Darwin':
             platform_os = 'macos'
             download_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+            file_extension = '.dmg'
         else:
             logger.error("Unsupported OS!")
             return None
@@ -828,7 +831,7 @@ class PreferencesApp(QWidget):
         try:
             response = requests.get(download_link, stream=True)
             response.raise_for_status()
-            filename = os.path.join(download_path, os.path.basename(download_link))
+            filename = os.path.join(download_path, 'DataDash' + file_extension)
             with open(filename, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
