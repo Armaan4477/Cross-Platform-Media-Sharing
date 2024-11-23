@@ -75,7 +75,9 @@ def decrypt_file(filepath: str, key: str):
         i += 1
         #com.an.Datadash
 
-    with open(filepath.replace('.crypt', ''), 'wb') as f:
+    # Use the updated file_name to save the decrypted file
+    output_file_path = os.path.join(directory, file_name)
+    with open(output_file_path, 'wb') as f:
         f.write(decrypted_data)
 
 

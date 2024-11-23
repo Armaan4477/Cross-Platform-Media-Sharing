@@ -450,7 +450,7 @@ class MainApp(QWidget):
 
                     open_button = msg_box.button(QMessageBox.StandardButton.Open)
                     if open_button:
-                        open_button.setText("Open Downloads Page")
+                        open_button.setText("Open Settings")
 
                     msg_box.setStyleSheet("""
                         QMessageBox {
@@ -495,7 +495,7 @@ class MainApp(QWidget):
                     reply = msg_box.exec()
 
                     if reply == QMessageBox.StandardButton.Open:
-                        QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+                        QTimer.singleShot(1, self.preferences_handler)
 
                 return fetched_version
             else:
