@@ -3,7 +3,6 @@ import platform
 import os
 import logging
 import socket
-import requests
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -161,8 +160,6 @@ def get_platform_link():
         
     url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
     return url
-
-
 
 BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
