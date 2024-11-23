@@ -845,7 +845,52 @@ class PreferencesApp(QWidget):
             with open(filename, 'wb') as f:
                 for data in response.iter_content(block_size):
                     if progress_dialog.wasCanceled():
-                        QMessageBox.information(self, "Download Canceled", "Download canceled by user.")
+                        msg_box = QMessageBox(self)
+                        msg_box.setWindowTitle("Download Canceled")
+                        msg_box.setText("Download canceled by user.")
+                        msg_box.setIcon(QMessageBox.Icon.Information)
+                        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        msg_box.setStyleSheet("""
+                            QMessageBox {
+                                background: qlineargradient(
+                                    x1: 0, y1: 0, x2: 1, y2: 1,
+                                    stop: 0 #b0b0b0,
+                                    stop: 1 #505050
+                                );
+                                color: #FFFFFF;
+                                font-size: 16px;
+                            }
+                            QLabel {
+                                background-color: transparent; /* Make the label background transparent */
+                            }
+                            QPushButton {
+                                background: qlineargradient(
+                                    x1: 0, y1: 0, x2: 1, y2: 0,
+                                    stop: 0 rgba(47, 54, 66, 255),
+                                    stop: 1 rgba(75, 85, 98, 255)
+                                );
+                                color: white;
+                                border-radius: 10px;
+                                border: 1px solid rgba(0, 0, 0, 0.5);
+                                padding: 4px;
+                                font-size: 16px;
+                            }
+                            QPushButton:hover {
+                                background: qlineargradient(
+                                    x1: 0, y1: 0, x2: 1, y2: 0,
+                                    stop: 0 rgba(60, 68, 80, 255),
+                                    stop: 1 rgba(90, 100, 118, 255)
+                                );
+                            }
+                            QPushButton:pressed {
+                                background: qlineargradient(
+                                    x1: 0, y1: 0, x2: 1, y2: 0,
+                                    stop: 0 rgba(35, 41, 51, 255),
+                                    stop: 1 rgba(65, 75, 88, 255)
+                                );
+                            }
+                        """)
+                        msg_box.exec()
                         logger.info("Download canceled by user")
                         f.close()
                         os.remove(filename)
@@ -863,10 +908,100 @@ class PreferencesApp(QWidget):
                     )
                     QApplication.processEvents()
             progress_dialog.close()
-            QMessageBox.information(self, "Download Complete", f"File downloaded to {filename}")
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Download Complete")
+            msg_box.setText(f"File downloaded to {filename}")
+            msg_box.setIcon(QMessageBox.Icon.Information)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+            msg_box.exec()
         except Exception as e:
             logger.error(f"Failed to download file: {e}")
-            QMessageBox.critical(self, "Download Failed", "Failed to download the update.")
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Download Failed")
+            msg_box.setText("Failed to download the update.")
+            msg_box.setIcon(QMessageBox.Icon.Critical)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+            msg_box.exec()
             return None
 
         return filename
