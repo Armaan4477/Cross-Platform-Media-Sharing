@@ -845,6 +845,7 @@ class PreferencesApp(QWidget):
             with open(filename, 'wb') as f:
                 for data in response.iter_content(block_size):
                     if progress_dialog.wasCanceled():
+                        QMessageBox.information(self, "Download Canceled", "Download canceled by user.")
                         logger.info("Download canceled by user")
                         f.close()
                         os.remove(filename)
