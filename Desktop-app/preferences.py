@@ -838,6 +838,60 @@ class PreferencesApp(QWidget):
             progress_dialog = QProgressDialog("Downloading update...", "Cancel", 0, total_size, self)
             progress_dialog.setWindowTitle("Download Progress")
             progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+            progress_dialog.setStyleSheet("""
+                QProgressDialog {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QProgressBar {
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    text-align: center;
+                    background-color: #222;
+                    color: #FFFFFF;
+                    font-size: 14px;
+                }
+                QProgressBar::chunk {
+                    background-color: #3add36;
+                    width: 20px;
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
             progress_dialog.show()
             downloaded_size = 0
             start_time = time.time()
