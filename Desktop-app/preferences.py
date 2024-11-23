@@ -952,14 +952,20 @@ class PreferencesApp(QWidget):
                     f.write(data)
                     downloaded_size += len(data)
                     elapsed_time = time.time() - start_time
-                    speed = downloaded_size / elapsed_time if elapsed_time > 0 else 0
-                    remaining_time = (total_size - downloaded_size) / speed if speed > 0 else 0
+                    if elapsed_time > 0:
+                        # Calculate speed in KB/s
+                        speed_kbps = (downloaded_size / 1024) / elapsed_time
+                        # Convert speed to MB/s with up to 3 decimal places
+                        speed_mbps = round(speed_kbps / 1024, 1)
+                        # Calculate estimated time remaining in seconds
+                        estimated_total_time = (total_size / downloaded_size) * elapsed_time
+                        time_remaining = estimated_total_time - elapsed_time
+                        # Format time remaining into minutes and seconds
+                        mins, secs = divmod(time_remaining, 60)
+                        time_format = f"{int(mins)} min {int(secs)} sec" if mins >= 1 else f"{int(secs)} sec"
+                        # Update label with speed and estimated time remaining
+                        progress_dialog.setLabelText(f"Downloading update... {speed_mbps} MB/s - {time_format} remaining")
                     progress_dialog.setValue(downloaded_size)
-                    progress_dialog.setLabelText(
-                        f"Downloading update...\n"
-                        f"Speed: {speed / 1024:.2f} KB/s\n"
-                        f"Estimated time remaining: {remaining_time:.2f} seconds"
-                    )
                     QApplication.processEvents()
             progress_dialog.close()
             msg_box = QMessageBox(self)
