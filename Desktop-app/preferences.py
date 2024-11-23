@@ -804,9 +804,10 @@ class PreferencesApp(QWidget):
             return None
 
         # Determine platform type
-        if platform.machine() == 'arm64':
+        machine = platform.machine().lower()
+        if machine in ['arm64', 'aarch64']:
             platform_type = 'arm'
-        elif platform.machine() == 'x86_64':
+        elif machine in ['x86_64', 'amd64']:
             platform_type = 'x64'
         else:
             logger.error("Unsupported platform type!")
