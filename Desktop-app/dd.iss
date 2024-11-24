@@ -1,7 +1,7 @@
 [Setup]
 AppName=DataDash
 AppVersion=3.3.2
-DefaultDirName={autopf}\DataDash
+DefaultDirName={commonpf64}\DataDash
 DefaultGroupName=DataDash
 OutputDir=Output
 OutputBaseFilename=DataDashInstaller
