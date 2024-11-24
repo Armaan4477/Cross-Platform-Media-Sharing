@@ -20,7 +20,7 @@ main.py
 
 dmg:
 create-dmg \
-  --volname "DataDash" 
+  --volname "DataDash" \
   --window-pos 200 120 \
   --window-size 400 400 \
   --icon-size 128 \
