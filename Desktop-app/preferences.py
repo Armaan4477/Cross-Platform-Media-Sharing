@@ -13,6 +13,7 @@ import requests
 import os
 import time
 from PyQt6.QtWidgets import QProgressDialog
+from subprocess import run
 
 class PreferencesApp(QWidget):
     def __init__(self):
@@ -969,6 +970,11 @@ class PreferencesApp(QWidget):
                     progress_dialog.setValue(downloaded_size)
                     QApplication.processEvents()
             progress_dialog.close()
+
+            # Set chmod permission for linux
+            if platform_os == "linux":
+                run(['chmod', '+x', filename])
+
             msg_box = QMessageBox(self)
             msg_box.setWindowTitle("Download Complete")
             msg_box.setText(f"File downloaded to {filename}")
