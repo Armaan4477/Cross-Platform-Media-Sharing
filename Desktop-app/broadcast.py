@@ -98,7 +98,7 @@ class BroadcastWorker(QThread):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, LISTEN_PORT))
 
             s.settimeout(2)
             try:
@@ -489,4 +489,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash   
+    #com.an.Datadash

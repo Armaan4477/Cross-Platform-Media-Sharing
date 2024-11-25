@@ -107,6 +107,7 @@ class ReceiveApp(QWidget):
         super().__init__()
         self.initUI()
         self.setFixedSize(853, 480)
+        self.config = get_config()  # Load config once
         #com.an.Datadash
 
     def initUI(self):
@@ -202,17 +203,16 @@ class ReceiveApp(QWidget):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('', BROADCAST_PORT))
+            s.bind(('', LISTEN_PORT))
 
             while True:
                 if self.file_receiver.broadcasting:
                     message, address = s.recvfrom(1024)
                     message = message.decode()
                     if message == 'DISCOVER':
-                        response = f'RECEIVER:{get_config()["device_name"]}'
-                        # Create a new socket to send the response on LISTEN_PORT
-                        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
-                            response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
+                        response = f'RECEIVER:{self.config["device_name"]}'
+                        # Use the same socket and port to send response
+                        s.sendto(response.encode(), (address[0], LISTEN_PORT))
                 sleep(1)  # Avoid busy-waiting
 
     def connection_successful(self):
