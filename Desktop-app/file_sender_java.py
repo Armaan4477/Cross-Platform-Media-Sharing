@@ -536,6 +536,30 @@ class SendAppJava(QWidget):
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
 
+    def closeEvent(self, event):
+        """Close all sockets and unbind the sockets"""
+        if self.client_skt:
+            try:
+                self.client_skt.shutdown(socket.SHUT_RDWR)
+                self.client_skt.close()
+                logger.debug("Socket closed in closeEvent")
+            except Exception as e:
+                logger.error(f"Error closing socket in closeEvent: {e}")
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        if not hasattr(self, 'stop_signal'):
+            self.stop_signal = False
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.shutdown(socket.SHUT_RDWR)
+            except Exception as e:
+                logger.error(f"Error shutting down socket: {e}")
+            self.client_skt.close()
+            logger.debug("Socket closed in stop method")
+
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
