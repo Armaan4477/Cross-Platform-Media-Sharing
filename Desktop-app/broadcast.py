@@ -125,7 +125,10 @@ class BroadcastWorker(QThread):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
-            s.sendto(b'DISCOVER', (self.get_broadcast, LISTEN_PORT))
+            # Fix: Call the method to get the broadcast address
+            broadcast_address = self.get_broadcast()
+            if broadcast_address != "Unable to get IP":
+                s.sendto(b'DISCOVER', (broadcast_address, LISTEN_PORT))
 
             s.settimeout(2)
             try:
@@ -137,6 +140,8 @@ class BroadcastWorker(QThread):
                         self.device_detected.emit({'ip': address[0], 'name': device_name})
             except socket.timeout:
                 pass
+            except Exception as e:
+                logger.error(f"Error in discover_receivers: {str(e)}")
 
     def connect_to_device(self, device_ip, device_name):
         try:
