@@ -30,7 +30,6 @@ import android.text.format.Formatter;
 /** @noinspection CallToPrintStackTrace*/
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
-    private static final int DISCOVER_PORT = 12345; // Port for sending DISCOVER messages
     private static final int RESPONSE_PORT = 12346; // Port for receiving responses
     private Button btnDiscover, btnConnect;
     private ListView listDevices;
@@ -112,8 +111,8 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 String broadcastIp = getBroadcastIp(this);
                 byte[] sendData = "DISCOVER".getBytes();
                 InetAddress broadcastAddress = InetAddress.getByName(broadcastIp);
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
-                Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, RESPONSE_PORT);
+                Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + RESPONSE_PORT);
 
                 for (int i = 0; i < 120 && isDiscovering.get(); i++) { // 120 iterations for 2 minutes
                     discoverSocket.send(sendPacket);

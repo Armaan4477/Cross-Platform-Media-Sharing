@@ -30,7 +30,7 @@ import java.net.SocketException;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
-    private static final int UDP_PORT = 12345; // Discovery port
+    private static final int UDP_PORT = 12346; // Discovery port
     private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on the Python app
     private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
     private String DEVICE_NAME;
