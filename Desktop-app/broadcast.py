@@ -96,57 +96,43 @@ class BroadcastWorker(QThread):
         self.discover_receivers()
 
     def discover_receivers(self):
-        self.discovered_devices.clear()  # Clear previous discoveries
         retry_count = 3
-        
         for attempt in range(retry_count):
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
                     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    s.settimeout(2)
+                    s.settimeout(2)  # Set timeout before bind
                     
-                    # Bind to any available port
                     try:
-                        s.bind(('', 0))
+                        s.bind(('', LISTEN_PORT))
                     except socket.error as e:
                         logger.error(f"Binding failed: {e}")
                         continue
 
-                    # Send discovery packets with retries
+                    # Send multiple discovery packets to improve reliability
                     for _ in range(3):
-                        try:
-                            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-                            logger.debug("Sent discovery broadcast")
-                        except Exception as e:
-                            logger.error(f"Failed to send discovery: {e}")
-                        sleep(0.1)
+                        s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+                        sleep(0.1)  # Small delay between broadcasts
 
-                    # Listen for responses
-                    end_time = time.time() + 2  # 2 second window
-                    while time.time() < end_time:
-                        try:
+                    try:
+                        start_time = time.time()
+                        while time.time() - start_time < 2:  # 2 second discovery window
                             message, address = s.recvfrom(1024)
                             message = message.decode()
                             if message.startswith('RECEIVER:'):
                                 device_name = message.split(':')[1]
+                                # Deduplicate devices before emitting
                                 device_info = {'ip': address[0], 'name': device_name}
                                 if device_info not in self.discovered_devices:
                                     self.discovered_devices.append(device_info)
                                     self.device_detected.emit(device_info)
-                                    logger.debug(f"Found device: {device_name} at {address[0]}")
-                        except socket.timeout:
-                            continue
-                        except Exception as e:
-                            logger.error(f"Error receiving response: {e}")
+                    except socket.timeout:
+                        continue
 
             except Exception as e:
                 logger.error(f"Discovery attempt {attempt + 1} failed: {e}")
-            
-            if self.discovered_devices:  # If we found any devices, we can stop retrying
-                break
-            
-            sleep(0.5)  # Wait before next attempt
+                sleep(0.5)  # Wait before retry
 
     def connect_to_device(self, device_ip, device_name):
         try:

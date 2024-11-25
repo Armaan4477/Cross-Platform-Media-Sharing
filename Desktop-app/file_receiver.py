@@ -112,39 +112,35 @@ class FileReceiver(QThread):
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
                     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    s.settimeout(1)
-                    s.bind(('', BROADCAST_PORT))
+                    s.settimeout(1)  # Add timeout
+                    
+                    try:
+                        s.bind(('', BROADCAST_PORT))
+                    except socket.error as e:
+                        logger.error(f"Binding failed: {e}")
+                        sleep(1)
+                        continue
 
-                    while self.file_receiver.broadcasting:
+                    while self.broadcasting:
                         try:
                             message, address = s.recvfrom(1024)
                             message = message.decode()
                             if message == 'DISCOVER':
-                                # Try multiple times to send response
                                 response = f'RECEIVER:{get_config()["device_name"]}'
-                                for _ in range(3):  # Try 3 times
-                                    try:
-                                        # Create new socket for each attempt
-                                        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
-                                            response_socket.settimeout(1)
-                                            response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
-                                            logger.debug(f"Sent response to {address[0]}")
-                                            break  # If successful, break retry loop
-                                    except OSError as e:
-                                        logger.error(f"Failed to send response: {e}")
-                                        sleep(0.1)  # Short delay between retries
-                                        continue
+                                # Send multiple responses to improve reliability
+                                for _ in range(3):
+                                    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
+                                        response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
+                                        sleep(0.1)
                         except socket.timeout:
                             continue
                         except Exception as e:
                             logger.error(f"Error in broadcast listener: {e}")
                             break
-
-                    sleep(0.1)  # Prevent busy waiting
-                
+                            
             except Exception as e:
                 logger.error(f"Broadcast listener error: {e}")
-                sleep(1)  # Delay before recreating socket
+                sleep(1)
 
 
 class ReceiveApp(QWidget):
