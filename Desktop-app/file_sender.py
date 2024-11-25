@@ -1,5 +1,7 @@
 import json
 import platform
+import tempfile
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
     QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit,
@@ -96,7 +98,31 @@ class FileSender(QThread):
         self.client_skt.close()
         #com.an.Datadash
 
+    def get_temp_dir(self):
+        system = platform.system()
+        if system == "Windows":
+            temp_dir = Path(os.getenv('LOCALAPPDATA')) / 'Temp' / 'DataDash'
+        elif system == "Darwin":  # macOS
+            temp_dir = Path.home() / 'Library' / 'Caches' / 'DataDash'
+        elif system == "Linux":  # Linux and others
+            temp_dir = Path.home() / '.cache' / 'DataDash'
+        else:
+            logger.error(f"Unsupported platform: {system}")
+        
+        try:
+            os.makedirs(str(temp_dir), exist_ok=True)
+            logger.debug(f"Created/verified temp directory: {temp_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create temp directory: {e}")
+            # Fallback to system temp directory
+            temp_dir = Path(tempfile.gettempdir()) / 'DataDash'
+            os.makedirs(str(temp_dir), exist_ok=True)
+            logger.debug(f"Using fallback temp directory: {temp_dir}")
+        
+        return temp_dir
+
     def create_metadata(self, folder_path=None, file_paths=None):
+        temp_dir = self.get_temp_dir()
         if folder_path:
             metadata = []
             for root, dirs, files in os.walk(folder_path):
@@ -117,7 +143,7 @@ class FileSender(QThread):
                     })
             metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
             metadata_json = json.dumps(metadata)
-            metadata_file_path = os.path.join(folder_path, 'metadata.json')
+            metadata_file_path = os.path.join(temp_dir, 'metadata.json')
             with open(metadata_file_path, 'w') as f:
                 f.write(metadata_json)
             self.metadata_created = True
@@ -131,7 +157,7 @@ class FileSender(QThread):
                     'size': file_size
                 })
             metadata_json = json.dumps(metadata)
-            metadata_file_path = os.path.join(os.path.dirname(file_paths[0]), 'metadata.json')
+            metadata_file_path = os.path.join(temp_dir, 'metadata.json')
             with open(metadata_file_path, 'w') as f:
                 f.write(metadata_json)
             self.metadata_created = True
