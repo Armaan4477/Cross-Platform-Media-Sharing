@@ -42,13 +42,20 @@ class FileSenderJava(QThread):
         
         # Create a new TCP socket
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Use dynamic port assignment to avoid WinError 10048
+        # Set socket options based on platform
+        if platform.system() == 'Windows':
+            # On Windows, set SO_REUSEADDR and SO_EXCLUSIVEADDRUSE
+            self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 0)
+        else:
+            self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # Use dynamic port assignment to avoid conflicts
         try:
             self.client_skt.bind(('', 0))  # Bind to any available port assigned by the OS
-            logger.debug(f"Bound to port {self.client_skt.getsockname()[1]}")  # Log the assigned port for debugging
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))  # Connect to receiver's IP and port
+            logger.debug(f"Bound to port {self.client_skt.getsockname()[1]}")
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
             logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
         except ConnectionRefusedError:
             logger.error("Connection refused: Failed to connect to the specified IP address.")
@@ -58,38 +65,51 @@ class FileSenderJava(QThread):
             logger.error(f"Binding error: {e}")
             self.show_message_box("Binding Error", f"Failed to bind to the specified port: {e}")
             return False
+        except Exception as e:
+            logger.error(f"Unhandled exception: {e}")
+            self.show_message_box("Connection Error", f"Failed to connect: {e}")
+            return False
 
         return True
 
     def run(self):
+        try:
+            if self.client_skt:
+                self.client_skt.close()
+        except Exception as e:
+            logger.error(f"Error closing socket: {e}")
+
         metadata_file_path = None
         self.metadata_created = False
-        metadata_file_path = None
         if not self.initialize_connection():
             return
         
-        # Reload config on each file transfer session
-        self.config = get_config()
+        self.encryption_flag = get_config()["encryption"]
 
-        self.encryption_flag = self.config['android_encryption']
-        # logger.debug("Encryption flag: %s", self.encryption_flag)
-
-        for file_path in self.file_paths:
-            if os.path.isdir(file_path):
-                self.send_folder(file_path)
-            else:
-                if not self.metadata_created:
-                    metadata_file_path = self.create_metadata(file_paths=self.file_paths)
-                    self.send_file(metadata_file_path)
-                self.send_file(file_path, encrypted_transfer=self.encryption_flag)
-        
-        # Delete metadata file
-        if self.metadata_created and metadata_file_path:
-            os.remove(metadata_file_path)
+        try:
+            for file_path in self.file_paths:
+                if os.path.isdir(file_path):
+                    self.send_folder(file_path)
+                else:
+                    if not self.metadata_created:
+                        metadata_file_path = self.create_metadata(file_paths=self.file_paths)
+                        self.send_file(metadata_file_path)
+                    self.send_file(file_path, encrypted_transfer=self.encryption_flag)
             
-        logger.debug("Sent halt signal")
-        self.client_skt.send('encyp: h'.encode())
-        self.client_skt.close()
+            if self.metadata_created and metadata_file_path:
+                os.remove(metadata_file_path)
+                
+            logger.debug("Sent halt signal")
+            self.client_skt.send('encyp: h'.encode())
+        finally:
+            # Ensure socket is properly closed
+            if self.client_skt:
+                try:
+                    self.client_skt.shutdown(socket.SHUT_RDWR)
+                except Exception as e:
+                    logger.error(f"Error shutting down socket: {e}")
+                self.client_skt.close()
+                logger.debug("Socket closed")
 
     def create_metadata(self, folder_path=None,file_paths=None):
         if folder_path:
@@ -197,6 +217,30 @@ class FileSenderJava(QThread):
             os.remove(file_path)
 
         return True
+    
+    def closeEvent(self, event):
+        """Close all sockets and unbind the sockets"""
+        if self.client_skt:
+            try:
+                self.client_skt.shutdown(socket.SHUT_RDWR)
+                self.client_skt.close()
+                logger.debug("Socket closed in closeEvent")
+            except Exception as e:
+                logger.error(f"Error closing socket in closeEvent: {e}")
+        event.accept()
+
+    def stop(self):
+        """Sets the stop signal to True and closes the socket if it's open."""
+        if not hasattr(self, 'stop_signal'):
+            self.stop_signal = False
+        self.stop_signal = True
+        if self.client_skt:
+            try:
+                self.client_skt.shutdown(socket.SHUT_RDWR)
+            except Exception as e:
+                logger.error(f"Error shutting down socket: {e}")
+            self.client_skt.close()
+            logger.debug("Socket closed in stop method")
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
@@ -493,24 +537,28 @@ class SendAppJava(QWidget):
         self.status_label.setText(f"File sent: {file_path}")
 
     def closeEvent(self, event):
-        try:
-            """Override the close event to ensure everything is stopped properly."""
-            if self.file_sender and self.file_sender.isRunning():
-                self.file_sender.stop()  # Signal the sender to stop
-                self.file_sender.wait()  # Wait until the thread fully stops
-        except Exception as e:
-            pass
-        finally:
-            event.accept()
+        """Close all sockets and unbind the sockets"""
+        if self.client_skt:
+            try:
+                self.client_skt.shutdown(socket.SHUT_RDWR)
+                self.client_skt.close()
+                logger.debug("Socket closed in closeEvent")
+            except Exception as e:
+                logger.error(f"Error closing socket in closeEvent: {e}")
+        event.accept()
 
     def stop(self):
         """Sets the stop signal to True and closes the socket if it's open."""
+        if not hasattr(self, 'stop_signal'):
+            self.stop_signal = False
         self.stop_signal = True
         if self.client_skt:
             try:
-                self.client_skt.close()
+                self.client_skt.shutdown(socket.SHUT_RDWR)
             except Exception as e:
-                logger.error(f"Error while closing socket: {e}")
+                logger.error(f"Error shutting down socket: {e}")
+            self.client_skt.close()
+            logger.debug("Socket closed in stop method")
 
 if __name__ == '__main__':
     import sys
