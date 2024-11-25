@@ -88,44 +88,34 @@ class BroadcastWorker(QThread):
         self.socket = None
         self.client_socket = None
         self.receiver_data = None
-        self.running = True  # Added to control the thread loop
 
     def run(self):
         self.discover_receivers()
 
     def discover_receivers(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            self.socket = s  # Reference to the socket
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            if platform.system() != 'Windows':
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
             s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
 
             s.settimeout(2)
             try:
-                while self.running:
-                    try:
-                        message, address = s.recvfrom(1024)
-                        message = message.decode()
-                        if message.startswith('RECEIVER:'):
-                            device_name = message.split(':')[1]
-                            self.device_detected.emit({'ip': address[0], 'name': device_name})
-                    except socket.timeout:
-                        pass
-            except Exception as e:
-                logger.error(f"Error in discover_receivers: {str(e)}")
-            finally:
-                s.close()
-                self.socket = None
+                while True:
+                    message, address = s.recvfrom(1024)
+                    message = message.decode()
+                    if message.startswith('RECEIVER:'):
+                        device_name = message.split(':')[1]
+                        self.device_detected.emit({'ip': address[0], 'name': device_name})
+            except socket.timeout:
+                pass
 
     def connect_to_device(self, device_ip, device_name):
         try:
             if self.client_socket:
                 self.client_socket.shutdown(socket.SHUT_RDWR)  # Properly shutdown before closing
                 self.client_socket.close()
-                self.client_socket = None
             
             # Create a new socket for connection
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -149,7 +139,6 @@ class BroadcastWorker(QThread):
             if device_type == 'python':
                 self.device_connected.emit(device_ip, device_name, self.receiver_data)
                 self.client_socket.close()
-                self.client_socket = None
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
             else:
@@ -157,6 +146,9 @@ class BroadcastWorker(QThread):
 
         except Exception as e:
             QMessageBox.critical(None, "Connection Error", f"Failed to connect: {str(e)}")
+        finally:
+            if self.client_socket:
+                self.client_socket.close()  # Ensure the socket is always closed
 
     def closeEvent(self, event):
         # Ensure socket is forcefully closed
@@ -170,20 +162,14 @@ class BroadcastWorker(QThread):
         event.accept()  # Accept the window close event
 
     def stop(self):
-        self.running = False
-        if self.socket:
-            try:
-                self.socket.close()
-                self.socket = None
-            except Exception as e:
-                logger.error(f"Error closing socket: {str(e)}")
+        # Method to manually stop the socket
         if self.client_socket:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
-                self.client_socket = None
+                logger.info("Socket closed manually.")
             except Exception as e:
-                logger.error(f"Error closing client socket: {str(e)}")
+                logger.error(f"Error closing socket: {str(e)}")
                 #com.an.Datadash
 
 
@@ -473,10 +459,20 @@ class Broadcast(QWidget):
         #com.an.Datadash
 
     def closeEvent(self, event):
-        if self.broadcast_worker.isRunning():
+        # Ensure socket is forcefully closed
+        try:
+            if self.worker.client_socket:
+                try:
+                    self.worker.client_socket.shutdown(socket.SHUT_RDWR)
+                    self.worker.client_socket.close()
+                    print("Socket closed on window switch or close.")
+                except Exception as e:
+                    print(f"Error closing socket: {str(e)}")
+        except Exception as e:
+            pass
+        finally:
             self.broadcast_worker.stop()
-            self.broadcast_worker.wait()
-        event.accept()
+            event.accept()  # Accept the window close event
     
     def stop(self):
         # Method to manually stop the socket
@@ -493,4 +489,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash
+    #com.an.Datadash   
