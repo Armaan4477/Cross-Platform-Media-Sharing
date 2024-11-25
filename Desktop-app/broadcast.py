@@ -10,12 +10,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence,QKeyEvent
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
+from constant import  logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
+LISTEN_PORT = 12346
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
@@ -92,13 +93,39 @@ class BroadcastWorker(QThread):
     def run(self):
         self.discover_receivers()
 
+    def get_broadcast(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            logger.info("Local IP determined: %s", local_ip)
+        except Exception as e:
+            logger.error("Error obtaining local IP: %s", e)
+            local_ip = "Unable to get IP"
+        finally:
+            s.close()
+        
+        if local_ip == "Unable to get IP":
+            return local_ip
+
+        # Split the IP address into parts
+        ip_parts = local_ip.split('.')
+        # Replace the last part with '255' to create the broadcast address
+        ip_parts[-1] = '255'
+        # Join the parts back together to form the broadcast address
+        broadcast_address = '.'.join(ip_parts)
+        logger.info("Broadcast address determined: %s", broadcast_address)
+        return broadcast_address
+
+
+
     def discover_receivers(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, LISTEN_PORT))
+            s.sendto(b'DISCOVER', (self.get_broadcast, LISTEN_PORT))
 
             s.settimeout(2)
             try:
