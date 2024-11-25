@@ -35,29 +35,35 @@ class FileReceiver(QThread):
         self.receiver_worker = None
 
     def run(self):
-        # Clear all connections on the about to be used ports 
-        try:
-            if self.server_socket:
-                self.server_socket.close()
-                sleep(0.5)
-            if self.client_socket:
-                self.client_socket.close()
-                sleep(0.5)
-            if self.receiver_worker:
-                self.receiver_worker.terminate()
-        except Exception as e:
-            pass
-
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow immediate reuse of the address
-        self.server_socket.bind(('0.0.0.0', RECEIVER_JSON))
-        self.server_socket.listen(5)  # Listen for multiple connections
-
         while True:
-            self.client_socket, addr = self.server_socket.accept()
-            self.store_client_ip()
-            self.handle_device_type()
-            self.client_socket.close()  # Close the connection after receiving files
+            try:
+                # Clear all connections on the about to be used ports
+                self.cleanup_sockets()
+                
+                self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                
+                # Add a timeout to the server socket
+                self.server_socket.settimeout(1)
+                self.server_socket.bind(('0.0.0.0', RECEIVER_JSON))
+                self.server_socket.listen(5)
+
+                while True:
+                    try:
+                        self.client_socket, addr = self.server_socket.accept()
+                        self.client_socket.settimeout(5)  # Set timeout for client operations
+                        self.store_client_ip()
+                        self.handle_device_type()
+                    except socket.timeout:
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error handling connection: {e}")
+                        self.cleanup_sockets()
+                        break
+
+            except Exception as e:
+                logger.error(f"Server error: {e}")
+                sleep(1)  # Prevent tight error loop
 
     def store_client_ip(self):
         """Extract and store the IP address of the connected client."""
@@ -100,6 +106,41 @@ class FileReceiver(QThread):
         if self.client_socket:
             self.client_socket.close()
 
+    def listenForBroadcast(self):
+        while True:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    s.settimeout(1)  # Add timeout
+                    
+                    try:
+                        s.bind(('', BROADCAST_PORT))
+                    except socket.error as e:
+                        logger.error(f"Binding failed: {e}")
+                        sleep(1)
+                        continue
+
+                    while self.broadcasting:
+                        try:
+                            message, address = s.recvfrom(1024)
+                            message = message.decode()
+                            if message == 'DISCOVER':
+                                response = f'RECEIVER:{get_config()["device_name"]}'
+                                # Send multiple responses to improve reliability
+                                for _ in range(3):
+                                    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
+                                        response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
+                                        sleep(0.1)
+                        except socket.timeout:
+                            continue
+                        except Exception as e:
+                            logger.error(f"Error in broadcast listener: {e}")
+                            break
+                            
+            except Exception as e:
+                logger.error(f"Broadcast listener error: {e}")
+                sleep(1)
 
 
 class ReceiveApp(QWidget):

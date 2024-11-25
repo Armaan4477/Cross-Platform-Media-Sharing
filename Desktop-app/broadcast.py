@@ -13,6 +13,8 @@ from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont,
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
+import time
+from time import sleep
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
@@ -88,28 +90,49 @@ class BroadcastWorker(QThread):
         self.socket = None
         self.client_socket = None
         self.receiver_data = None
+        self.discovered_devices = []
 
     def run(self):
         self.discover_receivers()
 
     def discover_receivers(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('', LISTEN_PORT))
-
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-
-            s.settimeout(2)
+        retry_count = 3
+        for attempt in range(retry_count):
             try:
-                while True:
-                    message, address = s.recvfrom(1024)
-                    message = message.decode()
-                    if message.startswith('RECEIVER:'):
-                        device_name = message.split(':')[1]
-                        self.device_detected.emit({'ip': address[0], 'name': device_name})
-            except socket.timeout:
-                pass
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    s.settimeout(2)  # Set timeout before bind
+                    
+                    try:
+                        s.bind(('', LISTEN_PORT))
+                    except socket.error as e:
+                        logger.error(f"Binding failed: {e}")
+                        continue
+
+                    # Send multiple discovery packets to improve reliability
+                    for _ in range(3):
+                        s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+                        sleep(0.1)  # Small delay between broadcasts
+
+                    try:
+                        start_time = time.time()
+                        while time.time() - start_time < 2:  # 2 second discovery window
+                            message, address = s.recvfrom(1024)
+                            message = message.decode()
+                            if message.startswith('RECEIVER:'):
+                                device_name = message.split(':')[1]
+                                # Deduplicate devices before emitting
+                                device_info = {'ip': address[0], 'name': device_name}
+                                if device_info not in self.discovered_devices:
+                                    self.discovered_devices.append(device_info)
+                                    self.device_detected.emit(device_info)
+                    except socket.timeout:
+                        continue
+
+            except Exception as e:
+                logger.error(f"Discovery attempt {attempt + 1} failed: {e}")
+                sleep(0.5)  # Wait before retry
 
     def connect_to_device(self, device_ip, device_name):
         try:
@@ -489,4 +512,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash   
+    #com.an.Datadash
