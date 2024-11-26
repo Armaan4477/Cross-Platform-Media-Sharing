@@ -83,6 +83,7 @@ class FileReceiver(QThread):
         device_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
         device_json = self.client_socket.recv(device_json_size).decode()
         self.device_info = json.loads(device_json)
+        logger.debug(f"Device information received: {self.device_info}")
         sender_device_type = self.device_info.get("device_type", "unknown")
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
