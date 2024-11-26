@@ -9,7 +9,7 @@ class ReceiverNetwork: ObservableObject {
     private var tcpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
     private let tcpQueue = DispatchQueue(label: "TCPQueue")
-    private let listenPort: NWEndpoint.Port = 12345
+    private let listenPort: NWEndpoint.Port = 12346
     private let responsePort: NWEndpoint.Port = 12346
     private let tcpListenPort: NWEndpoint.Port = 54000  // For receiving JSON
     private let tcpSendPort: NWEndpoint.Port = 53000  // For sending JSON
@@ -104,7 +104,6 @@ class ReceiverNetwork: ObservableObject {
     }
 
     private func handleReceivedJSON(_ json: [String: Any], connection: NWConnection) {
-        // Process the received JSON data (equivalent to Python's device_type negotiation)
         print("Received JSON: \(json)")
         guard let deviceType = json["device_type"] as? String else {
             print("Unknown device type received.")
@@ -113,12 +112,44 @@ class ReceiverNetwork: ObservableObject {
         
         if deviceType == "python" {
             print("Connected to a Python device.")
-            // Send a JSON response back on TCP port 54000
-            self.sendJSONResponse(to: connection.endpoint)
-        } else if deviceType == "java" {
-            print("Connected to a Java device. This feature is not implemented yet.")
+            // Create response JSON
+            let responseData: [String: Any] = [
+                "device_type": "swift",
+                "os": "ipad"
+            ]
+            
+            if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {
+                let jsonSize = UInt64(jsonData.count)
+                let sizeData = withUnsafeBytes(of: jsonSize) { Data($0) }
+                
+                // Log the JSON data and size to be sent
+                print("Sending JSON file size: \(jsonSize) bytes")
+                print("Sending JSON response: \(responseData)")
+                
+                // Send size first
+                connection.send(content: sizeData, completion: .contentProcessed({ error in
+                    if let error = error {
+                        print("Error sending size: \(error)")
+                        return
+                    }
+                    
+                    // Then send JSON data using the same connection
+                    connection.send(content: jsonData, completion: .contentProcessed({ error in
+                        if let error = error {
+                            print("Error sending JSON: \(error)")
+                        } else {
+                            print("JSON response sent successfully")
+                        }
+                        // Keep connection open for a moment to ensure data is sent
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            connection.cancel()
+                        }
+                    }))
+                }))
+            }
         } else {
             print("Unknown device type.")
+            connection.cancel()
         }
     }
 
@@ -131,7 +162,7 @@ class ReceiverNetwork: ObservableObject {
         // Create the JSON response (equivalent to sending JSON in Python)
         let responseData: [String: Any] = [
             "device_type": "swift",
-            "os": "ipad"
+            "os": "ipados"
         ]
         
         if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {

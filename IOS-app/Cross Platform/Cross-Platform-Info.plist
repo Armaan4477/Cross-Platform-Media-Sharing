@@ -59,6 +59,15 @@
     <key>NSUserTrackingUsageDescription</key>
     <string>This app tracks the user's activity to improve user experience and functionality.</string>
 
+    
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app needs to access your local network to discover and connect to nearby devices</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_datadash._udp</string>
+        <string>_datadash._tcp</string>
+    </array>
+    
     <!-- Enable TCP Connections -->
     <key>NSExceptionDomains</key>
     <dict>
