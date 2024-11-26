@@ -537,8 +537,15 @@ if __name__ == '__main__':
                 None, "runas", sys.executable, f'"{script}" {params}', None, 1)
             if result <= 32:
                 # The user declined the UAC prompt or an error occurred
-                QMessageBox.critical(None, "Admin Privileges Required",
-                                     "This application requires administrator privileges to run.")
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setWindowTitle("Admin Privileges Required")
+                msg_box.setText("This application requires administrator privileges to run.")
+                msg_box.setWindowFlags(msg_box.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+                msg_box.raise_()
+                msg_box.activateWindow()
+                msg_box.exec()
+                sys.exit()
             sys.exit()
     main = MainApp()
     main.show()
