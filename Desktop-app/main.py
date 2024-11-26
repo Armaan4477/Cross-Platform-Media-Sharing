@@ -529,8 +529,15 @@ if __name__ == '__main__':
         except:
             is_admin = False
         if not is_admin:
-            QMessageBox.critical(None, "Admin Privileges Required",
-                                 "Please run this application with administrator privileges.")
+            # Relaunch the script with admin rights
+            try:
+                script = os.path.abspath(sys.argv[0])
+                params = ' '.join(['"' + arg + '"' for arg in sys.argv[1:]])
+                ctypes.windll.shell32.ShellExecuteW(
+                    None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+            except:
+                QMessageBox.critical(None, "Admin Privileges Required",
+                                     "Failed to elevate privileges. Please run this application with administrator privileges.")
             sys.exit()
     main = MainApp()
     main.show()
