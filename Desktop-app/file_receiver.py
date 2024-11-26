@@ -94,6 +94,9 @@ class FileReceiver(QThread):
             self.show_receive_app_p_signal_java.emit()
             sleep(1)
             self.cleanup_sockets()
+        elif sender_device_type == "swift":
+            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
+            self.cleanup_sockets()
         else:
             logger.debug("Unknown device type received.")
     
