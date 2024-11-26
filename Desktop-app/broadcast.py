@@ -141,6 +141,8 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
+            elif device_type == 'swift':
+                logger.error("Swift device detected, but not supported yet.")
             else:
                 raise ValueError("Unsupported device type")
 

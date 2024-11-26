@@ -6,7 +6,7 @@ class SendingDiscovery: ObservableObject {
     @Published var devices: [String] = []
     private var udpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
-    private let discoveryPort: NWEndpoint.Port = 12346  // Port for sending DISCOVER messages
+    private let discoveryPort: NWEndpoint.Port = 12345  // Port for sending DISCOVER messages
     private let listeningPort: NWEndpoint.Port = 12346  // Port for listening to RECEIVER messages
     private let SENDER_JSON_PORT: NWEndpoint.Port = 53000
     private let RECEIVER_JSON_PORT: NWEndpoint.Port = 54000

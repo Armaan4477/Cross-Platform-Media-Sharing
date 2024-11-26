@@ -89,8 +89,12 @@ class FileReceiver(QThread):
             sleep(1)  # Wait for the signal to be processed
             self.cleanup_sockets() # Clean up before proceeding
         elif sender_device_type == "java":
-            logger.debug("Connected to a Java device, but this feature is not implemented yet.")
+            logger.debug("Connected to a Java device.")
             self.show_receive_app_p_signal_java.emit()
+            sleep(1)
+            self.cleanup_sockets()
+        elif sender_device_type == "swift":
+            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
             sleep(1)
             self.cleanup_sockets()
         else:

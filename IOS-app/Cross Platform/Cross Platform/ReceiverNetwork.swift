@@ -9,7 +9,7 @@ class ReceiverNetwork: ObservableObject {
     private var tcpListener: NWListener?
     private let udpQueue = DispatchQueue(label: "UDPQueue")
     private let tcpQueue = DispatchQueue(label: "TCPQueue")
-    private let listenPort: NWEndpoint.Port = 12346
+    private let listenPort: NWEndpoint.Port = 12345
     private let responsePort: NWEndpoint.Port = 12346
     private let tcpListenPort: NWEndpoint.Port = 54000  // For receiving JSON
     private let tcpSendPort: NWEndpoint.Port = 53000  // For sending JSON
