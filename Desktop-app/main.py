@@ -533,12 +533,19 @@ if __name__ == '__main__':
             try:
                 script = os.path.abspath(sys.argv[0])
                 params = ' '.join(['"' + arg + '"' for arg in sys.argv[1:]])
-                ctypes.windll.shell32.ShellExecuteW(
+                result = ctypes.windll.shell32.ShellExecuteW(
                     None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+                if result <= 32:
+                    # The user declined the UAC prompt or an error occurred
+                    QMessageBox.critical(None, "Admin Privileges Required",
+                                         "This application requires administrator privileges to run.")
+                    sys.exit()
+                else:
+                    sys.exit()  # Relaunched successfully; exit the current instance
             except:
                 QMessageBox.critical(None, "Admin Privileges Required",
                                      "Failed to elevate privileges. Please run this application with administrator privileges.")
-            sys.exit()
+                sys.exit()
     main = MainApp()
     main.show()
     sys.exit(app.exec())
