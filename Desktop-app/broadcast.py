@@ -10,13 +10,12 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence,QKeyEvent
-from constant import  logger, get_config
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
-LISTEN_PORT = 12346
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
@@ -93,42 +92,13 @@ class BroadcastWorker(QThread):
     def run(self):
         self.discover_receivers()
 
-    def get_broadcast(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            logger.info("Local IP determined: %s", local_ip)
-        except Exception as e:
-            logger.error("Error obtaining local IP: %s", e)
-            local_ip = "Unable to get IP"
-        finally:
-            s.close()
-        
-        if local_ip == "Unable to get IP":
-            return local_ip
-
-        # Split the IP address into parts
-        ip_parts = local_ip.split('.')
-        # Replace the last part with '255' to create the broadcast address
-        ip_parts[-1] = '255'
-        # Join the parts back together to form the broadcast address
-        broadcast_address = '.'.join(ip_parts)
-        logger.info("Broadcast address determined: %s", broadcast_address)
-        return broadcast_address
-
-
-
     def discover_receivers(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
-            # Fix: Call the method to get the broadcast address
-            broadcast_address = self.get_broadcast()
-            if broadcast_address != "Unable to get IP":
-                s.sendto(b'DISCOVER', (broadcast_address, LISTEN_PORT))
+            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
 
             s.settimeout(2)
             try:
@@ -140,8 +110,6 @@ class BroadcastWorker(QThread):
                         self.device_detected.emit({'ip': address[0], 'name': device_name})
             except socket.timeout:
                 pass
-            except Exception as e:
-                logger.error(f"Error in discover_receivers: {str(e)}")
 
     def connect_to_device(self, device_ip, device_name):
         try:
@@ -173,8 +141,6 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
-            elif device_type == 'swift':
-                logger.info("IOS/IpadOS device detected,feature not implemented yet.")
             else:
                 raise ValueError("Unsupported device type")
 
@@ -523,4 +489,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash
+    #com.an.Datadash   

@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
 from PyQt6.QtGui import QScreen, QMovie, QKeySequence, QKeyEvent
-from constant import get_config, logger
+from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
@@ -18,7 +18,6 @@ from file_receiver_android import ReceiveAppPJava
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
-LISTEN_PORT = 12346
 
 class FileReceiver(QThread):
     show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window
@@ -83,7 +82,6 @@ class FileReceiver(QThread):
         device_json_size = struct.unpack('<Q', self.client_socket.recv(8))[0]
         device_json = self.client_socket.recv(device_json_size).decode()
         self.device_info = json.loads(device_json)
-        logger.debug(f"Device information received: {self.device_info}")
         sender_device_type = self.device_info.get("device_type", "unknown")
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
@@ -94,9 +92,6 @@ class FileReceiver(QThread):
             logger.debug("Connected to a Java device, but this feature is not implemented yet.")
             self.show_receive_app_p_signal_java.emit()
             sleep(1)
-            self.cleanup_sockets()
-        elif sender_device_type == "swift":
-            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
             self.cleanup_sockets()
         else:
             logger.debug("Unknown device type received.")
@@ -112,7 +107,6 @@ class ReceiveApp(QWidget):
         super().__init__()
         self.initUI()
         self.setFixedSize(853, 480)
-        self.config = get_config()  # Load config once
         #com.an.Datadash
 
     def initUI(self):
@@ -208,16 +202,17 @@ class ReceiveApp(QWidget):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(('', LISTEN_PORT))
+            s.bind(('', BROADCAST_PORT))
 
             while True:
                 if self.file_receiver.broadcasting:
                     message, address = s.recvfrom(1024)
                     message = message.decode()
                     if message == 'DISCOVER':
-                        response = f'RECEIVER:{self.config["device_name"]}'
-                        # Use the same socket and port to send response
-                        s.sendto(response.encode(), (address[0], LISTEN_PORT))
+                        response = f'RECEIVER:{get_config()["device_name"]}'
+                        # Create a new socket to send the response on LISTEN_PORT
+                        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as response_socket:
+                            response_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
                 sleep(1)  # Avoid busy-waiting
 
     def connection_successful(self):
