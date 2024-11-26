@@ -14,6 +14,7 @@ from PyQt6.QtSvg import QSvgRenderer
 import math
 import platform
 import requests
+import ctypes
 
 class WifiAnimationWidget(QWidget):
     def __init__(self, parent=None):
@@ -522,7 +523,16 @@ class MainApp(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    if platform.system() == 'Windows':
+        try:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            is_admin = False
+        if not is_admin:
+            QMessageBox.critical(None, "Admin Privileges Required",
+                                 "Please run this application with administrator privileges.")
+            sys.exit()
     main = MainApp()
     main.show()
-    sys.exit(app.exec()) 
+    sys.exit(app.exec())
     #com.an.Datadash
