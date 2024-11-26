@@ -30,11 +30,12 @@ import java.net.SocketException;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
-    private static final int UDP_PORT = 12346; // Discovery port
+    private static final int UDP_PORT = 12345; // Discovery port
     private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on the Python app
     private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
+    private int LISTEN_PORT = 12346;
 
     private boolean tcpConnectionEstablished = false;
 
@@ -113,9 +114,9 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     if (message.equals("DISCOVER")) {
                         InetAddress senderAddress = receivePacket.getAddress();
                         byte[] sendData = ("RECEIVER:" + DEVICE_NAME).getBytes();
-                        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, UDP_PORT);
+                        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, LISTEN_PORT);
                         socket.send(sendPacket);
-                        Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + UDP_PORT);
+                        Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
 
                         // Start a new thread to handle the TCP connection
                         new Thread(() -> {
