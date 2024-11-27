@@ -7,11 +7,11 @@ import socket
 
 def get_logger_file_path():
     if platform.system() == 'Windows':
-        logger_dir = os.path.join(os.getenv('APPDATA'), 'DataDash')
+        logger_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'Temp' ,  'DataDash')
     elif platform.system() == 'Linux':
         logger_dir = os.path.join(os.path.expanduser('~'), '.cache', 'DataDash')
     elif platform.system() == 'Darwin':  # macOS
-        logger_dir = os.path.join(os.path.expanduser('~/Library/Application Support'), 'DataDash')
+        logger_dir = os.path.join(os.path.expanduser('~/Library/Caches'), 'DataDash')
     else:
         logger.error("Unsupported OS!")
         return None
