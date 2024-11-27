@@ -4,13 +4,43 @@ import os
 import logging
 import socket
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)s %(name)s %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
+
+def get_logger_file_path():
+    if platform.system() == 'Windows':
+        logger_dir = os.path.join(os.getenv('APPDATA'), 'DataDash')
+    elif platform.system() == 'Linux':
+        logger_dir = os.path.join(os.path.expanduser('~'), '.cache', 'DataDash')
+    elif platform.system() == 'Darwin':  # macOS
+        logger_dir = os.path.join(os.path.expanduser('~/Library/Application Support'), 'DataDash')
+    else:
+        logger.error("Unsupported OS!")
+        return None
+    return logger_dir
+
+
+# Get the directory of the config file
+log_file_path = os.path.join(get_logger_file_path(), 'datadashlog.txt')
+
+# Configure the logger
+logger = logging.getLogger('FileSharing: ')
+logger.setLevel(logging.DEBUG)
+
+# Create a formatter with date and time
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+
+# Create a FileHandler to write logs to 'datadashlog.txt'
+file_handler = logging.FileHandler(log_file_path, mode='a')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+
+# Create a StreamHandler for console output
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+
+# Add handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 logger = logging.getLogger('FileSharing: ')
 
