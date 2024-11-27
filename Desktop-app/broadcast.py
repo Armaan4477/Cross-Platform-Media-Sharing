@@ -98,6 +98,7 @@ class BroadcastWorker(QThread):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
+            logger.info("Sending discover packet.")
             s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
 
             s.settimeout(2)
@@ -105,11 +106,14 @@ class BroadcastWorker(QThread):
                 while True:
                     message, address = s.recvfrom(1024)
                     message = message.decode()
+                    logger.info(f"Received message from {address[0]}: {message}")
                     if message.startswith('RECEIVER:'):
                         device_name = message.split(':')[1]
                         self.device_detected.emit({'ip': address[0], 'name': device_name})
             except socket.timeout:
                 pass
+            except Exception as e:
+                logger.error(f"Error during discovery: {e}")
 
     def connect_to_device(self, device_ip, device_name):
         try:
@@ -491,4 +495,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash   
+    #com.an.Datadash
