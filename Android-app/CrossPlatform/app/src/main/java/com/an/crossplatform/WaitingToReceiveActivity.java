@@ -53,14 +53,14 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             try {
                 JSONObject json = new JSONObject(rawJson);
                 DEVICE_NAME = json.getString("device_name");  // Ensure correct key here
-                Log.d("WaitingToReceive", "Device name from config: " + DEVICE_NAME);
+                FileLogger.log("WaitingToReceive", "Device name from config: " + DEVICE_NAME);
             } catch (Exception e) {
-                Log.e("WaitingToReceive", "Error parsing JSON", e);
+                FileLogger.log("WaitingToReceive", "Error parsing JSON", e);
                 DEVICE_NAME = "Android Device";  // Fallback if error occurs
             }
         } else {
             DEVICE_NAME = "Android Device";  // Fallback if config.json doesn't exist
-            Log.d("WaitingToReceive", "Using default device name: " + DEVICE_NAME);
+            FileLogger.log("WaitingToReceive", "Using default device name: " + DEVICE_NAME);
         }
 
         // Start listening for discover messages
@@ -71,28 +71,28 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         // Access the config.json file in the new location in Downloads/DataDash/Config
         File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/");
         if (!folder.exists()) {
-            Log.d("readJsonFromFile", "Config folder does not exist in Downloads. Returning null.");
+            FileLogger.log("readJsonFromFile", "Config folder does not exist in Downloads. Returning null.");
             return null;
         }
 
         File file = new File(folder, "config.json");
-        Log.d("readJsonFromFile", "Looking for config file at: " + file.getAbsolutePath());
+        FileLogger.log("readJsonFromFile", "Looking for config file at: " + file.getAbsolutePath());
 
         if (file.exists()) {
-            Log.d("readJsonFromFile", "File exists. Reading contents...");
+            FileLogger.log("readJsonFromFile", "File exists. Reading contents...");
             StringBuilder jsonString = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     jsonString.append(line);
                 }
-                Log.d("readJsonFromFile", "File content: " + jsonString.toString());
+                FileLogger.log("readJsonFromFile", "File content: " + jsonString.toString());
                 return jsonString.toString();
             } catch (Exception e) {
-                Log.e("readJsonFromFile", "Error reading JSON from file", e);
+                FileLogger.log("readJsonFromFile", "Error reading JSON from file", e);
             }
         } else {
-            Log.d("readJsonFromFile", "Config file does not exist at: " + file.getAbsolutePath());
+            FileLogger.log("readJsonFromFile", "Config file does not exist at: " + file.getAbsolutePath());
         }
         return null;
     }
@@ -107,16 +107,16 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     socket.receive(receivePacket);
 
                     String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
-                    Log.d("WaitingToReceive", "Received raw message: " + message);
-                    Log.d("WaitingToReceive", "Sender address: " + receivePacket.getAddress().getHostAddress());
-                    Log.d("WaitingToReceive", "Sender port: " + receivePacket.getPort());
+                    FileLogger.log("WaitingToReceive", "Received raw message: " + message);
+                    FileLogger.log("WaitingToReceive", "Sender address: " + receivePacket.getAddress().getHostAddress());
+                    FileLogger.log("WaitingToReceive", "Sender port: " + receivePacket.getPort());
 
                     if (message.equals("DISCOVER")) {
                         InetAddress senderAddress = receivePacket.getAddress();
                         byte[] sendData = ("RECEIVER:" + DEVICE_NAME).getBytes();
                         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, LISTEN_PORT);
                         socket.send(sendPacket);
-                        Log.d("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
+                        FileLogger.log("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
 
                         // Start a new thread to handle the TCP connection
                         new Thread(() -> {
@@ -127,7 +127,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     }
                 }
             } catch (Exception e) {
-                Log.d("Error", "This is the error:" + e);
+                FileLogger.log("Error", "This is the error:" + e);
             }
         }).start();
     }
@@ -137,16 +137,16 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         Socket socket = null;
         BufferedOutputStream outputStream = null;
         BufferedInputStream inputStream = null;
-        Log.d("WaitingToReceive", "Establishing TCP connection with Sender");
+        FileLogger.log("WaitingToReceive", "Establishing TCP connection with Sender");
 
         try {
             serverSocket = new ServerSocket(RECEIVER_PORT_JSON);
-            Log.d("WaitingToReceive", "Waiting for incoming connections on port " + RECEIVER_PORT_JSON);
+            FileLogger.log("WaitingToReceive", "Waiting for incoming connections on port " + RECEIVER_PORT_JSON);
 
             while (true) {
-                Log.d("WaitingToReceive", "Waiting for incoming connections...");
+                FileLogger.log("WaitingToReceive", "Waiting for incoming connections...");
                 socket = serverSocket.accept();
-                Log.d("WaitingToReceive", "Accepted connection from: " + socket.getInetAddress().toString());
+                FileLogger.log("WaitingToReceive", "Accepted connection from: " + socket.getInetAddress().toString());
 
                 DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
                 DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
@@ -157,7 +157,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 deviceInfo.put("os", "Android");
                 String deviceInfoStr = deviceInfo.toString();
                 byte[] sendData = deviceInfoStr.getBytes(StandardCharsets.UTF_8);
-                Log.d("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
+                FileLogger.log("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
 
                 // Convert the JSON size to little-endian bytes and send it first
                 ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
@@ -169,7 +169,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 bufferedOutputStream.write(sendData);
                 bufferedOutputStream.flush();
 
-                Log.d("WaitingToReceive", "Sent JSON data to receiver");
+                FileLogger.log("WaitingToReceive", "Sent JSON data to receiver");
 
                 Socket finalSocket = socket;
 
@@ -181,7 +181,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         // Read the JSON size first (as a long, little-endian)
                         byte[] recvSizeBuf = new byte[Long.BYTES];
                         if (bufferedInputStream.read(recvSizeBuf) == -1) {
-                            Log.e("WaitingToReceive", "End of stream reached while reading size");
+                            FileLogger.log("WaitingToReceive", "End of stream reached while reading size");
                             return;
                         }
 
@@ -195,7 +195,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         while (totalBytesRead < recvBuf.length) {
                             int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
                             if (bytesRead == -1) {
-                                Log.e("WaitingToReceive", "End of stream reached before reading complete data");
+                                FileLogger.log("WaitingToReceive", "End of stream reached before reading complete data");
                                 return;
                             }
                             totalBytesRead += bytesRead;
@@ -204,18 +204,18 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                         // Convert the received bytes into a JSON string
                         String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
                         JSONObject receivedJson = new JSONObject(jsonStr);
-                        Log.d("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
+                        FileLogger.log("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
                         receivedJsonContainer[0] = receivedJson;
 
                     } catch (Exception e) {
-                        Log.e("WaitingToReceive", "Error receiving JSON data", e);
+                        FileLogger.log("WaitingToReceive", "Error receiving JSON data", e);
                     } finally {
                         try {
                             if (bufferedInputStream != null) bufferedInputStream.close();
                             if (bufferedOutputStream != null) bufferedOutputStream.close();
                             if (finalSocket != null && !finalSocket.isClosed()) finalSocket.close();
                         } catch (IOException e) {
-                            Log.e("WaitingToReceive", "Error closing socket resources", e);
+                            FileLogger.log("WaitingToReceive", "Error closing socket resources", e);
                         }
                     }
                 });
@@ -230,12 +230,12 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
                     if (socket != null && !socket.isClosed()) socket.close();
                     if (receivedJson.getString("device_type").equals("python")) {
-                        Log.d("WaitingToReceive", "Received JSON data from Python app");
+                        FileLogger.log("WaitingToReceive", "Received JSON data from Python app");
                         Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
                         intent.putExtra("receivedJson", receivedJson.toString());
                         startActivity(intent);
                     } else if (receivedJson.getString("device_type").equals("java")) {
-                        Log.d("WaitingToReceive", "Received JSON data from Java app");
+                        FileLogger.log("WaitingToReceive", "Received JSON data from Java app");
                         Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
                         intent.putExtra("receivedJson", receivedJson.toString());
                         startActivity(intent);
@@ -243,14 +243,14 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            Log.e("WaitingToReceive", "Error establishing TCP connection", e);
+            FileLogger.log("WaitingToReceive", "Error establishing TCP connection", e);
         } finally {
             // Make sure the serverSocket is only closed once we're done with all transactions
             try {
                 if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
-                Log.d("WaitingToReceive", "ServerSocket closed");
+                FileLogger.log("WaitingToReceive", "ServerSocket closed");
             } catch (IOException e) {
-                Log.e("WaitingToReceive", "Error closing ServerSocket", e);
+                FileLogger.log("WaitingToReceive", "Error closing ServerSocket", e);
             }
         }
     }

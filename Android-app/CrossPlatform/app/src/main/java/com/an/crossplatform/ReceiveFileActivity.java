@@ -76,7 +76,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             osType = jsonObject.getString("os");
             deviceType = jsonObject.getString("device_type");
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivity", "Failed to retrieve OS type", e);
+            FileLogger.log("ReceiveFileActivity", "Failed to retrieve OS type", e);
         }
 
         txt_waiting.setText("Waiting to Receive files from Android");
@@ -93,11 +93,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
         public void run() {
             boolean connectionSuccessful = initializeConnection();
             if (connectionSuccessful) {
-                Log.d("ReceiveFileActivity", "Connection established with the sender.");
+                FileLogger.log("ReceiveFileActivity", "Connection established with the sender.");
                 txt_waiting.setText("Receiving files from Android");
                 startReceiveFilesTask();
             } else {
-                Log.e("ReceiveFileActivity", "Failed to establish connection.");
+                FileLogger.log("ReceiveFileActivity", "Failed to establish connection.");
             }
         }
     }
@@ -108,12 +108,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 serverSocket.close();
             }
             serverSocket = new ServerSocket(58100);
-            Log.d("ReceiveFileActivity", "Waiting for a connection...");
+            FileLogger.log("ReceiveFileActivity", "Waiting for a connection...");
             clientSocket = serverSocket.accept();
-            Log.d("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
+            FileLogger.log("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
             return true;
         } catch (IOException e) {
-            Log.e("ReceiveFileActivity", "Error initializing connection", e);
+            FileLogger.log("ReceiveFileActivity", "Error initializing connection", e);
             return false;
         }
     }
@@ -132,7 +132,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     serverSocket.close();
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+                FileLogger.log("ReceiveFileActivityPython", "Error closing server socket", e);
             }
             receiveFiles();
             // Close any existing connections
@@ -141,7 +141,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     serverSocket.close();
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+                FileLogger.log("ReceiveFileActivityPython", "Error closing server socket", e);
             }
         }
 
@@ -155,13 +155,13 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
             try {
                 saveToDirectory = loadSaveDirectoryFromConfig();
-                Log.d("ReceiveFileActivity", "Save directory: " + saveToDirectory);
+                FileLogger.log("ReceiveFileActivity", "Save directory: " + saveToDirectory);
 
                 File baseDir = Environment.getExternalStorageDirectory();
                 File targetDir = new File(baseDir, saveToDirectory);
 
                 if (!targetDir.exists() && !targetDir.mkdirs()) {
-                    Log.e("ReceiveFileActivity", "Failed to create directory: " + targetDir.getPath());
+                    FileLogger.log("ReceiveFileActivity", "Failed to create directory: " + targetDir.getPath());
                     return;
                 }
 
@@ -212,11 +212,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
                         handleFilePath(fileName, destinationFolder, metadataArray, fileSize);
 
                     } else {
-                        Log.e("ReceiveFileActivity", "Missing metadata or destination folder");
+                        FileLogger.log("ReceiveFileActivity", "Missing metadata or destination folder");
                     }
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivity", "Error receiving files", e);
+                FileLogger.log("ReceiveFileActivity", "Error receiving files", e);
             }
         }
 
@@ -225,7 +225,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             try {
                 // Get full path from metadata
                 String filePath = getFilePathFromMetadata(metadataArray, fileName);
-                Log.d("ReceiveFileActivity", "Original file path: " + filePath);
+                FileLogger.log("ReceiveFileActivity", "Original file path: " + filePath);
 
                 // Extract base folder name from first folder entry
                 String baseFolderName = null;
@@ -234,7 +234,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     String path = fileInfo.optString("path", "");
                     if (path.endsWith("/")) {
                         baseFolderName = path.substring(0, path.indexOf("/"));
-                        Log.d("ReceiveFileActivity", "Found base folder name: " + baseFolderName);
+                        FileLogger.log("ReceiveFileActivity", "Found base folder name: " + baseFolderName);
                         break;
                     }
                 }
@@ -242,7 +242,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 // Strip base folder name from path
                 if (baseFolderName != null && filePath.startsWith(baseFolderName + "/")) {
                     filePath = filePath.substring(baseFolderName.length() + 1);
-                    Log.d("ReceiveFileActivity", "Adjusted file path: " + filePath);
+                    FileLogger.log("ReceiveFileActivity", "Adjusted file path: " + filePath);
                 }
 
                 // Create file and ensure parent directories exist
@@ -250,7 +250,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 File parentDir = receivedFile.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
                     boolean created = parentDir.mkdirs();
-                    Log.d("ReceiveFileActivity", "Created parent directory: " + created);
+                    FileLogger.log("ReceiveFileActivity", "Created parent directory: " + created);
                 }
 
                 // Handle duplicate file names
@@ -269,7 +269,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     counter++;
                 }
 
-                Log.d("ReceiveFileActivity", "Writing file to: " + receivedFile.getAbsolutePath());
+                FileLogger.log("ReceiveFileActivity", "Writing file to: " + receivedFile.getAbsolutePath());
 
                 // Write file data
                 try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
@@ -289,10 +289,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     }
                 }
 
-                Log.d("ReceiveFileActivity", "File written successfully: " + receivedFile.getName());
+                FileLogger.log("ReceiveFileActivity", "File written successfully: " + receivedFile.getName());
 
             } catch (IOException | JSONException e) {
-                Log.e("ReceiveFileActivity", "Error handling file path: " + fileName, e);
+                FileLogger.log("ReceiveFileActivity", "Error handling file path: " + fileName, e);
             }
         }
     }
@@ -306,7 +306,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     return path;
                 }
             } catch (JSONException e) {
-                Log.e("ReceiveFileActivity", "Error processing metadata for file: " + fileName, e);
+                FileLogger.log("ReceiveFileActivity", "Error processing metadata for file: " + fileName, e);
             }
         }
         return fileName;
@@ -319,7 +319,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
         File configFile = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/config.json");
 
         try {
-            Log.e("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
+            FileLogger.log("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -331,7 +331,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             JSONObject json = new JSONObject(jsonBuilder.toString());
             saveToDirectory = json.optString("saveToDirectory", "Download/DataDash");
         } catch (Exception e) {
-            Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
             saveToDirectory = "Download/DataDash"; // Default if loading fails
         }
         return saveToDirectory;
@@ -353,7 +353,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             String metadataJson = baos.toString(StandardCharsets.UTF_8);
             metadataArray = new JSONArray(metadataJson);
         } catch (IOException | JSONException e) {
-            Log.e("ReceiveFileActivity", "Error receiving metadata", e);
+            FileLogger.log("ReceiveFileActivity", "Error receiving metadata", e);
         }
         return metadataArray;
     }
@@ -361,7 +361,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     // In ReceiveFileActivity.java - Update createFolderStructure method
     private String createFolderStructure(JSONArray metadataArray, String defaultDir) {
         if (metadataArray.length() == 0) {
-            Log.d("ReceiveFileActivity", "Empty metadata array");
+            FileLogger.log("ReceiveFileActivity", "Empty metadata array");
             return defaultDir;
         }
 
@@ -373,13 +373,13 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 String path = fileInfo.optString("path", "");
                 if (path.endsWith("/")) {
                     baseFolderName = path.substring(0, path.indexOf("/"));
-                    Log.d("ReceiveFileActivity", "Found base folder name: " + baseFolderName);
+                    FileLogger.log("ReceiveFileActivity", "Found base folder name: " + baseFolderName);
                     break;
                 }
             }
 
             if (baseFolderName == null || baseFolderName.isEmpty()) {
-                Log.e("ReceiveFileActivity", "Could not determine base folder name");
+                FileLogger.log("ReceiveFileActivity", "Could not determine base folder name");
                 return defaultDir;
             }
 
@@ -392,18 +392,18 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 finalFolderName = baseFolderName + " (" + counter + ")";
                 destinationDir = new File(defaultDir, finalFolderName);
                 counter++;
-                Log.d("ReceiveFileActivity", "Trying folder name: " + finalFolderName);
+                FileLogger.log("ReceiveFileActivity", "Trying folder name: " + finalFolderName);
             }
 
             // Create the root folder
             String destinationFolder = destinationDir.getAbsolutePath();
             if (!destinationDir.mkdirs()) {
-                Log.e("ReceiveFileActivity", "Failed to create directory: " + destinationFolder);
+                FileLogger.log("ReceiveFileActivity", "Failed to create directory: " + destinationFolder);
                 if (!destinationDir.exists()) {
                     return defaultDir;
                 }
             }
-            Log.d("ReceiveFileActivity", "Created root folder: " + destinationFolder);
+            FileLogger.log("ReceiveFileActivity", "Created root folder: " + destinationFolder);
 
             // Update base folder name to include numbering if needed
             baseFolderName = finalFolderName;
@@ -411,7 +411,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
             return destinationFolder;
 
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivity", "Error processing metadata JSON", e);
+            FileLogger.log("ReceiveFileActivity", "Error processing metadata JSON", e);
             return defaultDir;
         }
     }
@@ -428,7 +428,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            Log.e("ReceiveFileActivity", "Error closing sockets", e);
+            FileLogger.log("ReceiveFileActivity", "Error closing sockets", e);
         }
     }
 
@@ -444,7 +444,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error closing sockets", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
         }
         finish();
     }

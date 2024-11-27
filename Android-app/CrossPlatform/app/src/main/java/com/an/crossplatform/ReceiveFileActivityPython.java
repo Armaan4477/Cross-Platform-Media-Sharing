@@ -76,7 +76,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             osType = jsonObject.getString("os");
             deviceType = jsonObject.getString("device_type");
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivityPython", "Failed to retrieve OS type", e);
+            FileLogger.log("ReceiveFileActivityPython", "Failed to retrieve OS type", e);
         }
 
         if(osType.equals("Windows")) {
@@ -97,7 +97,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             boolean connectionSuccessful = initializeConnection();
             runOnUiThread(() -> {
                 if (connectionSuccessful) {
-                    Log.d("ReceiveFileActivityPython", "Connection established with the sender.");
+                    FileLogger.log("ReceiveFileActivityPython", "Connection established with the sender.");
                     if(osType.equals("Windows")) {
                         txt_waiting.setText("Receiving files from Windows");
                     } else if (osType.equals("Linux")) {
@@ -109,7 +109,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     }
                     executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
                 } else {
-                    Log.e("ReceiveFileActivityPython", "Failed to establish connection.");
+                    FileLogger.log("ReceiveFileActivityPython", "Failed to establish connection.");
                 }
             });
         }
@@ -121,12 +121,12 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 serverSocket.close();
             }
             serverSocket = new ServerSocket(58100);
-            Log.d("ReceiveFileActivityPython", "Waiting for a connection...");
+            FileLogger.log("ReceiveFileActivityPython", "Waiting for a connection...");
             clientSocket = serverSocket.accept();
-            Log.d("ReceiveFileActivityPython", "Connected to " + clientSocket.getInetAddress().getHostAddress());
+            FileLogger.log("ReceiveFileActivityPython", "Connected to " + clientSocket.getInetAddress().getHostAddress());
             return true;
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error initializing connection", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error initializing connection", e);
             return false;
         }
     }
@@ -140,7 +140,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     serverSocket.close();
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivityPython", "Error closing server socket", e);
+                FileLogger.log("ReceiveFileActivityPython", "Error closing server socket", e);
             }
             receiveFiles();
             // Close threads and sockets after file reception
@@ -148,7 +148,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 try {
                     clientSocket.close();
                 } catch (IOException e) {
-                    Log.e("ReceiveFileActivityPython", "Error closing client socket", e);
+                    FileLogger.log("ReceiveFileActivityPython", "Error closing client socket", e);
                 }
             }
         }
@@ -160,12 +160,12 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 animationView.setVisibility(LottieAnimationView.VISIBLE);
                 animationView.playAnimation();
             });
-            Log.d("ReceiveFileActivityPython", "File reception started.");
+            FileLogger.log("ReceiveFileActivityPython", "File reception started.");
             try {
                 // Load the save directory from the config file
                 File configFile = new File(getFilesDir(), "config/config.json");
                 saveToDirectory = loadSaveDirectoryFromConfig();
-                Log.d("ReceiveFileActivityPython", "Save directory: " + saveToDirectory);
+                FileLogger.log("ReceiveFileActivityPython", "Save directory: " + saveToDirectory);
 
                 // Ensure the directory path is correctly formed
                 File baseDir = Environment.getExternalStorageDirectory();
@@ -173,7 +173,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
                 // Create the directory if it doesn't exist
                 if (!targetDir.exists() && !targetDir.mkdirs()) {
-                    Log.e("ReceiveFileActivityPython", "Failed to create directory: " + targetDir.getPath());
+                    FileLogger.log("ReceiveFileActivityPython", "Failed to create directory: " + targetDir.getPath());
                     return;
                 }
 
@@ -187,7 +187,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
 
                     if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
-                        Log.d("ReceiveFileActivityPython", "Received all files.");
+                        FileLogger.log("ReceiveFileActivityPython", "Received all files.");
                         // After file reception is complete, update the UI accordingly
                         runOnUiThread(() -> {
                             txt_waiting.setText("File transfer completed");
@@ -238,13 +238,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
                     // Check if received path is a directory
                     if (receivedFile.isDirectory()) {
-                        Log.e("ReceiveFileActivityPython", "Received path is a directory, removing filename from path.");
+                        FileLogger.log("ReceiveFileActivityPython", "Received path is a directory, removing filename from path.");
                         receivedFile = new File(destinationFolder, filePath + File.separator + fileName);
                     }
 
                     File parentDir = receivedFile.getParentFile();
                     if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
-                        Log.e("ReceiveFileActivityPython", "Failed to create directory: " + parentDir.getPath());
+                        FileLogger.log("ReceiveFileActivityPython", "Failed to create directory: " + parentDir.getPath());
                         continue;
                     }
 
@@ -286,13 +286,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                             receivedSize += bytesRead;
 
                             int progress = (int) ((receivedSize * 100) / fileSize);
-                            Log.d("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
+                            FileLogger.log("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
                             runOnUiThread(() -> progressBar.setProgress(progress));
                         }
                     }
                 }
             } catch (IOException e) {
-                Log.e("ReceiveFileActivityPython", "Error receiving files", e);
+                FileLogger.log("ReceiveFileActivityPython", "Error receiving files", e);
             }
         }
     }
@@ -310,7 +310,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     return path;
                 }
             } catch (JSONException e) {
-                Log.e("ReceiveFileActivityPython", "Error processing metadata for file: " + fileName, e);
+                FileLogger.log("ReceiveFileActivityPython", "Error processing metadata for file: " + fileName, e);
             }
         }
         return fileName; // Return original fileName if not found in metadata
@@ -323,7 +323,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         File configFile = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/config.json");
 
         try {
-            Log.e("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
+            FileLogger.log("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
             FileInputStream fis = new FileInputStream(configFile);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
             StringBuilder jsonBuilder = new StringBuilder();
@@ -335,7 +335,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             JSONObject json = new JSONObject(jsonBuilder.toString());
             saveToDirectory = json.optString("saveToDirectory", "Download/DataDash");
         } catch (Exception e) {
-            Log.e("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
             saveToDirectory = "Download/DataDash"; // Default if loading fails
         }
         return saveToDirectory;
@@ -349,16 +349,16 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             String metadataJson = new String(receivedData, StandardCharsets.UTF_8);
             return new JSONArray(metadataJson); // Change to JSONArray
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error receiving metadata", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error receiving metadata", e);
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivityPython", "Error parsing metadata JSON", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error parsing metadata JSON", e);
         }
         return null; // Return null or handle accordingly if metadata reception fails
     }
 
     private String createFolderStructure(JSONArray metadataArray, String saveToDirectory) {
         if (metadataArray.length() == 0) {
-            Log.e("ReceiveFileActivityPython", "No metadata provided for folder structure.");
+            FileLogger.log("ReceiveFileActivityPython", "No metadata provided for folder structure.");
             return saveToDirectory; // Return saveToDirectory if no metadata
         }
 
@@ -370,17 +370,17 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             topLevelFolder = lastMetadata.optString("base_folder_name", "");
 
             if (topLevelFolder.isEmpty()) {
-                Log.e("ReceiveFileActivityPython", "Base folder name not found in metadata, aborting folder creation.");
+                FileLogger.log("ReceiveFileActivityPython", "Base folder name not found in metadata, aborting folder creation.");
                 return saveToDirectory; // Abort if no base folder name is found
             }
         } catch (JSONException e) {
-            Log.e("ReceiveFileActivityPython", "Error processing metadata JSON to extract base folder name", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error processing metadata JSON to extract base folder name", e);
             return saveToDirectory; // Fallback if there's an error
         }
 
         // Construct the top-level folder path
         String topLevelFolderPath = new File(saveToDirectory, topLevelFolder).getPath();
-        Log.d("ReceiveFileActivityPython", "Top-level folder path: " + topLevelFolderPath);
+        FileLogger.log("ReceiveFileActivityPython", "Top-level folder path: " + topLevelFolderPath);
 
         // Check if the folder already exists and rename if necessary
         File topLevelDir = new File(topLevelFolderPath);
@@ -394,14 +394,14 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 i++;
             } while (topLevelDir.exists());
             topLevelFolderPath = topLevelDir.getPath(); // Update to the new folder path
-            Log.d("ReceiveFileActivityPython", "Renamed existing folder to: " + topLevelFolderPath);
+            FileLogger.log("ReceiveFileActivityPython", "Renamed existing folder to: " + topLevelFolderPath);
         } else {
             // Create the top-level folder
             if (!topLevelDir.mkdirs()) {
-                Log.e("ReceiveFileActivityPython", "Failed to create top-level folder: " + topLevelFolderPath);
+                FileLogger.log("ReceiveFileActivityPython", "Failed to create top-level folder: " + topLevelFolderPath);
                 return saveToDirectory; // Fallback if folder creation fails
             }
-            Log.d("ReceiveFileActivityPython", "Created top-level folder: " + topLevelFolderPath);
+            FileLogger.log("ReceiveFileActivityPython", "Created top-level folder: " + topLevelFolderPath);
         }
 
         // Process each file info in the metadata array
@@ -418,10 +418,10 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 File parentDir = fullFilePath.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
                     parentDir.mkdirs(); // Create the folder structure if it doesn't exist
-                    Log.d("ReceiveFileActivityPython", "Created folder: " + parentDir.getPath());
+                    FileLogger.log("ReceiveFileActivityPython", "Created folder: " + parentDir.getPath());
                 }
             } catch (JSONException e) {
-                Log.e("ReceiveFileActivityPython", "Error processing file info in metadata", e);
+                FileLogger.log("ReceiveFileActivityPython", "Error processing file info in metadata", e);
                 // Continue to the next file if there's an error with the current one
             }
         }
@@ -441,7 +441,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error closing sockets", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
         }
     }
 
@@ -457,7 +457,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            Log.e("ReceiveFileActivityPython", "Error closing sockets", e);
+            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
         }
         finish();
     }

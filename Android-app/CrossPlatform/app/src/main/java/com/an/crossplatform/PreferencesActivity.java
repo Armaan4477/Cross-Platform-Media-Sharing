@@ -96,12 +96,12 @@ public class PreferencesActivity extends AppCompatActivity {
             String versionName = packageInfo.versionName;
 
             // Log the version name
-            Log.d("AppVersion", "Version Name: " + versionName);
+            FileLogger.log("AppVersion", "Version Name: " + versionName);
 
             return versionName;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
-            Log.e("AppVersion", "Version Name not found", e);
+            FileLogger.log("AppVersion", "Version Name not found", e);
             return "Unknown";
         }
 
@@ -136,10 +136,10 @@ public class PreferencesActivity extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject(response.toString());
                     apiVersion = jsonObject.getString("value");
                 } else {
-                    Log.e("CheckForUpdates", "Failed to fetch version, Response Code: " + responseCode);
+                    FileLogger.log("CheckForUpdates", "Failed to fetch version, Response Code: " + responseCode);
                 }
             } catch (Exception e) {
-                Log.e("CheckForUpdates", "Error fetching updates", e);
+                FileLogger.log("CheckForUpdates", "Error fetching updates", e);
             }
 
             // Process the result on the main thread
@@ -176,7 +176,7 @@ public class PreferencesActivity extends AppCompatActivity {
                 // If all parts are equal
                 showMessageDialog("Version is up to date", "Your app is up to date.", false);
             } catch (Exception e) {
-                Log.e("CheckForUpdates", "Error parsing version", e);
+                FileLogger.log("CheckForUpdates", "Error parsing version", e);
                 showMessageDialog("Error", "Error checking for updates.", false);
             }
         } else {
@@ -229,7 +229,7 @@ public class PreferencesActivity extends AppCompatActivity {
                 deviceNameInput.setText(deviceName);
                 saveToDirectoryInput.setText(saveToDirectory);
             } catch (Exception e) {
-                Log.e("PreferencesActivity", "Error loading preferences", e);
+                FileLogger.log("PreferencesActivity", "Error loading preferences", e);
                 setDefaults();  // Fallback to default values if any error occurs
             }
         } else {
@@ -245,7 +245,7 @@ public class PreferencesActivity extends AppCompatActivity {
         if (!mediaDir.exists()) {
             boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
             if (!dirCreated) {
-                Log.e("PreferencesActivity", "Failed to create media directory");
+                FileLogger.log("PreferencesActivity", "Failed to create media directory");
                 return;
             }
         }
@@ -275,13 +275,13 @@ public class PreferencesActivity extends AppCompatActivity {
                 while ((line = reader.readLine()) != null) {
                     jsonString.append(line);
                 }
-                Log.d("PreferencesActivity", "Read JSON from file: " + jsonString.toString());
+                FileLogger.log("PreferencesActivity", "Read JSON from file: " + jsonString.toString());
                 return jsonString.toString();
             } catch (Exception e) {
-                Log.e("PreferencesActivity", "Error reading JSON from file", e);
+                FileLogger.log("PreferencesActivity", "Error reading JSON from file", e);
             }
         } else {
-            Log.d("PreferencesActivity", "File does not exist: " + file.getAbsolutePath());
+            FileLogger.log("PreferencesActivity", "File does not exist: " + file.getAbsolutePath());
         }
         return null;
     }
@@ -297,7 +297,7 @@ public class PreferencesActivity extends AppCompatActivity {
         if (!mediaDir.exists()) {
             boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
             if (!dirCreated) {
-                Log.e("MainActivity", "Failed to create media directory");
+                FileLogger.log("MainActivity", "Failed to create media directory");
                 return;
             }
         }
@@ -360,7 +360,7 @@ public class PreferencesActivity extends AppCompatActivity {
 
         // Convert into a path like /storage/emulated/0/Download
         String saveToDirectory = saveToDirectoryURI.substring(saveToDirectoryURI.indexOf(":", 0) + 1);
-        Log.d("PreferencesActivity", "Save to path: " + saveToDirectory);
+        FileLogger.log("PreferencesActivity", "Save to path: " + saveToDirectory);
 
         if (deviceName.isEmpty()) {
             Toast.makeText(this, "Device Name cannot be empty", Toast.LENGTH_SHORT).show();
@@ -380,9 +380,9 @@ public class PreferencesActivity extends AppCompatActivity {
 
             // Notify the user that preferences were updated
             Toast.makeText(this, "Preferences updated", Toast.LENGTH_SHORT).show();
-            Log.d("PreferencesActivity", "Preferences updated: " + configJson.toString());
+            FileLogger.log("PreferencesActivity", "Preferences updated: " + configJson.toString());
         } catch (Exception e) {
-            Log.e("PreferencesActivity", "Error creating JSON", e);
+            FileLogger.log("PreferencesActivity", "Error creating JSON", e);
         }
 
         // Go back to the main screen after submitting preferences
@@ -395,9 +395,9 @@ public class PreferencesActivity extends AppCompatActivity {
             File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");  // External storage path
             if (!folder.exists()) {
                 boolean folderCreated = folder.mkdirs();
-                Log.d("PreferencesActivity", "Config folder created: " + folder.getAbsolutePath());
+                FileLogger.log("PreferencesActivity", "Config folder created: " + folder.getAbsolutePath());
                 if (!folderCreated) {
-                    Log.e("PreferencesActivity", "Failed to create config folder");
+                    FileLogger.log("PreferencesActivity", "Failed to create config folder");
                     return;
                 }
             }
@@ -406,10 +406,10 @@ public class PreferencesActivity extends AppCompatActivity {
             FileOutputStream fileOutputStream = new FileOutputStream(file);
             fileOutputStream.write(jsonString.getBytes());
             fileOutputStream.close();
-            Log.d("PreferencesActivity", "Preferences saved: " + jsonString);
-            Log.d("PreferencesActivity", "Preferences saved at: " + file.getAbsolutePath());
+            FileLogger.log("PreferencesActivity", "Preferences saved: " + jsonString);
+            FileLogger.log("PreferencesActivity", "Preferences saved at: " + file.getAbsolutePath());
         } catch (Exception e) {
-            Log.e("PreferencesActivity", "Error saving JSON to file", e);
+            FileLogger.log("PreferencesActivity", "Error saving JSON to file", e);
         }
     }
 

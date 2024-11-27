@@ -62,7 +62,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
         // Call getBroadcastIp when the activity starts
         String broadcastIp = getBroadcastIp(this);
-        Log.d("DiscoverDevices", "BroadcastIP: " + broadcastIp);
+        FileLogger.log("DiscoverDevices", "BroadcastIP: " + broadcastIp);
 
         btnDiscover.setOnClickListener(v -> {
             resetSockets();
@@ -93,11 +93,11 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private void resetSockets() {
         if (discoverSocket != null && !discoverSocket.isClosed()) {
-            Log.d("DiscoverDevices", "Closing previous discoverSocket");
+            FileLogger.log("DiscoverDevices", "Closing previous discoverSocket");
             discoverSocket.close();
         }
         if (responseSocket != null && !responseSocket.isClosed()) {
-            Log.d("DiscoverDevices", "Closing previous responseSocket");
+            FileLogger.log("DiscoverDevices", "Closing previous responseSocket");
             responseSocket.close();
         }
     }
@@ -113,11 +113,11 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 byte[] sendData = "DISCOVER".getBytes();
                 InetAddress broadcastAddress = InetAddress.getByName(broadcastIp);
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
-                Log.d("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
+                FileLogger.log("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
 
                 for (int i = 0; i < 120 && isDiscovering.get(); i++) { // 120 iterations for 2 minutes
                     discoverSocket.send(sendPacket);
-                    Log.d("DiscoverDevices", "Sent DISCOVER message iteration: " + (i + 1));
+                    FileLogger.log("DiscoverDevices", "Sent DISCOVER message iteration: " + (i + 1));
                     Thread.sleep(1000);
                 }
 
@@ -153,7 +153,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 responseSocket = new DatagramSocket(RESPONSE_PORT); // Bind to port 12346
-                Log.d("DiscoverDevices", "Listening for RECEIVER messages on port " + RESPONSE_PORT);
+                FileLogger.log("DiscoverDevices", "Listening for RECEIVER messages on port " + RESPONSE_PORT);
 
                 byte[] recvBuf = new byte[15000];
 
@@ -162,10 +162,10 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     responseSocket.receive(receivePacket);
 
                     String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
-                    Log.d("DiscoverDevices", "Received raw message: " + message);
-                    Log.d("DiscoverDevices", "Message length: " + receivePacket.getLength());
-                    Log.d("DiscoverDevices", "Sender address: " + receivePacket.getAddress().getHostAddress());
-                    Log.d("DiscoverDevices", "Sender port: " + receivePacket.getPort());
+                    FileLogger.log("DiscoverDevices", "Received raw message: " + message);
+                    FileLogger.log("DiscoverDevices", "Message length: " + receivePacket.getLength());
+                    FileLogger.log("DiscoverDevices", "Sender address: " + receivePacket.getAddress().getHostAddress());
+                    FileLogger.log("DiscoverDevices", "Sender port: " + receivePacket.getPort());
 
                     if (message.startsWith("RECEIVER")) {
                         String deviceIP = receivePacket.getAddress().getHostAddress();
@@ -179,7 +179,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                             }
                         });
                     } else {
-                        Log.d("DiscoverDevices", "Unexpected message: " + message);
+                        FileLogger.log("DiscoverDevices", "Unexpected message: " + message);
                     }
                 }
             } catch (Exception e) {
@@ -217,11 +217,11 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 // Bind to the SENDER_PORT_JSON (similar to Python code: self.client_socket.bind(('', SENDER_JSON)))
 //                socket.bind(new InetSocketAddress(SENDER_PORT_JSON));  // Binding the sender to the port
 
-                Log.d("DiscoverDevices", "Binded to port: " + SENDER_PORT_JSON);
+                FileLogger.log("DiscoverDevices", "Binded to port: " + SENDER_PORT_JSON);
 
                 // Connect to the receiver's IP and RECEIVER_PORT_JSON (similar to Python: self.client_socket.connect((ip_address, RECEIVER_JSON)))
                 socket.connect(new InetSocketAddress(selectedDeviceIP, RECEIVER_PORT_JSON), 10000);
-                Log.d("DiscoverDevices", "Connected to " + selectedDeviceIP + " on port " + RECEIVER_PORT_JSON);
+                FileLogger.log("DiscoverDevices", "Connected to " + selectedDeviceIP + " on port " + RECEIVER_PORT_JSON);
 
                 dos = new DataOutputStream(socket.getOutputStream());
                 dis = new DataInputStream(socket.getInputStream());
@@ -232,7 +232,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 deviceInfo.put("os", "Android");
                 String deviceInfoStr = deviceInfo.toString();
                 byte[] sendData = deviceInfoStr.getBytes(StandardCharsets.UTF_8);
-                Log.d("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
+                FileLogger.log("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
 
                 DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
                 DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
@@ -267,17 +267,17 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 // Convert the received bytes into a JSON string
                 String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
                 JSONObject receivedJson = new JSONObject(jsonStr);
-                Log.d("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
+                FileLogger.log("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
 
                 if (receivedJson.getString("device_type").equals("python")) {
-                    Log.d("WaitingToReceive", "Received JSON data from Python app");
+                    FileLogger.log("WaitingToReceive", "Received JSON data from Python app");
                     // Proceed to the next activity (SendFileActivityPython)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivityPython.class);
                     intent.putExtra("receivedJson", receivedJson.toString());
                     intent.putExtra("selectedDeviceIP", selectedDeviceIP); // Send the selected device IP
                     startActivity(intent);
                 } else if (receivedJson.getString("device_type").equals("java")) {
-                    Log.d("WaitingToReceive", "Received JSON data from Java app");
+                    FileLogger.log("WaitingToReceive", "Received JSON data from Java app");
                     // Proceed to the next activity (ReceiveFileActivity)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
                     intent.putExtra("receivedJson", receivedJson.toString());

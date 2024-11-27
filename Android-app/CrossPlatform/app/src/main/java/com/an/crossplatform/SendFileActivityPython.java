@@ -91,11 +91,11 @@ public class SendFileActivityPython extends AppCompatActivity {
         try {
             osType = new JSONObject(receivedJson).getString("os");
         } catch (Exception e) {
-            Log.e("SendFileActivity", "Failed to retrieve OS type", e);
+            FileLogger.log("SendFileActivity", "Failed to retrieve OS type", e);
         }
-        Log.d("SendFileActivity", "Received JSON: " + receivedJson);
-        Log.d("SendFileActivity", "OS Type: " + osType);
-        Log.d("SendFileActivity", "Selected Device IP: " + selected_device_ip);
+        FileLogger.log("SendFileActivity", "Received JSON: " + receivedJson);
+        FileLogger.log("SendFileActivity", "OS Type: " + osType);
+        FileLogger.log("SendFileActivity", "Selected Device IP: " + selected_device_ip);
 
         // Set up buttons
         selectFileButton = findViewById(R.id.btn_select_file);
@@ -130,13 +130,13 @@ public class SendFileActivityPython extends AppCompatActivity {
                         for (int i = 0; i < count; i++) {
                             Uri fileUri = data.getClipData().getItemAt(i).getUri();
                             filePaths.add(fileUri.toString());
-                            Log.d("SendFileActivity", "File selected: " + fileUri.toString());
+                            FileLogger.log("SendFileActivity", "File selected: " + fileUri.toString());
                         }
                     } else if (data.getData() != null) {
                         // Single file selected
                         Uri fileUri = data.getData();
                         filePaths.add(fileUri.toString());
-                        Log.d("SendFileActivity", "File selected: " + fileUri.toString());
+                        FileLogger.log("SendFileActivity", "File selected: " + fileUri.toString());
                     }
 
                     // Refresh adapter on main thread
@@ -154,7 +154,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     Uri folderUri = result.getData().getData();
                     String folderPath = folderUri.toString();
                     filePaths.add(folderPath);  // Add folder path to file list
-                    Log.d("SendFileActivity", "Folder selected: " + folderPath);
+                    FileLogger.log("SendFileActivity", "Folder selected: " + folderPath);
 
                     // Take persistent permissions to read the folder
                     getContentResolver().takePersistableUriPermission(folderUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -165,7 +165,7 @@ public class SendFileActivityPython extends AppCompatActivity {
             });
 
     private void onSelectFileClicked() {
-        Log.d("SendFileActivity", "Select File button clicked");
+        FileLogger.log("SendFileActivity", "Select File button clicked");
         isFolder = false;
 
         // Launch file picker
@@ -181,7 +181,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     }
 
     private void onSelectFolderClicked() {
-        Log.d("SendFileActivity", "Select Folder button clicked");
+        FileLogger.log("SendFileActivity", "Select Folder button clicked");
 
         // Launch folder picker
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
@@ -194,7 +194,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     }
 
     private void onSendClicked() {
-        Log.d("SendFileActivity", "Send button clicked");
+        FileLogger.log("SendFileActivity", "Send button clicked");
 
         if (filePaths.isEmpty()) {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
@@ -220,7 +220,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                         return createFileMetadata();
                     }
                 } catch (IOException | JSONException e) {
-                    Log.e("SendFileActivity", "Failed to create metadata", e);
+                    FileLogger.log("SendFileActivity", "Failed to create metadata", e);
                     return null;  // Indicate failure
                 }
             }
@@ -242,20 +242,20 @@ public class SendFileActivityPython extends AppCompatActivity {
                     }
                 });
             } catch (Exception e) {
-                Log.e("SendFileActivity", "Error executing metadata task", e);
+                FileLogger.log("SendFileActivity", "Error executing metadata task", e);
             }
         }).start();
     }
 
     private String createFileMetadata() throws IOException, JSONException {
         JSONArray metadata = new JSONArray();
-        Log.d(TAG, "Starting file metadata creation");
+        FileLogger.log(TAG, "Starting file metadata creation");
 
         File metadataDirectory = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/metadata/");
         ensureDirectoryExists(metadataDirectory);
 
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
-        Log.d(TAG, "Metadata file path: " + metadataFilePath);
+        FileLogger.log(TAG, "Metadata file path: " + metadataFilePath);
 
         for (String filePath : filePaths) {
             Uri uri = Uri.parse(filePath);
@@ -274,12 +274,12 @@ public class SendFileActivityPython extends AppCompatActivity {
                             fileMetadata.put("size", size);
                             metadata.put(fileMetadata);
 
-                            Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                            FileLogger.log(TAG, "Added file metadata: " + fileMetadata.toString());
                             cursor.close();
                         }
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Error handling content URI: " + filePath + " Exception: " + e.getMessage(), e);
+                    FileLogger.log(TAG, "Error handling content URI: " + filePath + " Exception: " + e.getMessage(), e);
                 }
             } else {
                 File file = new File(filePath);
@@ -288,7 +288,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     fileMetadata.put("path", file.getAbsolutePath());
                     fileMetadata.put("size", file.length());
                     metadata.put(fileMetadata);
-                    Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                    FileLogger.log(TAG, "Added file metadata: " + fileMetadata.toString());
                 }
             }
         }
@@ -304,14 +304,14 @@ public class SendFileActivityPython extends AppCompatActivity {
         JSONObject baseInfo = new JSONObject();
         baseInfo.put("base_folder_name", base_folder_name_path);
         metadata.put(baseInfo);
-        Log.d(TAG, "Added base folder info: " + baseInfo.toString());
+        FileLogger.log(TAG, "Added base folder info: " + baseInfo.toString());
 
         // Create metadata directory in app's external storage
         File metadataDirectory = new File(Environment.getExternalStorageDirectory(),
                 "Android/media/" + getPackageName() + "/metadata/");
         if (!metadataDirectory.exists()) {
             boolean created = metadataDirectory.mkdirs();
-            Log.d(TAG, "Metadata directory creation result: " + created);
+            FileLogger.log(TAG, "Metadata directory creation result: " + created);
         }
 
         // Rest of metadata creation
@@ -324,7 +324,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         // Save metadata
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
         saveMetadataToFile(metadataFilePath, metadata);
-        Log.d(TAG, "Metadata saved to: " + metadataFilePath);
+        FileLogger.log(TAG, "Metadata saved to: " + metadataFilePath);
 
         return metadataFilePath;
     }
@@ -338,7 +338,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         folderMetadata.put("path", currentRelativePath + "/");
         folderMetadata.put("size", 0); // Directories have size 0
         metadata.put(folderMetadata);
-        Log.d(TAG, "Added folder metadata: " + folderMetadata.toString());
+        FileLogger.log(TAG, "Added folder metadata: " + folderMetadata.toString());
 
         // Recursively process contents
         for (DocumentFile file : folder.listFiles()) {
@@ -350,7 +350,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                 fileMetadata.put("path", fileRelativePath);
                 fileMetadata.put("size", file.length());
                 metadata.put(fileMetadata);
-                Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                FileLogger.log(TAG, "Added file metadata: " + fileMetadata.toString());
             }
         }
     }
@@ -364,7 +364,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         folderMetadata.put("path", currentRelativePath + "/");
         folderMetadata.put("size", 0); // Directories have size 0
         metadata.put(folderMetadata);
-        Log.d(TAG, "Added folder metadata: " + folderMetadata.toString());
+        FileLogger.log(TAG, "Added folder metadata: " + folderMetadata.toString());
 
         // Recursively process contents
         File[] files = folder.listFiles();
@@ -378,11 +378,11 @@ public class SendFileActivityPython extends AppCompatActivity {
                     fileMetadata.put("path", fileRelativePath);
                     fileMetadata.put("size", file.length());
                     metadata.put(fileMetadata);
-                    Log.d(TAG, "Added file metadata: " + fileMetadata.toString());
+                    FileLogger.log(TAG, "Added file metadata: " + fileMetadata.toString());
                 }
             }
         } else {
-            Log.e(TAG, "Could not list files for directory: " + folder.getAbsolutePath());
+            FileLogger.log(TAG, "Could not list files for directory: " + folder.getAbsolutePath());
         }
     }
 
@@ -399,25 +399,25 @@ public class SendFileActivityPython extends AppCompatActivity {
 
     private void ensureDirectoryExists(File directory) {
         if (!directory.exists()) {
-            Log.d(TAG, "Directory does not exist, attempting to create: " + directory.getAbsolutePath());
+            FileLogger.log(TAG, "Directory does not exist, attempting to create: " + directory.getAbsolutePath());
             if (directory.mkdirs()) {
-                Log.d(TAG, "Directory created: " + directory.getAbsolutePath());
+                FileLogger.log(TAG, "Directory created: " + directory.getAbsolutePath());
             } else {
-                Log.e(TAG, "Failed to create directory: " + directory.getAbsolutePath());
+                FileLogger.log(TAG, "Failed to create directory: " + directory.getAbsolutePath());
             }
         } else {
-            Log.d(TAG, "Directory already exists: " + directory.getAbsolutePath());
+            FileLogger.log(TAG, "Directory already exists: " + directory.getAbsolutePath());
         }
     }
 
     private void saveMetadataToFile(String filePath, JSONArray metadata) throws IOException {
-        Log.d(TAG, "Saving metadata to file: " + filePath);
+        FileLogger.log(TAG, "Saving metadata to file: " + filePath);
         try (FileWriter fileWriter = new FileWriter(filePath)) {
             fileWriter.write(metadata.toString());
             fileWriter.flush();
-            Log.d(TAG, "Metadata saved successfully");
+            FileLogger.log(TAG, "Metadata saved successfully");
         } catch (IOException e) {
-            Log.e(TAG, "Error saving metadata to file: " + e.getMessage(), e);
+            FileLogger.log(TAG, "Error saving metadata to file: " + e.getMessage(), e);
             throw e;
         }
     }
@@ -444,7 +444,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     count++;
                 }
             }
-            Log.d("SendFileActivity", "Total files to send: " + count);
+            FileLogger.log("SendFileActivity", "Total files to send: " + count);
             return count + 1;
         }
 
@@ -476,9 +476,9 @@ public class SendFileActivityPython extends AppCompatActivity {
             try {
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(ip, 58000), 10000);
-                Log.d("SendFileActivity", "Socket connected: " + socket.isConnected());
+                FileLogger.log("SendFileActivity", "Socket connected: " + socket.isConnected());
             } catch (IOException e) {
-                Log.e("SendFileActivity", "Failed to connect to server", e);
+                FileLogger.log("SendFileActivity", "Failed to connect to server", e);
                 runOnUiThread(() ->
                         Toast.makeText(SendFileActivityPython.this, "Connection Failed", Toast.LENGTH_SHORT).show()
                 );
@@ -501,7 +501,7 @@ public class SendFileActivityPython extends AppCompatActivity {
 
         private void onTransferComplete() {
             int remainingTransfers = pendingTransfers.decrementAndGet();
-            Log.d("SendFileActivity", "Files remaining: " + remainingTransfers); // Debugging line
+            FileLogger.log("SendFileActivity", "Files remaining: " + remainingTransfers); // Debugging line
 
             if (remainingTransfers == 0) {
                 sendHaltEncryptionSignal(); // Send halt signal once all transfers complete
@@ -514,7 +514,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                 String haltEncryptionSignal = "encyp: h";
                 dos.write(haltEncryptionSignal.getBytes(StandardCharsets.UTF_8));
                 dos.flush();
-                Log.d("SendFileActivity", "Sent halt encryption signal: " + haltEncryptionSignal);
+                FileLogger.log("SendFileActivity", "Sent halt encryption signal: " + haltEncryptionSignal);
                 runOnUiThread(() -> {
                     if (progressBar_send.getProgress() == 100) {
                         progressBar_send.setProgress(0);
@@ -527,7 +527,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     }
                 });
             } catch (IOException e) {
-                Log.e("SendFileActivity", "Error sending halt encryption signal", e);
+                FileLogger.log("SendFileActivity", "Error sending halt encryption signal", e);
             }
         }
 
@@ -535,7 +535,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
 
         if (filePath == null) {
-            Log.e("SendFileActivity", "File path is null");
+            FileLogger.log("SendFileActivity", "File path is null");
             return;
         }
 
@@ -553,7 +553,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                 } else {
                     finalRelativePath = relativePath;
                 }
-                Log.d("SendFileActivity", "Initial relative path: " + finalRelativePath);
+                FileLogger.log("SendFileActivity", "Initial relative path: " + finalRelativePath);
 
                 // Check if the filePath is a content URI
                 Uri fileUri = Uri.parse(filePath);
@@ -592,9 +592,9 @@ public class SendFileActivityPython extends AppCompatActivity {
 
                 // Make final variables to use inside AsyncTask
                 final InputStream finalInputStream = inputStream;
-                Log.d("SendFileActivity", "Sending final rel path: " + finalRelativePath);
+                FileLogger.log("SendFileActivity", "Sending final rel path: " + finalRelativePath);
                 final String finalPathToSend = finalRelativePath;
-                Log.d("SendFileActivity", "Sending final file: " + finalPathToSend);
+                FileLogger.log("SendFileActivity", "Sending final file: " + finalPathToSend);
                 final long fileSize = finalInputStream.available();
 
                 runOnUiThread(() -> {
@@ -612,7 +612,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
                     dos.write(encryptionFlag.getBytes(StandardCharsets.UTF_8));
                     dos.flush();
-                    Log.d("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
+                    FileLogger.log("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
 
                     // Step 2: Send the file name size
                     byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
@@ -648,10 +648,10 @@ public class SendFileActivityPython extends AppCompatActivity {
 
                     finalInputStream.close();
                 } catch (IOException e) {
-                    Log.e("SendFileActivity", "Error sending file", e);
+                    FileLogger.log("SendFileActivity", "Error sending file", e);
                 }
             } catch (IOException e) {
-                Log.e("SendFileActivity", "Error initializing connection", e);
+                FileLogger.log("SendFileActivity", "Error initializing connection", e);
             } finally {
                 onTransferComplete(); // Call after each file transfer completes
                 // Count down the latch to allow the next file to send
@@ -663,7 +663,7 @@ public class SendFileActivityPython extends AppCompatActivity {
             // Wait for the current file transfer to complete
             latch.await();
         } catch (InterruptedException e) {
-            Log.e("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
+            FileLogger.log("SendFileActivity", "Interrupted while waiting for file transfer to complete", e);
         }
     }
 
@@ -677,7 +677,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                     DocumentFile folderDocument = DocumentFile.fromTreeUri(SendFileActivityPython.this, folderUri);
 
                     if (folderDocument == null) {
-                        Log.e("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
+                        FileLogger.log("SendFileActivity", "Error: DocumentFile is null. Invalid URI or permission issue.");
                         return;
                     }
 
@@ -686,14 +686,14 @@ public class SendFileActivityPython extends AppCompatActivity {
                         sendFile(metadataFilePath, "");
                         metadataSent = true;
                     } else {
-                        Log.e("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
+                        FileLogger.log("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
                         return;
                     }
 
                     // Start recursion with empty relative path (top-level folder will be included)
                     sendDocumentFile(folderDocument, "");
                 } catch (Exception e) {
-                    Log.e("SendFileActivity", "Error sending folder", e);
+                    FileLogger.log("SendFileActivity", "Error sending folder", e);
                 }
             });
         }
@@ -710,7 +710,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                 }
             } else if (documentFile.isFile()) {
                 String fileRelativePath = relativePath.isEmpty() ? documentFile.getName() : relativePath + "/" + documentFile.getName();
-                Log.d("SendFileActivity", "Sending file: " + fileRelativePath);
+                FileLogger.log("SendFileActivity", "Sending file: " + fileRelativePath);
 
                 try {
                     InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
@@ -719,7 +719,7 @@ public class SendFileActivityPython extends AppCompatActivity {
                         inputStream.close();
                     }
                 } catch (IOException e) {
-                    Log.e("SendFileActivity", "Error sending file: " + fileRelativePath, e);
+                    FileLogger.log("SendFileActivity", "Error sending file: " + fileRelativePath, e);
                 }
             }
         }
@@ -732,10 +732,10 @@ public class SendFileActivityPython extends AppCompatActivity {
         try {
             if (socket != null) {
                 socket.close();
-                Log.d("SendFileActivity", "Socket closed");
+                FileLogger.log("SendFileActivity", "Socket closed");
             }
         } catch (IOException e) {
-            Log.e("SendFileActivity", "Error closing socket", e);
+            FileLogger.log("SendFileActivity", "Error closing socket", e);
         }
         executorService.shutdown();  // Clean up background threads
     }
@@ -747,10 +747,10 @@ public class SendFileActivityPython extends AppCompatActivity {
         try {
             if (socket != null) {
                 socket.close();
-                Log.d("SendFileActivity", "Socket closed");
+                FileLogger.log("SendFileActivity", "Socket closed");
             }
         } catch (IOException e) {
-            Log.e("SendFileActivity", "Error closing socket", e);
+            FileLogger.log("SendFileActivity", "Error closing socket", e);
         }
     }
 }
