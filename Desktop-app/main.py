@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
-from PyQt6.QtGui import QScreen, QFont, QColor, QIcon, QMovie
-from PyQt6.QtCore import Qt, QTimer, QSize, QThread, pyqtSignal
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath, QDesktopServices, QMovie
+from PyQt6.QtCore import Qt, QTimer, QSize, QUrl, QThread, pyqtSignal
 import sys
 import os
 from file_receiver import ReceiveApp
@@ -11,6 +11,9 @@ from constant import logger, get_config, PLATFORM_LINK
 import platform
 import requests
 import ctypes
+from PyQt6.QtSvg import QSvgRenderer
+import math
+from file_sender import SendApp
 
 class VersionCheck(QThread):
     update_available = pyqtSignal()
