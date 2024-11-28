@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath, QDesktopServices
+from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath, QDesktopServices, QMovie
 from PyQt6.QtCore import Qt, QTimer, QSize, QUrl
 import sys
 import os
@@ -16,33 +16,6 @@ import platform
 import requests
 import ctypes
 
-class WifiAnimationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(550, 500)
-        self.signal_strength = 0
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_signal)
-        self.timer.start(35)
-
-    def update_signal(self):
-        self.signal_strength = (self.signal_strength + 1.5) % 145
-        self.update()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        center = self.rect().center()
-        max_radius = min(self.width(), self.height()) // 2
-
-        for i in range(3):
-            radius = max_radius * (i + 1) // 3
-            opacity = min(1, self.signal_strength / 100 * 3 - i)
-            painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
-            painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
-                            radius * 2, radius * 2, 0, 180 * 16)
-            
 class IconButton(QPushButton):
     def __init__(self, color_start=(77, 84, 96), color_end=(105, 115, 128), parent=None):
         super().__init__(parent)
@@ -158,12 +131,17 @@ class MainApp(QWidget):
 
         main_layout.addWidget(header)
 
-        # Add some vertical space before the WiFi Animation Widget
-        main_layout.addSpacing(105)
+        # Reduce the vertical spacing before the GIF
+        main_layout.addSpacing(50)  # Decrease spacing from 105 to 50
 
         # Wifi Animation Widget
-        wifi_widget = WifiAnimationWidget()
-        main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        gif_label = QLabel()
+        gif_label.setStyleSheet("background-color: transparent;")  # Add this line
+        movie = QMovie(os.path.join(os.path.dirname(__file__), "assets", "wifi.gif"))
+        gif_label.setMovie(movie)
+        movie.setScaledSize(QSize(550, 500))  # Decrease height from 500 to 400
+        movie.start()
+        main_layout.addWidget(gif_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
         icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
