@@ -13,13 +13,19 @@ def get_logger_file_path():
     elif platform.system() == 'Darwin':  # macOS
         logger_dir = os.path.join(os.path.expanduser('~/Library/Caches'), 'DataDash')
     else:
-        logger.error("Unsupported OS!")
         return None
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(logger_dir, exist_ok=True)
     return logger_dir
 
 
-# Get the directory of the config file
-log_file_path = os.path.join(get_logger_file_path(), 'datadashlog.txt')
+# Create logger directory and set up the log file path
+log_dir = get_logger_file_path()
+if log_dir is None:
+    raise RuntimeError("Unsupported OS!")
+    
+log_file_path = os.path.join(log_dir, 'datadashlog.txt')
 
 # Configure the logger
 logger = logging.getLogger('FileSharing: ')
