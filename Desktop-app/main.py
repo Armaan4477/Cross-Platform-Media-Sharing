@@ -60,20 +60,21 @@ class VersionCheck(QThread):
         self.uga_version = config["app_version"]
 
 class MainApp(QWidget):
-    def __init__(self):
+    def __init__(self, skip_version_check=False):
         super().__init__()
-        self.initUI()
+        self.initUI(skip_version_check)
         self.setFixedSize(853, 480) 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-    def initUI(self):
+    def initUI(self, skip_version_check=False):
         self.setWindowTitle('DataDash')
         self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.set_background()
         self.version_thread = VersionCheck()
         self.version_thread.update_available.connect(self.showmsgbox)
-        self.check_update()
+        if not skip_version_check:
+            self.check_update()
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)

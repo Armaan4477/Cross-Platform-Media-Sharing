@@ -530,7 +530,7 @@ class PreferencesApp(QWidget):
     def go_to_main_menu(self):
         self.hide()
         from main import MainApp
-        self.main_app = MainApp()
+        self.main_app = MainApp(skip_version_check=True)
         self.main_app.show()
 
     
