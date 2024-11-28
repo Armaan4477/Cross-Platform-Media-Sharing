@@ -46,19 +46,17 @@ class FileSenderJava(QThread):
         self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # Use dynamic port assignment to avoid WinError 10048
         try:
-            self.client_skt.bind(('', 0))  # Bind to any available port assigned by the OS
-            logger.debug(f"Bound to port {self.client_skt.getsockname()[1]}")  # Log the assigned port for debugging
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))  # Connect to receiver's IP and port
+            # Directly attempt to connect without binding
+            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
             logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
         except ConnectionRefusedError:
             logger.error("Connection refused: Failed to connect to the specified IP address.")
             self.show_message_box("Connection Error", "Failed to connect to the specified IP address.")
             return False
         except OSError as e:
-            logger.error(f"Binding error: {e}")
-            self.show_message_box("Binding Error", f"Failed to bind to the specified port: {e}")
+            logger.error(f"Connection error: {e}")
+            self.show_message_box("Connection Error", f"Failed to connect: {e}")
             return False
 
         return True
