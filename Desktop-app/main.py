@@ -129,14 +129,14 @@ class MainApp(QWidget):
         main_layout.addWidget(header)
 
         # Reduce the vertical spacing before the GIF
-        main_layout.addSpacing(50)  # Decrease spacing from 105 to 50
+        main_layout.addSpacing(20)  # Decrease spacing from 105 to 50
 
         # Wifi Animation Widget
         gif_label = QLabel()
         gif_label.setStyleSheet("background-color: transparent;")  # Add this line
         movie = QMovie(os.path.join(os.path.dirname(__file__), "assets", "wifi.gif"))
         gif_label.setMovie(movie)
-        movie.setScaledSize(QSize(550, 500))  # Decrease height from 500 to 400
+        movie.setScaledSize(QSize(500, 450))  # Decrease height from 500 to 400
         movie.start()
         main_layout.addWidget(gif_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
