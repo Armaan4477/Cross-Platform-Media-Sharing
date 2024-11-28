@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
 from PyQt6.QtGui import QScreen, QFont, QColor, QIcon, QMovie
-from PyQt6.QtCore import Qt, QTimer, QSize
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread, pyqtSignal
 import sys
 import os
 from file_receiver import ReceiveApp
@@ -11,6 +11,53 @@ from constant import logger, get_config, PLATFORM_LINK
 import platform
 import requests
 import ctypes
+
+class VersionCheck(QThread):
+    update_available = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.uga_version = None
+
+    def run(self):
+        self.currentversion()
+        fetched_version = self.fetch_platform_value()
+        if fetched_version and self.compare_versions(fetched_version, self.uga_version) > 0:
+            self.update_available.emit()
+
+    def fetch_platform_value(self):
+        url = PLATFORM_LINK
+        logger.info(f"Fetching platform value from: {url}")
+        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+
+            data = response.json()
+            if "value" in data:
+                logger.info(f"Value for python: {data['value']}")
+                return data['value']
+            else:
+                logger.error(f"Value key not found in response: {data}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching platform value: {e}")
+            return None
+
+    def compare_versions(self, v1, v2):
+        v1_parts = [int(part) for part in v1.split('.')]
+        v2_parts = [int(part) for part in v2.split('.')]
+        
+        # Pad the shorter version with zeros
+        while len(v1_parts) < 4:
+            v1_parts.append(0)
+        while len(v2_parts) < 4:
+            v2_parts.append(0)
+        
+        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
+
+    def currentversion(self):
+        config= get_config()
+        self.uga_version = config["app_version"]
 
 class MainApp(QWidget):
     def __init__(self):
@@ -24,7 +71,8 @@ class MainApp(QWidget):
         self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.set_background()
-        self.displayversion()
+        self.version_thread = VersionCheck()
+        self.version_thread.update_available.connect(self.showmsgbox)
         self.check_update()
 
         main_layout = QVBoxLayout()
@@ -343,105 +391,68 @@ class MainApp(QWidget):
     def check_update(self):
         if get_config()["check_update"]:
             logger.info("Checking for updates")
-            self.fetch_platform_value()
+            self.version_thread.start()
         else:
             logger.info("Update check disabled")
-            pass
-        #com.an.Datadash
+
+    def showmsgbox(self):
+        message = "You are on an older version. Please update."
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Version Check")
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
+
+        open_button = msg_box.button(QMessageBox.StandardButton.Open)
+        if open_button:
+            open_button.setText("Open Settings")
+
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        reply = msg_box.exec()
+
+        if reply == QMessageBox.StandardButton.Open:
+            self.openSettings()
 
 
-    def fetch_platform_value(self):
-        url = PLATFORM_LINK
-        logger.info(f"Fetching platform value from: {url}")
-        
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-
-            data = response.json()
-            if "value" in data:
-                logger.info(f"Value for python: {data['value']}")
-                fetched_version = data['value']
-                
-                if self.compare_versions(fetched_version, self.uga_version) > 0:
-                    message = "You are on an older version. Please update."
-                    msg_box = QMessageBox(self)
-                    msg_box.setWindowTitle("Version Check")
-                    msg_box.setText(message)
-                    msg_box.setIcon(QMessageBox.Icon.Information)
-                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
-
-                    open_button = msg_box.button(QMessageBox.StandardButton.Open)
-                    if open_button:
-                        open_button.setText("Open Settings")
-
-                    msg_box.setStyleSheet("""
-                        QMessageBox {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 1,
-                                stop: 0 #b0b0b0,
-                                stop: 1 #505050
-                            );
-                            color: #FFFFFF;
-                            font-size: 16px;
-                        }
-                        QLabel {
-                            background-color: transparent;
-                        }
-                        QPushButton {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(47, 54, 66, 255),
-                                stop: 1 rgba(75, 85, 98, 255)
-                            );
-                            color: white;
-                            border-radius: 10px;
-                            border: 1px solid rgba(0, 0, 0, 0.5);
-                            padding: 4px;
-                            font-size: 16px;
-                        }
-                        QPushButton:hover {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(60, 68, 80, 255),
-                                stop: 1 rgba(90, 100, 118, 255)
-                            );
-                        }
-                        QPushButton:pressed {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(35, 41, 51, 255),
-                                stop: 1 rgba(65, 75, 88, 255)
-                            );
-                        }
-                    """)
-                    reply = msg_box.exec()
-
-                    if reply == QMessageBox.StandardButton.Open:
-                        QTimer.singleShot(1, self.preferences_handler)
-
-                return fetched_version
-            else:
-                logger.error(f"Value key not found in response: {data}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching platform value: {e}")
-            return None
-
-    def compare_versions(self, v1, v2):
-        v1_parts = [int(part) for part in v1.split('.')]
-        v2_parts = [int(part) for part in v2.split('.')]
-        
-        # Pad the shorter version with zeros
-        while len(v1_parts) < 4:
-            v1_parts.append(0)
-        while len(v2_parts) < 4:
-            v2_parts.append(0)
-        
-        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
-
-    def displayversion(self):
-        config= get_config()
-        self.uga_version = config["app_version"]
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
