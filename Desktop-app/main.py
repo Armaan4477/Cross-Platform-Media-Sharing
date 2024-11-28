@@ -7,7 +7,6 @@ import os
 from file_receiver import ReceiveApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
-from credits_dialog import CreditsDialog
 from constant import logger, get_config, PLATFORM_LINK
 import platform
 import requests
@@ -336,11 +335,6 @@ class MainApp(QWidget):
         self.hide()
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
-
-    def show_credits(self):
-        logger.info("Opened Credits Dialog")
-        credits_dialog = CreditsDialog()
-        credits_dialog.exec()
 
     def openSettings(self):
         logger.info("Settings button clicked")
