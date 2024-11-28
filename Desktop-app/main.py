@@ -1,92 +1,17 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath, QDesktopServices, QMovie
-from PyQt6.QtCore import Qt, QTimer, QSize, QUrl
+from PyQt6.QtGui import QScreen, QFont, QColor, QIcon, QMovie
+from PyQt6.QtCore import Qt, QTimer, QSize
 import sys
 import os
 from file_receiver import ReceiveApp
-from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
 from credits_dialog import CreditsDialog
 from constant import logger, get_config, PLATFORM_LINK
-from PyQt6.QtSvg import QSvgRenderer
-import math
 import platform
 import requests
 import ctypes
-
-class IconButton(QPushButton):
-    def __init__(self, color_start=(77, 84, 96), color_end=(105, 115, 128), parent=None):
-        super().__init__(parent)
-        self.setFixedSize(42, 42)
-        self.color_start = color_start
-        self.color_end = color_end
-        #self.glow()
-        self.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Settings</b><br><i style='font-size: 12px;'>Click to configure</i>")
-
-    def glow(self):
-        glow_effect = QGraphicsDropShadowEffect()
-        glow_effect.setBlurRadius(15)
-        glow_effect.setXOffset(0)
-        glow_effect.setYOffset(0)
-        glow_effect.setColor(QColor(255, 255, 255, 100))
-        self.setGraphicsEffect(glow_effect)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        # Set the gradient brush for the circles
-        gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0, QColor(*self.color_start))
-        gradient.setColorAt(1, QColor(*self.color_end))
-
-        # Draw the circles first
-        painter.setBrush(gradient)
-        painter.setPen(QPen(QColor(0, 0, 0, 0)))  # Set pen to transparent
-
-        # Draw a settings (gear) icon
-        path = QPainterPath()
-
-        # Create a gear shape
-        center_x, center_y = 19, 19  # Center coordinates
-        inner_radius = 7               # Inner radius
-        outer_radius = 12              # Outer radius
-        tooth_length = 5               # Length of the teeth
-        tooth_width = 17               # Width of the teeth
-
-        # Draw outer circle
-        path.addEllipse(center_x - outer_radius, center_y - outer_radius, outer_radius * 2, outer_radius * 2)
-
-        # Draw inner circle
-        path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
-
-        # Draw gear teeth square shape (rectangle), 6 teeth in total, 1 tooth = 60 degrees, 30 degrees for each side,first tooth at 90 degrees
-        for i in range(6):
-            angle = 81 + i * 60
-            x1 = center_x + inner_radius * math.cos(math.radians(angle))
-            y1 = center_y + inner_radius * math.sin(math.radians(angle))
-            x2 = center_x + outer_radius * math.cos(math.radians(angle))
-            y2 = center_y + outer_radius * math.sin(math.radians(angle))
-            x3 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle))
-            y3 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle))
-            x4 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle + tooth_width))
-            y4 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle + tooth_width))
-            x5 = center_x + outer_radius * math.cos(math.radians(angle + tooth_width))
-            y5 = center_y + outer_radius * math.sin(math.radians(angle + tooth_width))
-            x6 = center_x + inner_radius * math.cos(math.radians(angle + tooth_width))
-            y6 = center_y + inner_radius * math.sin(math.radians(angle + tooth_width))
-
-            path.moveTo(x1, y1)
-            path.lineTo(x2, y2)
-            path.lineTo(x3, y3)
-            path.lineTo(x4, y4)
-            path.lineTo(x5, y5)
-            path.lineTo(x6, y6)
-            path.lineTo(x1, y1)
-
-        painter.drawPath(path)
 
 class MainApp(QWidget):
     def __init__(self):
@@ -113,9 +38,33 @@ class MainApp(QWidget):
         header_layout = QHBoxLayout(header)
 
         # Create and add the IconButton instead of using SvgButton
-        icon_button = IconButton()  # Example colors
-        icon_button.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
-        header_layout.addWidget(icon_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Settings button
+        settings_button = QPushButton()
+        settings_button.setFixedSize(44, 44)
+        settings_icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings.svg")
+        settings_button.setIcon(QIcon(settings_icon_path))
+        settings_button.setIconSize(QSize(32, 32))
+        settings_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 30);
+                border-radius: 21px;
+            }
+        """)
+        settings_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Settings</b><br><i style='font-size: 12px;'>Click to configure</i>")
+        settings_button.clicked.connect(self.openSettings)
+
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)
+        glow_effect.setXOffset(0)
+        glow_effect.setYOffset(0)
+        glow_effect.setColor(QColor(255, 255, 255, 100))
+        settings_button.setGraphicsEffect(glow_effect)
+
+        header_layout.addWidget(settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Add a stretch after the settings button
         header_layout.addStretch()
