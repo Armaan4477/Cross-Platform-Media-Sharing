@@ -120,7 +120,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-            serverSocket = new ServerSocket(58100);
+            serverSocket = new ServerSocket(57341);
             FileLogger.log("ReceiveFileActivityPython", "Waiting for a connection...");
             clientSocket = serverSocket.accept();
             FileLogger.log("ReceiveFileActivityPython", "Connected to " + clientSocket.getInetAddress().getHostAddress());

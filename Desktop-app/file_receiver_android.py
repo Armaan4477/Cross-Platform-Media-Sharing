@@ -12,8 +12,7 @@ import subprocess
 import platform
 import time
 
-SENDER_DATA = 57000
-RECEIVER_DATA = 58000
+RECEIVER_DATA = 57341
 
 class ReceiveWorkerJava(QThread):
     progress_update = pyqtSignal(int)

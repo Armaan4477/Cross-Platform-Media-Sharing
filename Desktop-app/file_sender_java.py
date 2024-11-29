@@ -15,8 +15,7 @@ from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config,
 from crypt_handler import encrypt_file
 from time import sleep
 
-SENDER_DATA = 57000
-RECEIVER_DATA = 58100
+RECEIVER_DATA = 57341
 
 class FileSenderJava(QThread):
     progress_update = pyqtSignal(int)
