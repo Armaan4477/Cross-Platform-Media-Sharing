@@ -54,8 +54,8 @@ logger.setLevel(logging.DEBUG)
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.5.8"  # Set the current version of the json config file
-app_version = "3.3.6"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "5.5.9"  # Set the current version of the json config file
+app_version = "3.3.7"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 def get_config_file_path():
     if platform.system() == 'Windows':
