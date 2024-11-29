@@ -487,7 +487,7 @@ public class SendFileActivity extends AppCompatActivity {
             // Initialize connection
             try {
                 socket = new Socket();
-                socket.connect(new InetSocketAddress(ip, 58100), 10000);
+                socket.connect(new InetSocketAddress(ip, 57341), 10000);
                 FileLogger.log("SendFileActivity", "Socket connected: " + socket.isConnected());
             } catch (IOException e) {
                 FileLogger.log("SendFileActivity", "Failed to connect to server", e);
