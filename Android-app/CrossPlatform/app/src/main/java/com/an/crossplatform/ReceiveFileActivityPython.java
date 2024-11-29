@@ -28,6 +28,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -56,6 +57,10 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private Button openFolder;
     private TextView txt_path;
     private ExecutorService executorService = Executors.newFixedThreadPool(2); // Using 2 threads: one for connection, one for file reception
+    private static final int PORT = 57341;
+    private static final int MAX_RETRIES = 3;
+    private static final int RETRY_DELAY_MS = 1000;
+    private static final int SOCKET_TIMEOUT = 30000; // 30 seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,19 +120,60 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         }
     }
 
+
     private boolean initializeConnection() {
+        int retryCount = 0;
+
+        while (retryCount < MAX_RETRIES) {
+            try {
+                // Cleanup existing sockets
+                cleanupSockets();
+
+                // Create new server socket
+                serverSocket = new ServerSocket();
+                serverSocket.setReuseAddress(true);
+                serverSocket.setSoTimeout(SOCKET_TIMEOUT);
+                serverSocket.bind(new InetSocketAddress(PORT));
+
+                FileLogger.log("ReceiveFileActivityPython", "Listening on port: " + PORT);
+
+                // Accept connection
+                clientSocket = serverSocket.accept();
+                clientSocket.setSoTimeout(SOCKET_TIMEOUT);
+
+                FileLogger.log("ReceiveFileActivityPython",
+                        "Connected to " + clientSocket.getInetAddress().getHostAddress());
+                return true;
+
+            } catch (IOException e) {
+                FileLogger.log("ReceiveFileActivityPython",
+                        "Connection attempt " + (retryCount + 1) + " failed: " + e.getMessage());
+                retryCount++;
+
+                if (retryCount < MAX_RETRIES) {
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void cleanupSockets() {
         try {
+            if (clientSocket != null && !clientSocket.isClosed()) {
+                clientSocket.close();
+            }
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-            serverSocket = new ServerSocket(57341);
-            FileLogger.log("ReceiveFileActivityPython", "Waiting for a connection...");
-            clientSocket = serverSocket.accept();
-            FileLogger.log("ReceiveFileActivityPython", "Connected to " + clientSocket.getInetAddress().getHostAddress());
-            return true;
-        } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error initializing connection", e);
-            return false;
+            Thread.sleep(RETRY_DELAY_MS);
+        } catch (IOException | InterruptedException e) {
+            FileLogger.log("ReceiveFileActivityPython", "Error during socket cleanup: " + e.getMessage());
         }
     }
 

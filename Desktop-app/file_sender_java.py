@@ -32,33 +32,24 @@ class FileSenderJava(QThread):
         #com.an.Datadash
 
     def initialize_connection(self):
-        # Ensure previous socket is closed before re-binding
         try:
             if hasattr(self, 'client_skt'):
                 self.client_skt.close()
                 logger.debug("Socket closed successfully before rebinding.")
-            sleep(1)  # Delay to ensure the OS releases the port
-        except Exception as e:
-            logger.error(f"Error closing socket: {e}")
-        
-        # Create a new TCP socket
-        self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        try:
-            # Directly attempt to connect without binding
-            self.client_skt.connect((self.ip_address, RECEIVER_DATA))
-            logger.debug(f"Successfully connected to {self.ip_address} on port {RECEIVER_DATA}")
-        except ConnectionRefusedError:
-            logger.error("Connection refused: Failed to connect to the specified IP address.")
-            self.show_message_box("Connection Error", "Failed to connect to the specified IP address.")
-            return False
-        except OSError as e:
-            logger.error(f"Connection error: {e}")
+            sleep(1)  # Wait for socket cleanup
+            
+            self.client_skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.client_skt.settimeout(30)  # 30 second timeout
+            
+            self.client_skt.connect((self.ip_address, 57341))
+            logger.debug(f"Successfully connected to {self.ip_address} on port 57341")
+            return True
+            
+        except (ConnectionRefusedError, OSError) as e:
+            logger.error(f"Connection failed: {e}")
             self.show_message_box("Connection Error", f"Failed to connect: {e}")
             return False
-
-        return True
 
     def run(self):
         metadata_file_path = None
