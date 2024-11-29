@@ -186,6 +186,7 @@ class PreferencesApp(QWidget):
 
     def style_checkbox(self, checkbox):
         tick = os.path.join(os.path.dirname(__file__), "icons", "tick.svg")
+        tick = tick.replace('\\', '/')  # Convert backslashes to forward slashes for CSS
         checkbox.setGraphicsEffect(self.create_glow_effect())
         checkbox.setStyleSheet(f"""
             QCheckBox {{
