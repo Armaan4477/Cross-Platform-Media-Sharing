@@ -47,6 +47,7 @@
         <activity android:name=".SendFileActivityPython" />
         <activity android:name=".ReceiveFileActivityPython" />
         <activity android:name=".CreditsActivity" />
+        <activity android:name=".TransferCompleteActivity"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"
