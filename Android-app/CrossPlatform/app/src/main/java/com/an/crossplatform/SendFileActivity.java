@@ -12,6 +12,8 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -85,6 +87,13 @@ public class SendFileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing to disable back navigation
+            }
+        });
 
         // Retrieve the JSON string from the intent
         receivedJson = getIntent().getStringExtra("receivedJson");

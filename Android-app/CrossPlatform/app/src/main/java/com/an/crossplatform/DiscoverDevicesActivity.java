@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
+import androidx.activity.OnBackPressedCallback;
 
 /** @noinspection CallToPrintStackTrace*/
 public class DiscoverDevicesActivity extends AppCompatActivity {
@@ -53,6 +54,13 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_discover_devices);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing to disable back navigation
+            }
+        });
 
         btnDiscover = findViewById(R.id.btn_discover);
         btnConnect = findViewById(R.id.btn_connect);

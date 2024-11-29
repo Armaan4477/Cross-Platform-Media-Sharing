@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.net.SocketException;
+import androidx.activity.OnBackPressedCallback;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
@@ -43,6 +44,13 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing to disable back navigation
+            }
+        });
 
         TextView txtWaiting = findViewById(R.id.txt_waiting);
         txtWaiting.setText("Waiting to connect to sender...");
