@@ -185,10 +185,32 @@ class PreferencesApp(QWidget):
         """)
 
     def style_checkbox(self, checkbox):
+        tick = os.path.join(os.path.dirname(__file__), "icons", "tick.svg")
         checkbox.setGraphicsEffect(self.create_glow_effect())
-        checkbox.setStyleSheet("""
-        color: #FFFFFF;
-        background-color: transparent;  /* Set the background to transparent */
+        checkbox.setStyleSheet(f"""
+            QCheckBox {{
+                color: #FFFFFF;
+                background-color: transparent;
+                spacing: 5px;
+            }}
+            QCheckBox::indicator {{
+                width: 20px;
+                height: 20px;
+                border: 2px solid #FFFFFF;
+                border-radius: 4px;
+                background-color: transparent;
+            }}
+            QCheckBox::indicator:unchecked {{
+                background-color: transparent;
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: transparent;
+                border: 2px solid #FFFFFF;
+                image: url({tick});
+            }}
+            QCheckBox::indicator:unchecked:hover {{
+                background-color: rgba(255, 255, 255, 0.1);
+            }}
         """)
 
     def style_button(self, button):
