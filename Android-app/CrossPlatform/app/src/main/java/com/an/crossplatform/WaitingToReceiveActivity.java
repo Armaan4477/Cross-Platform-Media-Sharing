@@ -37,6 +37,12 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private int LISTEN_PORT = 12346;
+    private ServerSocket serverSocket;
+    private DatagramSocket udpSocket;
+    private Socket clientSocket;
+    private DataInputStream bufferedInputStream;
+    private DataOutputStream bufferedOutputStream;
+    private volatile boolean isRunning = true;
 
     private boolean tcpConnectionEstablished = false;
 
@@ -48,7 +54,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                // Do nothing to disable back navigation
+                closeAllSockets();
             }
         });
 
@@ -107,37 +113,92 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private void startListeningForDiscover() {
         new Thread(() -> {
-            try (DatagramSocket socket = new DatagramSocket(UDP_PORT)) {
+            try {
+                udpSocket = new DatagramSocket(UDP_PORT);
+                udpSocket.setSoTimeout(1000); // 1 second timeout
                 byte[] recvBuf = new byte[15000];
 
-                while (!tcpConnectionEstablished) { // Continue listening until a TCP connection is confirmed
-                    DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
-                    socket.receive(receivePacket);
+                while (!tcpConnectionEstablished) { // Remove isRunning check here
+                    try {
+                        DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
+                        FileLogger.log("WaitingToReceive", "Waiting for discovery packet...");
+                        udpSocket.receive(receivePacket);
 
-                    String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
-                    FileLogger.log("WaitingToReceive", "Received raw message: " + message);
-                    FileLogger.log("WaitingToReceive", "Sender address: " + receivePacket.getAddress().getHostAddress());
-                    FileLogger.log("WaitingToReceive", "Sender port: " + receivePacket.getPort());
+                        String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
+                        FileLogger.log("WaitingToReceive", "Received message: " + message);
 
-                    if (message.equals("DISCOVER")) {
-                        InetAddress senderAddress = receivePacket.getAddress();
-                        byte[] sendData = ("RECEIVER:" + DEVICE_NAME).getBytes();
-                        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, senderAddress, LISTEN_PORT);
-                        socket.send(sendPacket);
-                        FileLogger.log("WaitingToReceive", "Sent RECEIVER message to: " + senderAddress.getHostAddress() + " on port " + LISTEN_PORT);
+                        if (message.equals("DISCOVER")) {
+                            InetAddress senderAddress = receivePacket.getAddress();
+                            byte[] sendData = ("RECEIVER:" + DEVICE_NAME).getBytes();
+                            DatagramPacket sendPacket = new DatagramPacket(
+                                    sendData,
+                                    sendData.length,
+                                    senderAddress,
+                                    LISTEN_PORT
+                            );
+                            udpSocket.send(sendPacket);
+                            FileLogger.log("WaitingToReceive", "Sent RECEIVER response to: " +
+                                    senderAddress.getHostAddress() + ":" + LISTEN_PORT);
 
-                        // Start a new thread to handle the TCP connection
-                        new Thread(() -> {
-                            // Set the flag to indicate TCP connection is being established
-                            tcpConnectionEstablished = true;
-                            establishTcpConnection(senderAddress);
-                        }).start();
+                            // Start TCP connection in new thread
+                            new Thread(() -> establishTcpConnection(senderAddress)).start();
+                        }
+                    } catch (SocketException e) {
+                        if (!isRunning) {
+                            FileLogger.log("WaitingToReceive", "UDP socket closed normally");
+                            break;
+                        }
+                    } catch (IOException e) {
+                        // Timeout - continue listening
+                        continue;
                     }
                 }
             } catch (Exception e) {
-                FileLogger.log("Error", "This is the error:" + e);
+                FileLogger.log("WaitingToReceive", "UDP Discovery error", e);
             }
         }).start();
+    }
+
+    private void closeAllSockets() {
+        if (!isRunning) {
+            return; // Prevent multiple closes
+        }
+        isRunning = false;
+
+        try {
+            // Close UDP socket
+            if (udpSocket != null && !udpSocket.isClosed()) {
+                udpSocket.close();
+                udpSocket = null;
+                FileLogger.log("WaitingToReceive", "UDP socket closed");
+            }
+
+            // Close TCP related resources
+            if (bufferedInputStream != null) {
+                bufferedInputStream.close();
+                bufferedInputStream = null;
+            }
+            if (bufferedOutputStream != null) {
+                bufferedOutputStream.close();
+                bufferedOutputStream = null;
+            }
+            if (clientSocket != null && !clientSocket.isClosed()) {
+                clientSocket.close();
+                clientSocket = null;
+            }
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+                serverSocket = null;
+            }
+
+            tcpConnectionEstablished = true; // Ensure discovery stops
+            FileLogger.log("WaitingToReceive", "All sockets closed successfully");
+
+        } catch (IOException e) {
+            FileLogger.log("WaitingToReceive", "Error closing sockets", e);
+        } finally {
+            finish(); // Close the activity
+        }
     }
 
     private void establishTcpConnection(final InetAddress receiverAddress) {
@@ -262,4 +323,11 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             }
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        closeAllSockets();
+    }
+
 }

@@ -49,6 +49,9 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private int LISTEN_PORT = 12346;
+    private Socket tcpSocket;
+    private DataOutputStream dataOutputStream;
+    private DataInputStream dataInputStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +61,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                // Do nothing to disable back navigation
+                closeAllSockets();
             }
         });
 
@@ -156,6 +159,41 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         return broadcastIp;
     }
 
+
+    private void closeAllSockets() {
+        try {
+            // Stop discovery first
+            stopDiscovering();
+
+            // Close TCP related resources
+            if (dataOutputStream != null) {
+                dataOutputStream.close();
+                FileLogger.log("DiscoverDevices", "DataOutputStream closed");
+            }
+            if (dataInputStream != null) {
+                dataInputStream.close();
+                FileLogger.log("DiscoverDevices", "DataInputStream closed");
+            }
+            if (tcpSocket != null && !tcpSocket.isClosed()) {
+                tcpSocket.close();
+                FileLogger.log("DiscoverDevices", "TCP Socket closed");
+            }
+
+            // Close UDP sockets
+            if (discoverSocket != null && !discoverSocket.isClosed()) {
+                discoverSocket.close();
+                FileLogger.log("DiscoverDevices", "Discover Socket closed");
+            }
+            if (responseSocket != null && !responseSocket.isClosed()) {
+                responseSocket.close();
+                FileLogger.log("DiscoverDevices", "Response Socket closed");
+            }
+
+            finish(); // Close the activity
+        } catch (IOException e) {
+            FileLogger.log("DiscoverDevices", "Error closing sockets", e);
+        }
+    }
 
     private void startReceiverThread() {
         new Thread(() -> {
@@ -309,10 +347,9 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onDestroy() {
+        closeAllSockets();
         super.onDestroy();
-        stopDiscovering();
     }
 }
