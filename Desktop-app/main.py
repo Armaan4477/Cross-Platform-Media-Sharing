@@ -7,7 +7,7 @@ import os
 from file_receiver import ReceiveApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
-from constant import logger, get_config, PLATFORM_LINK
+from constant import logger, get_config
 import platform
 import requests
 import ctypes
@@ -21,12 +21,13 @@ class VersionCheck(QThread):
 
     def run(self):
         self.currentversion()
+        self.get_platform_link()
         fetched_version = self.fetch_platform_value()
         if fetched_version and self.compare_versions(fetched_version, self.uga_version) > 0:
             self.update_available.emit()
 
     def fetch_platform_value(self):
-        url = PLATFORM_LINK
+        url = self.get_platform_link()
         logger.info(f"Fetching platform value from: {url}")
         
         try:
@@ -58,6 +59,25 @@ class VersionCheck(QThread):
     def currentversion(self):
         config= get_config()
         self.uga_version = config["app_version"]
+
+    def get_platform_link(self):
+        if platform.system() == 'Windows':
+                platform_name = 'windows'
+        elif platform.system() == 'Linux':
+                platform_name = 'linux'
+        elif platform.system() == 'Darwin':
+                platform_name = 'macos'
+        else:
+                logger.error("Unsupported OS!")
+                return None
+
+        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+        # platform_name = 'auga'
+        # platform_name = 'buga'
+        # platform_name = 'cuga'
+            
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        return url
 
 class MainApp(QWidget):
     def __init__(self, skip_version_check=False):

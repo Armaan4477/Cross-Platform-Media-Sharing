@@ -8,7 +8,7 @@ import platform
 from constant import get_config, write_config, get_default_path
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
-from constant import logger,PLATFORM_LINK
+from constant import logger
 import requests
 import os
 import time
@@ -655,7 +655,7 @@ class PreferencesApp(QWidget):
         #com.an.Datadash
 
     def fetch_platform_value(self):
-        url = PLATFORM_LINK
+        url = self.get_platform_link()
         logger.info(f"Fetching platform value from: {url}")
         
         try:
@@ -808,6 +808,25 @@ class PreferencesApp(QWidget):
             v2_parts.append(0)
         
         return (v1_parts > v2_parts) - (v1_parts < v2_parts)
+    
+    def get_platform_link(self):
+        if platform.system() == 'Windows':
+                platform_name = 'windows'
+        elif platform.system() == 'Linux':
+                platform_name = 'linux'
+        elif platform.system() == 'Darwin':
+                platform_name = 'macos'
+        else:
+                logger.error("Unsupported OS!")
+                return None
+
+        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+        # platform_name = 'auga'
+        # platform_name = 'buga'
+        # platform_name = 'cuga'
+            
+        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        return url
     
     def get_update_download(self):
         # Determine platform OS and download path
