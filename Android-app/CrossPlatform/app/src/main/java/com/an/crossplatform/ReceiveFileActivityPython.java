@@ -72,6 +72,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                Toast.makeText(ReceiveFileActivityPython.this, "Back navigation is disabled, Please Restart the App", Toast.LENGTH_SHORT).show();
                 // Do nothing to disable back navigation
             }
         });
