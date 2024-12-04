@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
 from PyQt6.QtGui import QScreen, QMovie, QKeySequence, QKeyEvent
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from constant import BROADCAST_PORT, LISTEN_PORT, get_config, logger, RECEIVER_JSON
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
@@ -17,7 +17,6 @@ from file_receiver_python import ReceiveAppP
 from file_receiver_android import ReceiveAppPJava
 from file_receiver_swift import ReceiveAppPSwift
 
-RECEIVER_JSON = 54314
 
 class FileReceiver(QThread):
     show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window

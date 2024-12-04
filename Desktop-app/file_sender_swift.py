@@ -11,7 +11,7 @@ import os
 import socket
 import struct
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from constant import get_config, logger
 from crypt_handler import encrypt_file
 from time import sleep
 

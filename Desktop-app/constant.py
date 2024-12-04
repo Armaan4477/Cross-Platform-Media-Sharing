@@ -156,34 +156,9 @@ else:
     else:
         logger.info("Loaded configuration: %s", config_data)
 
-def get_broadcast():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        logger.info("Local IP determined: %s", local_ip)
-    except Exception as e:
-        logger.error("Error obtaining local IP: %s", e)
-        local_ip = "Unable to get IP"
-    finally:
-        s.close()
-    
-    if local_ip == "Unable to get IP":
-        return local_ip
-
-    # Split the IP address into parts
-    ip_parts = local_ip.split('.')
-    # Replace the last part with '255' to create the broadcast address
-    ip_parts[-1] = '255'
-    # Join the parts back together to form the broadcast address
-    broadcast_address = '.'.join(ip_parts)
-    logger.info("Broadcast address determined: %s", broadcast_address)
-    return broadcast_address
-
-
-BROADCAST_ADDRESS = get_broadcast()
 BROADCAST_PORT = 12345
 LISTEN_PORT = 12346
+RECEIVER_JSON = 54314
 
-logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
+logger.info("Broadcast port: %d, Listen port: %d", BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash

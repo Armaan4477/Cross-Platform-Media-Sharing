@@ -10,12 +10,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence,QKeyEvent
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
+from constant import BROADCAST_PORT, LISTEN_PORT, logger, get_config, RECEIVER_JSON
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 from file_sender_swift import SendAppSwift
-
-RECEIVER_JSON = 54314
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
@@ -91,16 +89,44 @@ class BroadcastWorker(QThread):
         self.receiver_data = None
 
     def run(self):
+        # Start discovering receivers directly
         self.discover_receivers()
 
+    def get_broadcast(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            logger.info("Local IP determined: %s", local_ip)
+        except Exception as e:
+            logger.error("Error obtaining local IP: %s", e)
+            local_ip = "Unable to get IP"
+        finally:
+            s.close()
+        
+        if local_ip == "Unable to get IP":
+            return local_ip
+
+        # Split the IP address into parts
+        ip_parts = local_ip.split('.')
+        # Replace the last part with '255' to create the broadcast address
+        ip_parts[-1] = '255'
+        # Join the parts back together to form the broadcast address
+        broadcast_address = '.'.join(ip_parts)
+        logger.info("Broadcast address determined: %s", broadcast_address)
+        return broadcast_address
+
     def discover_receivers(self):
+        broadcast_address = self.get_broadcast()
+        if broadcast_address == "Unable to get IP":
+            return
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('', LISTEN_PORT))
 
             logger.info("Sending discover packet.")
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
+            s.sendto(b'DISCOVER', (broadcast_address, BROADCAST_PORT))
 
             s.settimeout(2)
             try:
