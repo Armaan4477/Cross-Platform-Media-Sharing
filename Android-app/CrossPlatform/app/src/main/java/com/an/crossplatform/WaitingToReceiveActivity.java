@@ -300,14 +300,26 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     if (socket != null && !socket.isClosed()) socket.close();
                     if (receivedJson.getString("device_type").equals("python")) {
                         FileLogger.log("WaitingToReceive", "Received JSON data from Python app");
+
+                        // Close sockets
+                        closeAllSockets();
+
+                        // Start the new activity
                         Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
                         intent.putExtra("receivedJson", receivedJson.toString());
                         startActivity(intent);
+
                     } else if (receivedJson.getString("device_type").equals("java")) {
                         FileLogger.log("WaitingToReceive", "Received JSON data from Java app");
+
+                        // Close sockets
+                        closeAllSockets();
+
+                        // Start the new activity
                         Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
                         intent.putExtra("receivedJson", receivedJson.toString());
                         startActivity(intent);
+
                     }
                 }
             }
