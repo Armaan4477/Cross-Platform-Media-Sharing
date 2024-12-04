@@ -58,6 +58,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private Button donebtn;
     private TextView txt_path;
     private final ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private static final int FILE_TRANSFER_PORT = 63152;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,13 +121,14 @@ public class ReceiveFileActivity extends AppCompatActivity {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-            FileLogger.log("ReceiveFileActivity", "Waiting for a connection...");
-            serverSocket = new ServerSocket(63152);
+            FileLogger.log("ReceiveFileActivity", "Starting server on port " + FILE_TRANSFER_PORT);
+            serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
+            serverSocket.setReuseAddress(true); // Add this to prevent port binding issues
             clientSocket = serverSocket.accept();
             FileLogger.log("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
             return true;
         } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivity", "Error initializing connection", e);
+            FileLogger.log("ReceiveFileActivity", "Error initializing connection on port " + FILE_TRANSFER_PORT, e);
             return false;
         }
     }
@@ -139,22 +141,20 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private class ReceiveFilesTask implements Runnable {
         @Override
         public void run() {
-            // Close any existing connections
             try {
-                if (serverSocket != null && !serverSocket.isClosed()) {
-                    serverSocket.close();
+                receiveFiles();
+            } finally {
+                // Ensure sockets are properly closed
+                try {
+                    if (clientSocket != null) {
+                        clientSocket.close();
+                    }
+                    if (serverSocket != null) {
+                        serverSocket.close();
+                    }
+                } catch (IOException e) {
+                    FileLogger.log("ReceiveFileActivity", "Error closing sockets", e);
                 }
-            } catch (IOException e) {
-                FileLogger.log("ReceiveFileActivityPython", "Error closing server socket", e);
-            }
-            receiveFiles();
-            // Close any existing connections
-            try {
-                if (serverSocket != null && !serverSocket.isClosed()) {
-                    serverSocket.close();
-                }
-            } catch (IOException e) {
-                FileLogger.log("ReceiveFileActivityPython", "Error closing server socket", e);
             }
         }
 
@@ -438,12 +438,12 @@ public class ReceiveFileActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Close sockets on activity destruction
+        executorService.shutdown(); // Add this to clean up thread pool
         try {
-            if (clientSocket != null && !clientSocket.isClosed()) {
+            if (clientSocket != null) {
                 clientSocket.close();
             }
-            if (serverSocket != null && !serverSocket.isClosed()) {
+            if (serverSocket != null) {
                 serverSocket.close();
             }
         } catch (IOException e) {

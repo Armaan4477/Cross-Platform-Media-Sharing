@@ -15,8 +15,7 @@ from file_sender import SendApp
 from file_sender_java import SendAppJava
 from file_sender_swift import SendAppSwift
 
-SENDER_JSON = 53000
-RECEIVER_JSON = 54000
+RECEIVER_JSON = 54314
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):

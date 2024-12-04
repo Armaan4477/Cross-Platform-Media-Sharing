@@ -82,6 +82,7 @@ public class SendFileActivity extends AppCompatActivity {
     Button selectFileButton;
     Button selectFolderButton;
     Button sendButton;
+    private static final int FILE_TRANSFER_PORT = 63152;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -485,30 +486,38 @@ public class SendFileActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            // Initialize connection
             try {
+                // Create socket with specific port
                 socket = new Socket();
-                FileLogger.log("SendFileActivity", "Socket connected: " + socket.isConnected());
-                socket.connect(new InetSocketAddress(ip, 63152), 10000);
-            } catch (IOException e) {
-                FileLogger.log("SendFileActivity", "Failed to connect to server", e);
-                runOnUiThread(() ->
-                        Toast.makeText(SendFileActivity.this, "Connection Failed", Toast.LENGTH_SHORT).show()
-                );
-                return;
-            }
+                socket.setReuseAddress(true); // Add this to prevent port binding issues
+                FileLogger.log("SendFileActivity", "Attempting connection to " + ip + ":" + FILE_TRANSFER_PORT);
+                socket.connect(new InetSocketAddress(ip, FILE_TRANSFER_PORT), 10000);
+                FileLogger.log("SendFileActivity", "Connected successfully to port " + FILE_TRANSFER_PORT);
 
-            // Send files/folders if connection is successful
-            for (String filePath : filePaths) {
-                if (isFolder) {
-                    sendFolder(filePath);
-                } else {
-                    if (!metadataSent) {
-                        sendFile(metadataFilePath, null);
-                        metadataSent = true;
-                    }
-                    sendFile(filePath, null);
+                if (!socket.isConnected()) {
+                    throw new IOException("Failed to connect to port " + FILE_TRANSFER_PORT);
                 }
+
+                // Send files/folders if connection is successful
+                for (String filePath : filePaths) {
+                    if (isFolder) {
+                        sendFolder(filePath);
+                    } else {
+                        if (!metadataSent) {
+                            sendFile(metadataFilePath, null);
+                            metadataSent = true;
+                        }
+                        sendFile(filePath, null);
+                    }
+                }
+            } catch (IOException e) {
+                FileLogger.log("SendFileActivity", "Connection failed on port " + FILE_TRANSFER_PORT, e);
+                runOnUiThread(() ->
+                        Toast.makeText(SendFileActivity.this,
+                                "Connection Failed on port " + FILE_TRANSFER_PORT,
+                                Toast.LENGTH_SHORT).show()
+                );
+                closeSocket();
             }
         }
 
@@ -737,20 +746,22 @@ public class SendFileActivity extends AppCompatActivity {
             }
         }
     }
+    private void closeSocket() {
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+                FileLogger.log("SendFileActivity", "Socket closed on port " + FILE_TRANSFER_PORT);
+            }
+        } catch (IOException e) {
+            FileLogger.log("SendFileActivity", "Error closing socket on port " + FILE_TRANSFER_PORT, e);
+        }
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Close the socket connection when the activity is destroyed
-        try {
-            if (socket != null) {
-                socket.close();
-                FileLogger.log("SendFileActivity", "Socket closed");
-            }
-        } catch (IOException e) {
-            FileLogger.log("SendFileActivity", "Error closing socket", e);
-        }
-        executorService.shutdown();  // Clean up background threads
+        closeSocket();
+        executorService.shutdown();
     }
 
     @Override

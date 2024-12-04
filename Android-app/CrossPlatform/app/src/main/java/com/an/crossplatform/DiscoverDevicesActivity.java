@@ -45,7 +45,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345; // Discovery port on Android
     private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on Python app
-    private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
+    private static final int RECEIVER_PORT_JSON = 54314; // TCP port for Python app communication
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private int LISTEN_PORT = 12346;
@@ -253,24 +253,11 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private void exchangeJsonAndStartSendFileActivity() {
         new Thread(() -> {
             Socket socket = null;
-            DataOutputStream dos = null;
-            DataInputStream dis = null;
-
             try {
-                // Establish a socket connection to the selected device IP on the RECEIVER_PORT_JSON
+                // Connect directly to port 54000 (RECEIVER_PORT_JSON)
                 socket = new Socket();
-
-                // Bind to the SENDER_PORT_JSON (similar to Python code: self.client_socket.bind(('', SENDER_JSON)))
-//                socket.bind(new InetSocketAddress(SENDER_PORT_JSON));  // Binding the sender to the port
-
-                FileLogger.log("DiscoverDevices", "Binded to port: " + SENDER_PORT_JSON);
-
-                // Connect to the receiver's IP and RECEIVER_PORT_JSON (similar to Python: self.client_socket.connect((ip_address, RECEIVER_JSON)))
                 socket.connect(new InetSocketAddress(selectedDeviceIP, RECEIVER_PORT_JSON), 10000);
                 FileLogger.log("DiscoverDevices", "Connected to " + selectedDeviceIP + " on port " + RECEIVER_PORT_JSON);
-
-                dos = new DataOutputStream(socket.getOutputStream());
-                dis = new DataInputStream(socket.getInputStream());
 
                 // Prepare JSON data to send (Android device info)
                 JSONObject deviceInfo = new JSONObject();
@@ -283,23 +270,23 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
                 DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
 
-                // Convert the JSON size to little-endian bytes and send it first
+                // Send JSON size (little-endian)
                 ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
                 sizeBuffer.putLong(sendData.length);
                 bufferedOutputStream.write(sizeBuffer.array());
                 bufferedOutputStream.flush();
 
-                // Send the actual JSON data encoded in UTF-8
+                // Send JSON data
                 bufferedOutputStream.write(sendData);
                 bufferedOutputStream.flush();
 
-                // Read the JSON size first (as a long, little-endian)
+                // Read response JSON size
                 byte[] recvSizeBuf = new byte[Long.BYTES];
                 bufferedInputStream.read(recvSizeBuf);
                 ByteBuffer sizeBufferReceived = ByteBuffer.wrap(recvSizeBuf).order(ByteOrder.LITTLE_ENDIAN);
                 long jsonSize = sizeBufferReceived.getLong();
 
-                // Read the actual JSON data
+                // Read response JSON data
                 byte[] recvBuf = new byte[(int) jsonSize];
                 int totalBytesRead = 0;
                 while (totalBytesRead < recvBuf.length) {
@@ -310,38 +297,30 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     totalBytesRead += bytesRead;
                 }
 
-                // Convert the received bytes into a JSON string
+                // Process received JSON
                 String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
                 JSONObject receivedJson = new JSONObject(jsonStr);
                 FileLogger.log("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
 
+                // Start appropriate activity based on device type
                 if (receivedJson.getString("device_type").equals("python")) {
-                    FileLogger.log("WaitingToReceive", "Received JSON data from Python app");
-                    // Proceed to the next activity (SendFileActivityPython)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivityPython.class);
                     intent.putExtra("receivedJson", receivedJson.toString());
-                    intent.putExtra("selectedDeviceIP", selectedDeviceIP); // Send the selected device IP
+                    intent.putExtra("selectedDeviceIP", selectedDeviceIP);
                     startActivity(intent);
                 } else if (receivedJson.getString("device_type").equals("java")) {
-                    FileLogger.log("WaitingToReceive", "Received JSON data from Java app");
-                    // Proceed to the next activity (ReceiveFileActivity)
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
                     intent.putExtra("receivedJson", receivedJson.toString());
-                    intent.putExtra("selectedDeviceIP", selectedDeviceIP); // Send the selected device IP
+                    intent.putExtra("selectedDeviceIP", selectedDeviceIP);
                     startActivity(intent);
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                // Close resources in case of an exception
                 try {
-                    if (dos != null) dos.close();
-                    if (dis != null) dis.close();
                     if (socket != null) socket.close();
-                } catch (Exception ignored) {
-                    // Ignored exceptions while closing resources
-                }
+                } catch (Exception ignored) {}
             }
         }).start();
     }

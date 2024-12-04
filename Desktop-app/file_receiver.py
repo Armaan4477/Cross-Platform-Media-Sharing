@@ -17,8 +17,7 @@ from file_receiver_python import ReceiveAppP
 from file_receiver_android import ReceiveAppPJava
 from file_receiver_swift import ReceiveAppPSwift
 
-SENDER_JSON = 53000
-RECEIVER_JSON = 54000
+RECEIVER_JSON = 54314
 
 class FileReceiver(QThread):
     show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window

@@ -32,10 +32,10 @@ import androidx.activity.OnBackPressedCallback;
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
     private static final int UDP_PORT = 12345; // Discovery port
-    private static final int SENDER_PORT_JSON = 53000; // Response port for JSON on the Python app
-    private static final int RECEIVER_PORT_JSON = 54000; // TCP port for Python app communication
+
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
+    private static final int JSON_EXCHANGE_PORT = 54314;
     private int LISTEN_PORT = 12346;
     private ServerSocket serverSocket;
     private DatagramSocket udpSocket;
@@ -204,134 +204,82 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private void establishTcpConnection(final InetAddress receiverAddress) {
         ServerSocket serverSocket = null;
         Socket socket = null;
-        BufferedOutputStream outputStream = null;
-        BufferedInputStream inputStream = null;
-        FileLogger.log("WaitingToReceive", "Establishing TCP connection with Sender");
 
         try {
-            serverSocket = new ServerSocket(RECEIVER_PORT_JSON);
-            FileLogger.log("WaitingToReceive", "Waiting for incoming connections on port " + RECEIVER_PORT_JSON);
+            // Listen only on port 54000
+            serverSocket = new ServerSocket(JSON_EXCHANGE_PORT);
+            FileLogger.log("WaitingToReceive", "Waiting for incoming connections on port " + JSON_EXCHANGE_PORT);
 
-            while (true) {
-                FileLogger.log("WaitingToReceive", "Waiting for incoming connections...");
-                socket = serverSocket.accept();
-                FileLogger.log("WaitingToReceive", "Accepted connection from: " + socket.getInetAddress().toString());
+            socket = serverSocket.accept();
+            FileLogger.log("WaitingToReceive", "Accepted connection from: " + socket.getInetAddress());
 
-                DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
-                DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
+            DataOutputStream bufferedOutputStream = new DataOutputStream(socket.getOutputStream());
+            DataInputStream bufferedInputStream = new DataInputStream(socket.getInputStream());
 
-                // Send JSON data first
-                JSONObject deviceInfo = new JSONObject();
-                deviceInfo.put("device_type", DEVICE_TYPE);
-                deviceInfo.put("os", "Android");
-                String deviceInfoStr = deviceInfo.toString();
-                byte[] sendData = deviceInfoStr.getBytes(StandardCharsets.UTF_8);
-                FileLogger.log("WaitingToReceive", "Encoded JSON data size: " + sendData.length);
+            // Send device info JSON
+            JSONObject deviceInfo = new JSONObject();
+            deviceInfo.put("device_type", DEVICE_TYPE);
+            deviceInfo.put("os", "Android");
+            byte[] sendData = deviceInfo.toString().getBytes(StandardCharsets.UTF_8);
 
-                // Convert the JSON size to little-endian bytes and send it first
-                ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                sizeBuffer.putLong(sendData.length);
-                bufferedOutputStream.write(sizeBuffer.array());
-                bufferedOutputStream.flush();
+            // Send size as little-endian
+            ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+            sizeBuffer.putLong(sendData.length);
+            bufferedOutputStream.write(sizeBuffer.array());
+            bufferedOutputStream.flush();
 
-                // Send the actual JSON data encoded in UTF-8
-                bufferedOutputStream.write(sendData);
-                bufferedOutputStream.flush();
+            // Send JSON data
+            bufferedOutputStream.write(sendData);
+            bufferedOutputStream.flush();
+            FileLogger.log("WaitingToReceive", "Sent JSON data");
 
-                FileLogger.log("WaitingToReceive", "Sent JSON data to receiver");
-
-                Socket finalSocket = socket;
-
-                // Flag for handling which activity to launch
-                final JSONObject[] receivedJsonContainer = new JSONObject[1]; // Use array to allow modification inside thread
-
-                Thread receiveThread = new Thread(() -> {
-                    try {
-                        // Read the JSON size first (as a long, little-endian)
-                        byte[] recvSizeBuf = new byte[Long.BYTES];
-                        if (bufferedInputStream.read(recvSizeBuf) == -1) {
-                            FileLogger.log("WaitingToReceive", "End of stream reached while reading size");
-                            return;
-                        }
-
-                        ByteBuffer sizeBufferReceived = ByteBuffer.wrap(recvSizeBuf).order(ByteOrder.LITTLE_ENDIAN);
-                        long jsonSize = sizeBufferReceived.getLong();
-
-                        // Read the actual JSON data
-                        byte[] recvBuf = new byte[(int) jsonSize];
-                        int totalBytesRead = 0;
-
-                        while (totalBytesRead < recvBuf.length) {
-                            int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
-                            if (bytesRead == -1) {
-                                FileLogger.log("WaitingToReceive", "End of stream reached before reading complete data");
-                                return;
-                            }
-                            totalBytesRead += bytesRead;
-                        }
-
-                        // Convert the received bytes into a JSON string
-                        String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
-                        JSONObject receivedJson = new JSONObject(jsonStr);
-                        FileLogger.log("WaitingToReceive", "Received JSON data: " + receivedJson.toString());
-                        receivedJsonContainer[0] = receivedJson;
-
-                    } catch (Exception e) {
-                        FileLogger.log("WaitingToReceive", "Error receiving JSON data", e);
-                    } finally {
-                        try {
-                            if (bufferedInputStream != null) bufferedInputStream.close();
-                            if (bufferedOutputStream != null) bufferedOutputStream.close();
-                            if (finalSocket != null && !finalSocket.isClosed()) finalSocket.close();
-                        } catch (IOException e) {
-                            FileLogger.log("WaitingToReceive", "Error closing socket resources", e);
-                        }
-                    }
-                });
-                // Start the receiving thread and wait for it to complete
-                receiveThread.start();
-                receiveThread.join(); // Wait until the thread finishes before continuing
-
-                // Once JSON is received, decide which activity to start based on the device_type
-                JSONObject receivedJson = receivedJsonContainer[0];
-                if (receivedJson != null) {
-                    // Close socket and serverSocket before starting the new activity
-                    if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
-                    if (socket != null && !socket.isClosed()) socket.close();
-                    if (receivedJson.getString("device_type").equals("python")) {
-                        FileLogger.log("WaitingToReceive", "Received JSON data from Python app");
-
-                        // Close sockets
-                        closeAllSockets();
-
-                        // Start the new activity
-                        Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
-                        intent.putExtra("receivedJson", receivedJson.toString());
-                        startActivity(intent);
-
-                    } else if (receivedJson.getString("device_type").equals("java")) {
-                        FileLogger.log("WaitingToReceive", "Received JSON data from Java app");
-
-                        // Close sockets
-                        closeAllSockets();
-
-                        // Start the new activity
-                        Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
-                        intent.putExtra("receivedJson", receivedJson.toString());
-                        startActivity(intent);
-
-                    }
-                }
+            // Read response size
+            byte[] recvSizeBuf = new byte[Long.BYTES];
+            int read = bufferedInputStream.read(recvSizeBuf);
+            if (read == -1) {
+                throw new IOException("Connection closed while reading size");
             }
+
+            long jsonSize = ByteBuffer.wrap(recvSizeBuf).order(ByteOrder.LITTLE_ENDIAN).getLong();
+
+            // Read JSON data
+            byte[] recvBuf = new byte[(int) jsonSize];
+            int totalBytesRead = 0;
+            while (totalBytesRead < jsonSize) {
+                int bytesRead = bufferedInputStream.read(recvBuf, totalBytesRead, recvBuf.length - totalBytesRead);
+                if (bytesRead == -1) {
+                    throw new IOException("Connection closed while reading data");
+                }
+                totalBytesRead += bytesRead;
+            }
+
+            String jsonStr = new String(recvBuf, StandardCharsets.UTF_8);
+            JSONObject receivedJson = new JSONObject(jsonStr);
+            FileLogger.log("WaitingToReceive", "Received JSON: " + receivedJson);
+
+            // Close connections before starting new activity
+            socket.close();
+            serverSocket.close();
+
+            // Launch appropriate activity
+            if (receivedJson.getString("device_type").equals("python")) {
+                Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivityPython.class);
+                intent.putExtra("receivedJson", receivedJson.toString());
+                startActivity(intent);
+            } else if (receivedJson.getString("device_type").equals("java")) {
+                Intent intent = new Intent(WaitingToReceiveActivity.this, ReceiveFileActivity.class);
+                intent.putExtra("receivedJson", receivedJson.toString());
+                startActivity(intent);
+            }
+
         } catch (Exception e) {
-            FileLogger.log("WaitingToReceive", "Error establishing TCP connection", e);
+            FileLogger.log("WaitingToReceive", "TCP connection error", e);
         } finally {
-            // Make sure the serverSocket is only closed once we're done with all transactions
             try {
-                if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close();
-                FileLogger.log("WaitingToReceive", "ServerSocket closed");
+                if (socket != null) socket.close();
+                if (serverSocket != null) serverSocket.close();
             } catch (IOException e) {
-                FileLogger.log("WaitingToReceive", "Error closing ServerSocket", e);
+                FileLogger.log("WaitingToReceive", "Error closing sockets", e);
             }
         }
     }
