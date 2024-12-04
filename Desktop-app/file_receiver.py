@@ -15,6 +15,7 @@ from time import sleep
 import json
 from file_receiver_python import ReceiveAppP
 from file_receiver_android import ReceiveAppPJava
+from file_receiver_swift import ReceiveAppPSwift
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
@@ -22,6 +23,7 @@ RECEIVER_JSON = 54000
 class FileReceiver(QThread):
     show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window
     show_receive_app_p_signal_java = pyqtSignal()  # Signal to show the ReceiveAppP window for Java devices
+    show_receive_app_p_signal_swift = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -94,7 +96,8 @@ class FileReceiver(QThread):
             sleep(1)
             self.cleanup_sockets()
         elif sender_device_type == "swift":
-            logger.debug("Connected to a Swift device, but this feature is not implemented yet.")
+            logger.debug("Connected to a Swift device.")
+            self.show_receive_app_p_signal_swift.emit()
             sleep(1)
             self.cleanup_sockets()
         else:
@@ -168,6 +171,7 @@ class ReceiveApp(QWidget):
         self.file_receiver = FileReceiver()
         self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)  # Connect the signal to the slot
         self.file_receiver.show_receive_app_p_signal_java.connect(self.show_receive_app_p_java)
+        self.file_receiver.show_receive_app_p_signal_swift.connect(self.show_receive_app_p_swift)
         self.file_receiver.start()
         #com.an.Datadash
 
@@ -240,6 +244,13 @@ class ReceiveApp(QWidget):
         self.hide()
         self.receive_app_p_java = ReceiveAppPJava(client_ip)
         self.receive_app_p_java.show()
+
+    def show_receive_app_p_swift(self):
+        client_ip = self.file_receiver.client_ip
+        """Slot to show the ReceiveAppP window on the main thread."""
+        self.hide()
+        self.receive_app_p_swift = ReceiveAppPSwift(client_ip)
+        self.receive_app_p_swift.show()
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())

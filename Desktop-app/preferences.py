@@ -355,12 +355,14 @@ class PreferencesApp(QWidget):
         self.max_filesize = config["max_filesize"]
         self.encryption_toggle.setChecked(config["encryption"])
         self.android_encryption=(config["android_encryption"])
+        self.swift_encryption=(config["swift_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.show_update_toggle.setChecked(config["check_update"])
         self.original_preferences = config.copy()
         logger.info("Loaded preferences- json_version: %s", self.version)
         logger.info("Loaded preferences- app_version: %s", self.app_version)
         logger.info("Loaded preferences- android_encryption: %s", self.android_encryption)
+        logger.info("Loaded preferences- swift_encryption: %s", self.swift_encryption)
         logger.info("Loaded preferences- show_warning: %s", self.show_warning_toggle.isChecked())
         logger.info("Loaded preferences- check_update: %s", self.show_update_toggle.isChecked())
 
@@ -430,6 +432,7 @@ class PreferencesApp(QWidget):
             "max_filesize": self.max_filesize,
             "encryption": encryption,
             "android_encryption": self.android_encryption,
+            "swift_encryption": self.swift_encryption,
             "show_warning": show_warning,  # Save show_warning state
             "check_update": check_update
         }
@@ -574,6 +577,7 @@ class PreferencesApp(QWidget):
             "max_filesize": self.max_filesize,
             "encryption": self.encryption_toggle.isChecked(),
             "android_encryption": self.android_encryption,
+            "swift_encryption": self.swift_encryption,
             "show_warning": self.show_warning_toggle.isChecked(),  # Get show_warning toggle state
             "check_update": self.show_update_toggle.isChecked()
         }

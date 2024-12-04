@@ -13,6 +13,7 @@ from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont,
 from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
 from file_sender import SendApp
 from file_sender_java import SendAppJava
+from file_sender_swift import SendAppSwift
 
 SENDER_JSON = 53000
 RECEIVER_JSON = 54000
@@ -82,6 +83,7 @@ class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
     device_connected = pyqtSignal(str, str, dict)
     device_connected_java = pyqtSignal(str, str, dict)
+    device_connected_swift = pyqtSignal(str, str, dict)
 
     def __init__(self):
         super().__init__()
@@ -146,7 +148,7 @@ class BroadcastWorker(QThread):
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
             elif device_type == 'swift':
-                logger.error("Swift device detected, but not supported yet.")
+                self.device_connected_swift.emit(device_ip, device_name, self.receiver_data)
             else:
                 raise ValueError("Unsupported device type")
 
@@ -193,6 +195,7 @@ class Broadcast(QWidget):
         self.broadcast_worker.device_detected.connect(self.add_device)
         self.broadcast_worker.device_connected.connect(self.show_send_app)
         self.broadcast_worker.device_connected_java.connect(self.show_send_app_java)
+        self.broadcast_worker.device_connected_swift.connect(self.show_send_app_swift)
 
         self.animation_offset = 0
         self.animation_timer = QTimer(self)
@@ -462,6 +465,63 @@ class Broadcast(QWidget):
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
+        #com.an.Datadash
+
+    def show_send_app_swift(self, device_ip, device_name, receiver_data):
+        
+        if get_config()["encryption"] and get_config()["show_warning"]:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Input Error")
+                msg_box.setText("You have encryption Enabled, unfortunately android tranfer doesn't support that yet. Clicking ok will bypass your encryption settings for this file transfer.")
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec() 
+        
+        self.hide()
+        self.send_app_swift = SendAppSwift(device_ip, device_name, receiver_data)
+        self.send_app_swift.show()
         #com.an.Datadash
 
     def closeEvent(self, event):

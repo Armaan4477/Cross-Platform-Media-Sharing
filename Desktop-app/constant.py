@@ -120,6 +120,7 @@ if not os.path.exists(config_file):
         "max_filesize": 1000,
         "encryption": False,
         "android_encryption": False,
+        "swift_encryption": False,
         "show_warning": True,
         "check_update": True
     }
@@ -146,6 +147,7 @@ else:
             "max_filesize": 1000,
             "encryption": encryption,
             "android_encryption": False,
+            "swift_encryption": False,
             "show_warning": True,
             "check_update": True
         }
