@@ -112,6 +112,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private class ConnectionTask implements Runnable {
         @Override
         public void run() {
+            forceReleasePort(PORT);
             boolean connectionSuccessful = initializeConnection();
             runOnUiThread(() -> {
                 if (connectionSuccessful) {
@@ -257,6 +258,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                             txt_path.setVisibility(TextView.VISIBLE);
                             donebtn.setVisibility(Button.VISIBLE);
                         });
+                        forceReleasePort(PORT);
                         break;
                     }
 
@@ -492,6 +494,31 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private void ondonebtnclk(){
         Toast.makeText(this, "App Exit Completed", Toast.LENGTH_SHORT).show();
         finishAffinity();
+    }
+
+    private void forceReleasePort(int port) {
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+        }
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -118,17 +119,18 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     private boolean initializeConnection() {
         try {
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
+            // Force release port first
+            forceReleasePort(FILE_TRANSFER_PORT);
+
+            serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress(true);
+            serverSocket.bind(new InetSocketAddress(FILE_TRANSFER_PORT));
+
             FileLogger.log("ReceiveFileActivity", "Starting server on port " + FILE_TRANSFER_PORT);
-            serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
-            serverSocket.setReuseAddress(true); // Add this to prevent port binding issues
             clientSocket = serverSocket.accept();
-            FileLogger.log("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
             return true;
         } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivity", "Error initializing connection on port " + FILE_TRANSFER_PORT, e);
+            FileLogger.log("ReceiveFileActivity", "Error initializing connection", e);
             return false;
         }
     }
@@ -195,6 +197,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             txt_path.setVisibility(TextView.VISIBLE);
                             donebtn.setVisibility(Button.VISIBLE);
                         });
+                        forceReleasePort(FILE_TRANSFER_PORT);
                         break;
                     }
 
@@ -433,6 +436,31 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private void ondonebtnclk(){
         Toast.makeText(this, "App Exit Completed", Toast.LENGTH_SHORT).show();
         finishAffinity();
+    }
+
+    private void forceReleasePort(int port) {
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+        }
     }
 
     @Override
