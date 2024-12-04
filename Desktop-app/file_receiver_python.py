@@ -11,6 +11,7 @@ from PyQt6.QtGui import QScreen,QMovie,QFont,QKeyEvent,QKeySequence
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 import time
+import shutil
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -553,10 +554,8 @@ class ReceiveAppP(QWidget):
             self.decryptor = Decryptor(value)
             self.decryptor.show()
 
-    def open_receiving_directory(self):
-
-        receiving_dir = get_config()["save_to_directory"]
-        #com.an.Datadash
+    def open_receiving_directory():
+        receiving_dir = get_config().get("save_to_directory", "")
         
         if receiving_dir:
             try:
@@ -564,15 +563,34 @@ class ReceiveAppP(QWidget):
                 
                 if current_os == 'Windows':
                     os.startfile(receiving_dir)
+                
                 elif current_os == 'Linux':
-                    subprocess.Popen(["xdg-open", receiving_dir])
+                    # Check for available tools to open the directory
+                    if shutil.which("xdg-open"):
+                        subprocess.Popen(["xdg-open", receiving_dir])
+                    else:
+                        # Check for specific file managers
+                        possible_file_managers = ["gio", "nautilus", "thunar", "pcmanfm", "dolphin", "nemo", "konqueror", "caja"]
+                        for fm in possible_file_managers:
+                            if shutil.which(fm):
+                                subprocess.Popen([fm, receiving_dir])
+                                break
+                        else:
+                            raise FileNotFoundError("No suitable file manager found on your system.")
+                
                 elif current_os == 'Darwin':  # macOS
                     subprocess.Popen(["open", receiving_dir])
+                
                 else:
                     raise NotImplementedError(f"Unsupported OS: {current_os}")
             
+            except FileNotFoundError as fnfe:
+                logger.error("No file manager found on Linux: %s", fnfe)
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
+        else:
+            logger.error("No receiving directory configured.")
+
 
     def show_error_message(self, title, message, detailed_text):
         QMessageBox.critical(self, title, message)
