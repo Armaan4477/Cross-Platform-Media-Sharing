@@ -121,7 +121,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 serverSocket.close();
             }
             FileLogger.log("ReceiveFileActivity", "Waiting for a connection...");
-            serverSocket = new ServerSocket(58100);
+            serverSocket = new ServerSocket(63152);
             clientSocket = serverSocket.accept();
             FileLogger.log("ReceiveFileActivity", "Connected to " + clientSocket.getInetAddress().getHostAddress());
             return true;
