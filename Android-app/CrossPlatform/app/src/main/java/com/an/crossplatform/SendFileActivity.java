@@ -535,7 +535,11 @@ public class SendFileActivity extends AppCompatActivity {
                         selectFileButton.setEnabled(false);
                         selectFolderButton.setEnabled(false);
                         sendButton.setEnabled(false);
-                        Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
+                        // Launch TransferCompleteActivity
+                        Intent intent = new Intent(SendFileActivity.this, TransferCompleteActivity.class);
+                        startActivity(intent);
+                        finish(); // Close current activity
                     }
                 });
             } catch (IOException e) {
