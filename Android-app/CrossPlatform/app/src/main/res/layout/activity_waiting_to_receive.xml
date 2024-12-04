@@ -73,6 +73,18 @@
         android:visibility="gone"
         android:layout_marginBottom="40dp"/>
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/donebtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Done"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@drawable/state_list_drawable"
+        android:visibility="gone"
+        android:layout_marginBottom="40dp"/>
+
     <TextView
         android:id="@+id/path"
         android:layout_width="match_parent"

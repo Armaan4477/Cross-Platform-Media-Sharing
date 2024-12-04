@@ -55,6 +55,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private LottieAnimationView animationView;
     private LottieAnimationView waitingAnimation;
     private Button openFolder;
+    private Button donebtn;
     private TextView txt_path;
     private final ExecutorService executorService = Executors.newFixedThreadPool(2);
 
@@ -75,6 +76,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
         animationView = findViewById(R.id.transfer_animation);
         waitingAnimation = findViewById(R.id.waiting_animation);
         openFolder = findViewById(R.id.openFolder);
+        donebtn = findViewById(R.id.donebtn);
+        donebtn.setOnClickListener(v -> ondonebtnclk());
         txt_path = findViewById(R.id.path);
 
         senderJson = getIntent().getStringExtra("receivedJson");
@@ -189,6 +192,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             animationView.setVisibility(LottieAnimationView.INVISIBLE);
                             txt_path.setText("Files saved to: " + destinationFolder);
                             txt_path.setVisibility(TextView.VISIBLE);
+                            donebtn.setVisibility(Button.VISIBLE);
                         });
                         break;
                     }
@@ -423,6 +427,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
             FileLogger.log("ReceiveFileActivity", "Error processing metadata JSON", e);
             return defaultDir;
         }
+    }
+
+    private void ondonebtnclk(){
+        Toast.makeText(this, "App Exit Completed", Toast.LENGTH_SHORT).show();
+        finishAffinity();
     }
 
     @Override
