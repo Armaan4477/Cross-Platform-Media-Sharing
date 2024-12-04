@@ -11,6 +11,7 @@ Pending priority work:
 
 
 Overall FUTURE IDEAS:
+Add X button on individual files for android and python so the user can deselect a fike if select by nistake instead of completely selecting again.
 1) Device discovery using bluetooth- Python/Android/IOS
 2) File transfer over bluetooth- Python/Android (bluetooth doesnt work well with non apple devices)
 3) File transfer over wifi direct- Python/Android/IOS
