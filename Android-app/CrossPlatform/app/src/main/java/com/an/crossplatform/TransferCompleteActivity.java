@@ -3,6 +3,7 @@ package com.an.crossplatform;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -14,6 +15,14 @@ public class TransferCompleteActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_transfer_complete);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Toast.makeText(TransferCompleteActivity.this, "Back navigation is disabled, Please use the Done button", Toast.LENGTH_SHORT).show();
+                // Do nothing to disable back navigation
+            }
+        });
 
         doneButton = findViewById(R.id.done_button);
         doneButton.setOnClickListener(v -> {
