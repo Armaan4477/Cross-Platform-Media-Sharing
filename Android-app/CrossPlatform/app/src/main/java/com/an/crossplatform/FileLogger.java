@@ -15,10 +15,12 @@ import java.util.Locale;
 
 public class FileLogger {
     private static File logFile;
+    private static Context appContext;
 
     public static void init(Context context) {
         try {
-            File mediaDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
+            appContext = context.getApplicationContext();
+            File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + appContext.getPackageName() + "/Logs");
             if (!mediaDir.exists()) {
                 boolean created = mediaDir.mkdirs();
                 if (!created) {
