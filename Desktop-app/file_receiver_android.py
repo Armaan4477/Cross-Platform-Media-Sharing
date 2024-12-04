@@ -546,7 +546,7 @@ class ReceiveAppPJava(QWidget):
                     os.startfile(receiving_dir)
                 
                 elif current_os == 'Linux':
-                    # Check for available tools to open the directory
+                    # First attempt to use graphical file managers
                     if shutil.which("xdg-open"):
                         subprocess.Popen(["xdg-open", receiving_dir])
                     else:
@@ -557,7 +557,15 @@ class ReceiveAppPJava(QWidget):
                                 subprocess.Popen([fm, receiving_dir])
                                 break
                         else:
-                            raise FileNotFoundError("No suitable file manager found on your system.")
+                            # If no graphical file manager is found, fallback to opening in terminal
+                            try:
+                                terminal = shutil.which("x-terminal-emulator") or shutil.which("gnome-terminal") or shutil.which("konsole") or shutil.which("xterm")
+                                if terminal:
+                                    subprocess.Popen([terminal, "--working-directory", receiving_dir])
+                                else:
+                                    logger.error("No graphical file manager or terminal emulator found.")
+                            except Exception as terminal_error:
+                                logger.error("Failed to open directory in terminal: %s", str(terminal_error))
                 
                 elif current_os == 'Darwin':  # macOS
                     subprocess.Popen(["open", receiving_dir])
@@ -566,7 +574,7 @@ class ReceiveAppPJava(QWidget):
                     raise NotImplementedError(f"Unsupported OS: {current_os}")
             
             except FileNotFoundError as fnfe:
-                logger.error("No file manager found on Linux: %s", fnfe)
+                logger.error("No file manager or terminal emulator found on Linux: %s", fnfe)
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
         else:
