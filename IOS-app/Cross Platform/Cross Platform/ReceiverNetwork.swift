@@ -11,8 +11,7 @@ class ReceiverNetwork: ObservableObject {
     private let tcpQueue = DispatchQueue(label: "TCPQueue")
     private let listenPort: NWEndpoint.Port = 12345
     private let responsePort: NWEndpoint.Port = 12346
-    private let tcpListenPort: NWEndpoint.Port = 54000  // For receiving JSON
-    private let tcpSendPort: NWEndpoint.Port = 53000  // For sending JSON
+    private let tcpPort: NWEndpoint.Port = 54314
     private var broadcastIp: String?
     
     init() {
@@ -65,16 +64,16 @@ class ReceiverNetwork: ObservableObject {
     }
     
     private func setupTCPListener() {
-        do {
-            tcpListener = try NWListener(using: .tcp, on: tcpListenPort)
-            tcpListener?.newConnectionHandler = { [weak self] connection in
-                self?.handleNewTCPConnection(connection)
+            do {
+                tcpListener = try NWListener(using: .tcp, on: tcpPort) // Updated to use tcpPort
+                tcpListener?.newConnectionHandler = { [weak self] connection in
+                    self?.handleNewTCPConnection(connection)
+                }
+                tcpListener?.start(queue: tcpQueue)
+            } catch {
+                print("Failed to create TCP listener: \(error)")
             }
-            tcpListener?.start(queue: tcpQueue)
-        } catch {
-            print("Failed to create TCP listener: \(error)")
         }
-    }
 
     private func handleNewTCPConnection(_ connection: NWConnection) {
         connection.start(queue: tcpQueue)
@@ -154,34 +153,32 @@ class ReceiverNetwork: ObservableObject {
     }
 
     private func sendJSONResponse(to endpoint: NWEndpoint) {
-        guard case .hostPort(let host, _) = endpoint else {
-            print("Failed to extract host from endpoint")
-            return
-        }
+            guard case .hostPort(let host, _) = endpoint else {
+                print("Failed to extract host from endpoint")
+                return
+            }
 
-        // Create the JSON response (equivalent to sending JSON in Python)
-        let responseData: [String: Any] = [
-            "device_type": "swift",
-            "os": "ipados"
-        ]
-        
-        if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {
-            let jsonSize = UInt64(jsonData.count)
-            let sizeData = withUnsafeBytes(of: jsonSize) { Data($0) }
-            let responseConnection = NWConnection(host: host, port: tcpSendPort, using: .tcp)
-            responseConnection.start(queue: tcpQueue)
+            let responseData: [String: Any] = [
+                "device_type": "swift",
+                "os": "ipados"
+            ]
             
-            // Log the JSON data and size to be sent
-            print("Sending JSON file size: \(jsonSize) bytes")
-            print("Sending JSON response: \(responseData)")
-            
-            responseConnection.send(content: sizeData, completion: .contentProcessed({ _ in
-                responseConnection.send(content: jsonData, completion: .contentProcessed({ _ in
-                    responseConnection.cancel()  // Close connection after sending
+            if let jsonData = try? JSONSerialization.data(withJSONObject: responseData, options: []) {
+                let jsonSize = UInt64(jsonData.count)
+                let sizeData = withUnsafeBytes(of: jsonSize) { Data($0) }
+                let responseConnection = NWConnection(host: host, port: tcpPort, using: .tcp) // Updated to use tcpPort
+                responseConnection.start(queue: tcpQueue)
+                
+                print("Sending JSON file size: \(jsonSize) bytes")
+                print("Sending JSON response: \(responseData)")
+                
+                responseConnection.send(content: sizeData, completion: .contentProcessed({ _ in
+                    responseConnection.send(content: jsonData, completion: .contentProcessed({ _ in
+                        responseConnection.cancel()
+                    }))
                 }))
-            }))
+            }
         }
-    }
 
     func scanForDevices() {
         guard let broadcastIp = broadcastIp else {
