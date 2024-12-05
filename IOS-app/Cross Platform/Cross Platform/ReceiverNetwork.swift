@@ -13,6 +13,7 @@ class ReceiverNetwork: ObservableObject {
     private let responsePort: NWEndpoint.Port = 12346
     private let tcpPort: NWEndpoint.Port = 54314
     private var broadcastIp: String?
+    private var fileReceiverVM: FileReceiverViewModel?
     
     init() {
         self.broadcastIp = calculateBroadcastIp()  // Calculate the broadcast IP address on initialization
@@ -102,6 +103,8 @@ class ReceiverNetwork: ObservableObject {
         }
     }
 
+    // ReceiverNetwork.swift - Update handleReceivedJSON method
+    // In ReceiverNetwork.swift - Update handleReceivedJSON method
     private func handleReceivedJSON(_ json: [String: Any], connection: NWConnection) {
         print("Received JSON: \(json)")
         guard let deviceType = json["device_type"] as? String else {
@@ -111,7 +114,7 @@ class ReceiverNetwork: ObservableObject {
         
         if deviceType == "python" {
             print("Connected to a Python device.")
-            // Create response JSON
+            // Create and send response
             let responseData: [String: Any] = [
                 "device_type": "swift",
                 "os": "ipad"
@@ -121,35 +124,36 @@ class ReceiverNetwork: ObservableObject {
                 let jsonSize = UInt64(jsonData.count)
                 let sizeData = withUnsafeBytes(of: jsonSize) { Data($0) }
                 
-                // Log the JSON data and size to be sent
-                print("Sending JSON file size: \(jsonSize) bytes")
-                print("Sending JSON response: \(responseData)")
-                
-                // Send size first
                 connection.send(content: sizeData, completion: .contentProcessed({ error in
                     if let error = error {
                         print("Error sending size: \(error)")
                         return
                     }
                     
-                    // Then send JSON data using the same connection
-                    connection.send(content: jsonData, completion: .contentProcessed({ error in
+                    connection.send(content: jsonData, completion: .contentProcessed({ [weak self] error in
                         if let error = error {
                             print("Error sending JSON: \(error)")
                         } else {
                             print("JSON response sent successfully")
-                        }
-                        // Keep connection open for a moment to ensure data is sent
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            connection.cancel()
+                            DispatchQueue.main.async {
+                                // Initialize FileReceiverViewModel and post notification with the view model
+                                let viewModel = FileReceiverViewModel()
+                                self?.fileReceiverVM = viewModel
+                                NotificationCenter.default.post(
+                                    name: NSNotification.Name("ShowFileReceiver"),
+                                    object: nil,
+                                    userInfo: ["viewModel": viewModel]
+                                )
+                            }
                         }
                     }))
                 }))
             }
-        } else {
-            print("Unknown device type.")
-            connection.cancel()
         }
+    }
+    
+    func getFileReceiverViewModel() -> FileReceiverViewModel? {
+        return fileReceiverVM
     }
 
     private func sendJSONResponse(to endpoint: NWEndpoint) {

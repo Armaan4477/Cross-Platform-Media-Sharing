@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		082B198A2D017BC500A74437 /* FileReceiverSwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082B19892D017BC000A74437 /* FileReceiverSwift.swift */; };
+		082B198C2D017BF200A74437 /* FileReceiverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082B198B2D017BEE00A74437 /* FileReceiverView.swift */; };
 		08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */; };
 		08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCC2C554FC500C10FB5 /* ContentView.swift */; };
 		08938FCF2C554FC500C10FB5 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08938FCE2C554FC500C10FB5 /* Item.swift */; };
@@ -19,6 +21,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		082B19892D017BC000A74437 /* FileReceiverSwift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReceiverSwift.swift; sourceTree = "<group>"; };
+		082B198B2D017BEE00A74437 /* FileReceiverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReceiverView.swift; sourceTree = "<group>"; };
 		08938FC72C554FC500C10FB5 /* Cross Platform.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Cross Platform.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cross_PlatformApp.swift; sourceTree = "<group>"; };
 		08938FCC2C554FC500C10FB5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -62,6 +66,8 @@
 		08938FC92C554FC500C10FB5 /* Cross Platform */ = {
 			isa = PBXGroup;
 			children = (
+				082B198B2D017BEE00A74437 /* FileReceiverView.swift */,
+				082B19892D017BC000A74437 /* FileReceiverSwift.swift */,
 				08938FDA2C55505C00C10FB5 /* Cross-Platform-Info.plist */,
 				08938FCA2C554FC500C10FB5 /* Cross_PlatformApp.swift */,
 				08938FCC2C554FC500C10FB5 /* ContentView.swift */,
@@ -155,9 +161,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				08938FCD2C554FC500C10FB5 /* ContentView.swift in Sources */,
+				082B198C2D017BF200A74437 /* FileReceiverView.swift in Sources */,
 				08C759602C70F7E70083D63B /* ReceiverNetwork.swift in Sources */,
 				08C759622C70FAFB0083D63B /* SendView.swift in Sources */,
 				08C759642C70FB0F0083D63B /* SendingDiscovery.swift in Sources */,
+				082B198A2D017BC500A74437 /* FileReceiverSwift.swift in Sources */,
 				08FABC1E2C68FA680074FC89 /* ReceiveView.swift in Sources */,
 				08938FCF2C554FC500C10FB5 /* Item.swift in Sources */,
 				08938FCB2C554FC500C10FB5 /* Cross_PlatformApp.swift in Sources */,
@@ -291,6 +299,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Cross Platform/Cross PlatformDebug.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Cross Platform/Preview Content\"";
@@ -324,6 +333,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Cross Platform/Cross PlatformRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Cross Platform/Preview Content\"";
