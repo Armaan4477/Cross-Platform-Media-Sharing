@@ -267,7 +267,8 @@ public class SendFileActivity extends AppCompatActivity {
         JSONArray metadata = new JSONArray();
         FileLogger.log(TAG, "Starting file metadata creation");
 
-        File metadataDirectory = new File(getApplicationContext().getFilesDir(), "metadata");
+        File metadataDirectory =  new File(Environment.getExternalStorageDirectory(),
+                "Android/media/" + getPackageName() + "/metadata/");
         ensureDirectoryExists(metadataDirectory);
 
         String metadataFilePath = new File(metadataDirectory, "metadata.json").getAbsolutePath();
