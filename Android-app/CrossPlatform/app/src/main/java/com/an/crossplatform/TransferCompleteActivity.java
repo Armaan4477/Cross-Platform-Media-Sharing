@@ -27,7 +27,9 @@ public class TransferCompleteActivity extends AppCompatActivity {
         doneButton = findViewById(R.id.done_button);
         doneButton.setOnClickListener(v -> {
             Toast.makeText(this, "App Exit Completed", Toast.LENGTH_SHORT).show();
-            finishAffinity(); // Close all activities and return to main screen
+            finishAffinity(); // Close all activities
+            android.os.Process.killProcess(android.os.Process.myPid()); // Kill the app process
+            System.exit(0); // Ensure complete shutdown
         });
     }
 

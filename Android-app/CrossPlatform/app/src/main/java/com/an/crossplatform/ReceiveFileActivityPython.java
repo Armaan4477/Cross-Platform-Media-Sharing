@@ -502,7 +502,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
     private void ondonebtnclk(){
         Toast.makeText(this, "App Exit Completed", Toast.LENGTH_SHORT).show();
-        finishAffinity();
+        finishAffinity(); // Close all activities
+        android.os.Process.killProcess(android.os.Process.myPid()); // Kill the app process
+        System.exit(0); // Ensure complete shutdown
     }
 
     private void forceReleasePort(int port) {
