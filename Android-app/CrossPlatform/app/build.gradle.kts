@@ -11,7 +11,7 @@ android {
         minSdk = 30
         targetSdk = 35
         versionCode = 1
-        versionName = "7.8.5"
+        versionName = "7.8.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -26,9 +26,10 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+    buildToolsVersion = "35.0.0"
 }
 
 dependencies {
