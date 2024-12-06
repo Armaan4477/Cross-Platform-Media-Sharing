@@ -3,6 +3,7 @@ package com.an.crossplatform;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         FileLogger.init(this);
+        getVersionName();
         requestStoragePermissions();
 
         createConfigFileIfNotExists();
@@ -80,6 +82,24 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
+    }
+
+    private String getVersionName() {
+        try {
+            // Fetch version name from the app's PackageInfo
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String versionName = packageInfo.versionName;
+
+            // Log the version name
+            FileLogger.log("AppVersion", "Version Name: " + versionName);
+
+            return versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            FileLogger.log("AppVersion", "Version Name not found", e);
+            return "Unknown";
+        }
+
     }
 
     private void requestStoragePermissions() {

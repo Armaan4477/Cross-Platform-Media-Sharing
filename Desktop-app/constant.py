@@ -4,6 +4,11 @@ import os
 import logging
 import socket
 
+# Define the config file name and current version
+config_file_name = ".config.json"
+current_version = "5.6.0"  # Set the current version of the json config file
+app_version = "3.3.8"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+
 
 def get_logger_file_path():
     if platform.system() == 'Windows':
@@ -22,7 +27,7 @@ def get_logger_file_path():
 
 # Create logger directory and set up the log file path
 log_dir = get_logger_file_path()
-if log_dir is None:
+if (log_dir is None):
     raise RuntimeError("Unsupported OS!")
     
 log_file_path = os.path.join(log_dir, 'datadashlog.txt')
@@ -52,10 +57,7 @@ logger = logging.getLogger('FileSharing: ')
 
 logger.setLevel(logging.DEBUG)
 
-# Define the config file name and current version
-config_file_name = ".config.json"
-current_version = "5.6.0"  # Set the current version of the json config file
-app_version = "3.3.8"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+logger.info("App version: %s", app_version)
 
 def get_config_file_path():
     if platform.system() == 'Windows':
