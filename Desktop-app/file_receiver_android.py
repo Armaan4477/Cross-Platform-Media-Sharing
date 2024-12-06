@@ -546,26 +546,7 @@ class ReceiveAppPJava(QWidget):
                     os.startfile(receiving_dir)
                 
                 elif current_os == 'Linux':
-                    # First attempt to use graphical file managers
-                    if shutil.which("xdg-open"):
-                        subprocess.Popen(["xdg-open", receiving_dir])
-                    else:
-                        # Check for specific file managers
-                        possible_file_managers = ["gio", "nautilus", "thunar", "pcmanfm", "dolphin", "nemo", "konqueror", "caja"]
-                        for fm in possible_file_managers:
-                            if shutil.which(fm):
-                                subprocess.Popen([fm, receiving_dir])
-                                break
-                        else:
-                            # If no graphical file manager is found, fallback to opening in terminal
-                            try:
-                                terminal = shutil.which("x-terminal-emulator") or shutil.which("gnome-terminal") or shutil.which("konsole") or shutil.which("xterm")
-                                if terminal:
-                                    subprocess.Popen([terminal, "--working-directory", receiving_dir])
-                                else:
-                                    logger.error("No graphical file manager or terminal emulator found.")
-                            except Exception as terminal_error:
-                                logger.error("Failed to open directory in terminal: %s", str(terminal_error))
+                    subprocess.Popen(["xdg-open", receiving_dir])
                 
                 elif current_os == 'Darwin':  # macOS
                     subprocess.Popen(["open", receiving_dir])
