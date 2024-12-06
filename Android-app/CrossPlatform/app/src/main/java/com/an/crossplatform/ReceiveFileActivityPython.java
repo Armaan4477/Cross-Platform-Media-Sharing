@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -407,15 +408,23 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private JSONArray receiveMetadata(long fileSize) {
         byte[] receivedData = new byte[(int) fileSize];
         try {
-            clientSocket.getInputStream().read(receivedData);
-            String metadataJson = new String(receivedData, StandardCharsets.UTF_8);
-            return new JSONArray(metadataJson); // Change to JSONArray
+            InputStream in = clientSocket.getInputStream();
+            int totalBytesRead = 0;
+            while (totalBytesRead < fileSize) {
+                int bytesRead = in.read(receivedData, totalBytesRead, (int) (fileSize - totalBytesRead));
+                if (bytesRead == -1) {
+                    break; // End of stream reached
+                }
+                totalBytesRead += bytesRead;
+            }
+            String metadataJson = new String(receivedData, 0, totalBytesRead, StandardCharsets.UTF_8);
+            return new JSONArray(metadataJson);
         } catch (IOException e) {
             FileLogger.log("ReceiveFileActivityPython", "Error receiving metadata", e);
         } catch (JSONException e) {
             FileLogger.log("ReceiveFileActivityPython", "Error parsing metadata JSON", e);
         }
-        return null; // Return null or handle accordingly if metadata reception fails
+        return null;
     }
 
     private String createFolderStructure(JSONArray metadataArray, String saveToDirectory) {

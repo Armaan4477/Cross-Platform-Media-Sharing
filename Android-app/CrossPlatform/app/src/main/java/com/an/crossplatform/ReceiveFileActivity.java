@@ -367,7 +367,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 baos.write(buffer, 0, bytesRead);
                 receivedSize += bytesRead;
             }
-            String metadataJson = baos.toString(StandardCharsets.UTF_8);
+            String metadataJson = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             metadataArray = new JSONArray(metadataJson);
         } catch (IOException | JSONException e) {
             FileLogger.log("ReceiveFileActivity", "Error receiving metadata", e);
