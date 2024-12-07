@@ -32,6 +32,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -484,6 +485,7 @@ public class SendFileActivityPython extends AppCompatActivity {
         public void run() {
             // Initialize connection
             try {
+                forceReleasePort(57341);
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(ip, 57341), 10000);
                 FileLogger.log("SendFileActivity", "Socket connected: " + socket.isConnected());
@@ -736,6 +738,31 @@ public class SendFileActivityPython extends AppCompatActivity {
                 } catch (IOException e) {
                     FileLogger.log("SendFileActivity", "Error sending file: " + fileRelativePath, e);
                 }
+            }
+        }
+
+        private void forceReleasePort(int port) {
+            try {
+                // Find and kill process using the port
+                Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("LISTEN")) {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length > 1) {
+                            String pid = parts[1];
+                            Runtime.getRuntime().exec("kill -9 " + pid);
+                            FileLogger.log("SendFileActivity", "Killed process " + pid + " using port " + port);
+                        }
+                    }
+                }
+
+                // Wait briefly for port to be fully released
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                FileLogger.log("SendFileActivity", "Error releasing port: " + port, e);
             }
         }
     }

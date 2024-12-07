@@ -33,6 +33,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -488,7 +489,7 @@ public class SendFileActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                // Create socket with specific port
+                forceReleasePort(FILE_TRANSFER_PORT);
                 socket = new Socket();
                 socket.setReuseAddress(true); // Add this to prevent port binding issues
                 FileLogger.log("SendFileActivity", "Attempting connection to " + ip + ":" + FILE_TRANSFER_PORT);
@@ -744,6 +745,31 @@ public class SendFileActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     FileLogger.log("SendFileActivity", "Error sending file: " + fileRelativePath, e);
                 }
+            }
+        }
+
+        private void forceReleasePort(int port) {
+            try {
+                // Find and kill process using the port
+                Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("LISTEN")) {
+                        String[] parts = line.split("\\s+");
+                        if (parts.length > 1) {
+                            String pid = parts[1];
+                            Runtime.getRuntime().exec("kill -9 " + pid);
+                            FileLogger.log("SendFileActivity", "Killed process " + pid + " using port " + port);
+                        }
+                    }
+                }
+
+                // Wait briefly for port to be fully released
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                FileLogger.log("SendFileActivity", "Error releasing port: " + port, e);
             }
         }
     }

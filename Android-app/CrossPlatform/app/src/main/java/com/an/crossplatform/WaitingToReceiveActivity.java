@@ -206,7 +206,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         Socket socket = null;
 
         try {
-            // Listen only on port 54000
+            forceReleasePort(JSON_EXCHANGE_PORT);
             serverSocket = new ServerSocket(JSON_EXCHANGE_PORT);
             FileLogger.log("WaitingToReceive", "Waiting for incoming connections on port " + JSON_EXCHANGE_PORT);
 
@@ -281,6 +281,31 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             } catch (IOException e) {
                 FileLogger.log("WaitingToReceive", "Error closing sockets", e);
             }
+        }
+    }
+
+    private void forceReleasePort(int port) {
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
         }
     }
 
