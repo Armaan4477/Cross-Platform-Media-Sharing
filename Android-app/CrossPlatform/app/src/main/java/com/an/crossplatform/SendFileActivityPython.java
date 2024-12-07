@@ -781,4 +781,18 @@ public class SendFileActivityPython extends AppCompatActivity {
         }
         executorService.shutdown();  // Clean up background threads
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Close sockets on activity destruction
+        try {
+            if (socket != null) {
+                socket.close();
+                FileLogger.log("SendFileActivity", "Socket closed");
+            }
+        } catch (IOException e) {
+            FileLogger.log("SendFileActivity", "Error closing socket", e);
+        }
+    }
 }
