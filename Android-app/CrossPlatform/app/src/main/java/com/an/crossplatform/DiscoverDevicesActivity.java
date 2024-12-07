@@ -106,6 +106,8 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     }
 
     private void resetSockets() {
+        forceReleaseUDPPort(DISCOVER_PORT);
+        forceReleaseUDPPort(RESPONSE_PORT);
         if (discoverSocket != null && !discoverSocket.isClosed()) {
             FileLogger.log("DiscoverDevices", "Closing previous discoverSocket");
             discoverSocket.close();
@@ -120,6 +122,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         isDiscovering.set(true); // Set the flag to true
         new Thread(() -> {
             try {
+                forceReleaseUDPPort(DISCOVER_PORT);
                 discoverSocket = new DatagramSocket();
                 discoverSocket.setBroadcast(true);
 
@@ -201,6 +204,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private void startReceiverThread() {
         new Thread(() -> {
             try {
+                forceReleaseUDPPort(RESPONSE_PORT);
                 responseSocket = new DatagramSocket(RESPONSE_PORT); // Bind to port 12346
                 FileLogger.log("DiscoverDevices", "Listening for RECEIVER messages on port " + RESPONSE_PORT);
 
@@ -350,6 +354,31 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             Thread.sleep(1000);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+        }
+    }
+
+    private void forceReleaseUDPPort(int port) {
+        try {
+            // Find and kill process using the UDP port
+            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith("COMMAND")) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port, e);
         }
     }
 
