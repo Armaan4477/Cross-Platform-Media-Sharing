@@ -475,7 +475,8 @@ class SendApp(QWidget):
         #com.an.Datadash
 
     def selectFile(self):
-        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files')
+        documents= self.get_default_path()
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files', documents)
         if file_paths:
             self.file_path_display.clear()
             for file_path in file_paths:
@@ -484,12 +485,24 @@ class SendApp(QWidget):
             self.checkReadyToSend()
 
     def selectFolder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        documents= self.get_default_path()
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder', documents)
         if folder_path:
             self.file_path_display.clear()
             self.file_path_display.append(folder_path)
             self.file_paths = [folder_path]
             self.checkReadyToSend()
+
+    def get_default_path(self):
+        if platform.system() == 'Windows':
+            return os.path.expanduser('~\\Documents')
+        elif platform.system() == 'Linux':
+            return os.path.expanduser('~/Documents')
+        elif platform.system() == 'Darwin':  # macOS
+            return os.path.expanduser('~/Documents')
+        else:
+            logger.error("Unsupported OS!")
+            return os.path.expanduser('~')  # Fallback to home directory
 
     def checkReadyToSend(self):
         if self.file_paths:
