@@ -6,8 +6,8 @@ import socket
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.6.1"  # Set the current version of the json config file
-app_version = "3.3.9"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "5.6.2"  # Set the current version of the json config file
+app_version = "3.4.0"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 
 def get_logger_file_path():
