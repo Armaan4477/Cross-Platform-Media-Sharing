@@ -189,7 +189,7 @@ class ReceiveApp(QWidget):
         self.main_app.show()
         self.close()
 
-    def start_typewriter_effect(self, full_text, interval=100):
+    def start_typewriter_effect(self, full_text, interval=50):
         """Starts the typewriter effect to show text character by character."""
         self.full_text = full_text
         self.text_index = 0

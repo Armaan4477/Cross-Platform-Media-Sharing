@@ -344,7 +344,7 @@ class ReceiveAppPSwift(QWidget):
         self.initUI()
         self.setFixedSize(853, 480)
         
-        self.current_text = "Waiting for file..."  # The full text for the label
+        self.current_text = "Waiting to receive files from a Swift device..."  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
         self.progress_bar.setVisible(False)  # Initially hidden
@@ -359,7 +359,7 @@ class ReceiveAppPSwift(QWidget):
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
+        self.typewriter_timer.start(50)  # Adjust speed of typewriter effect
 
         # Start the file receiving process and set progress bar visibility
         QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
@@ -503,6 +503,7 @@ class ReceiveAppPSwift(QWidget):
 
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
+        self.label.setText("Receiving files from a Swift device...")
 
     
     def update_typewriter_effect(self):

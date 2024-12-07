@@ -376,7 +376,7 @@ class ReceiveAppP(QWidget):
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
+        self.typewriter_timer.start(50)  # Adjust speed of typewriter effect
 
         # Start the file receiving process directly on the main thread
         self.file_receiver.start()
@@ -478,6 +478,16 @@ class ReceiveAppP(QWidget):
             return 'Waiting to receive files from a macOS device...'
         else:
             return 'Waiting to receive files from Desktop app...'
+        
+    def displaytxtreceive(self):
+        if self.sender_os == 'Windows':
+            return 'Receiving files from a Windows device...'
+        elif self.sender_os == 'Linux':
+            return 'Receiving files from a Linux device...'
+        elif self.sender_os == 'Darwin':
+            return 'Receiving files from a macOS device...'
+        else:
+            return 'Receiving files from Desktop app...'
 
     def openMainWindow(self):
         from main import MainApp
@@ -531,6 +541,7 @@ class ReceiveAppP(QWidget):
 
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
+        self.label.setText(self.displaytxtreceive())
 
     
     def update_typewriter_effect(self):

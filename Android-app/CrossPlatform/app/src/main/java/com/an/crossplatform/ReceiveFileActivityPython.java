@@ -119,13 +119,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 if (connectionSuccessful) {
                     FileLogger.log("ReceiveFileActivityPython", "Connection established with the sender.");
                     if(osType.equals("Windows")) {
-                        txt_waiting.setText("Receiving files from Windows");
+                        txt_waiting.setText("Receiving files from a Windows device...");
                     } else if (osType.equals("Linux")) {
-                        txt_waiting.setText("Receiving files from Linux");
+                        txt_waiting.setText("Receiving files from a Linux device...");
                     } else if (osType.equals("Darwin")) {
-                        txt_waiting.setText("Receiving files from Mac");
+                        txt_waiting.setText("Receiving files from a macOS device...");
                     } else {
-                        txt_waiting.setText("Receiving files from Python");
+                        txt_waiting.setText("Receiving files from Desktop app...");
                     }
                     executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
                 } else {
