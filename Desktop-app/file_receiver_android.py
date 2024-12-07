@@ -344,7 +344,7 @@ class ReceiveAppPJava(QWidget):
         self.initUI()
         self.setFixedSize(853, 480)
         
-        self.current_text = "Waiting for file..."  # The full text for the label
+        self.current_text = "Waiting to Receive files from Android"  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
         self.progress_bar.setVisible(False)  # Initially hidden

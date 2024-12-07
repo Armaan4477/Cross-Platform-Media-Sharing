@@ -354,14 +354,15 @@ class ReceiveWorkerPython(QThread):
 class ReceiveAppP(QWidget):
     progress_update = pyqtSignal(int)
 
-    def __init__(self, client_ip):
+    def __init__(self, client_ip, sender_os):
         super().__init__()
         self.client_ip = client_ip
+        self.sender_os = sender_os  # Store sender's OS
         self.initUI()
         self.setFixedSize(853, 480)
         #com.an.Datadash
         
-        self.current_text = "Waiting for file..."  # The full text for the label
+        self.current_text = self.displaytxt()  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
         self.progress_bar.setVisible(False)  # Initially hidden
@@ -467,6 +468,16 @@ class ReceiveAppP(QWidget):
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
             self.openMainWindow()
+
+    def displaytxt(self):
+        if self.sender_os == 'Windows':
+            return 'Waiting to receive files from a Windows device...'
+        elif self.sender_os == 'Linux':
+            return 'Waiting to receive files from a Linux device...'
+        elif self.sender_os == 'Darwin':
+            return 'Waiting to receive files from a macOS device...'
+        else:
+            return 'Waiting to receive files from Desktop app...'
 
     def openMainWindow(self):
         from main import MainApp

@@ -99,13 +99,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         }
 
         if(osType.equals("Windows")) {
-            txt_waiting.setText("Waiting to Receive files from Windows");
+            txt_waiting.setText("Waiting to receive files from a Windows device...");
         } else if (osType.equals("Linux")) {
-            txt_waiting.setText("Waiting to Receive files from Linux");
+            txt_waiting.setText("Waiting to receive files from a Linux device...");
         } else if (osType.equals("Darwin")) {
-            txt_waiting.setText("Waiting to Receive files from Mac");
+            txt_waiting.setText("Waiting to receive files from a macOS device...");
         } else {
-            txt_waiting.setText("Waiting to Receive files from Python");
+            txt_waiting.setText("Waiting to receive files from Desktop app...");
         }
         startConnectionTask();
     }
