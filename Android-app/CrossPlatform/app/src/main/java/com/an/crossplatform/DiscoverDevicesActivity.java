@@ -106,8 +106,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     }
 
     private void resetSockets() {
-        forceReleaseUDPPort(DISCOVER_PORT);
-        forceReleaseUDPPort(RESPONSE_PORT);
         if (discoverSocket != null && !discoverSocket.isClosed()) {
             FileLogger.log("DiscoverDevices", "Closing previous discoverSocket");
             discoverSocket.close();
@@ -351,7 +349,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
         }
@@ -376,7 +374,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port, e);
         }

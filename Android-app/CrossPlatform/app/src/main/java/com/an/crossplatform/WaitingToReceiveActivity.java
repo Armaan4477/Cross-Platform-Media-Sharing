@@ -305,7 +305,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
         }
@@ -330,7 +330,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port, e);
         }
