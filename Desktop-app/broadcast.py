@@ -14,6 +14,7 @@ from constant import BROADCAST_PORT, LISTEN_PORT, logger, get_config, RECEIVER_J
 from file_sender import SendApp
 from file_sender_java import SendAppJava
 from file_sender_swift import SendAppSwift
+import netifaces
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
@@ -94,27 +95,34 @@ class BroadcastWorker(QThread):
 
     def get_broadcast(self):
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            logger.info("Local IP determined: %s", local_ip)
+            # Get all network interfaces
+            for interface in netifaces.interfaces():
+                # Skip loopback interface
+                if interface.startswith('lo'):
+                    continue
+                    
+                addrs = netifaces.ifaddresses(interface)
+                
+                # Check for IPv4 addresses
+                if netifaces.AF_INET in addrs:
+                    for addr in addrs[netifaces.AF_INET]:
+                        ip = addr['addr']
+                        # Skip loopback addresses
+                        if not ip.startswith('127.'):
+                            logger.info("Local IP determined: %s", ip)
+                            # Split IP and create broadcast
+                            ip_parts = ip.split('.')
+                            ip_parts[-1] = '255'
+                            broadcast_address = '.'.join(ip_parts)
+                            logger.info("Broadcast address determined: %s", broadcast_address)
+                            return broadcast_address
+
+            logger.error("No valid network interface found")
+            return "Unable to get IP"
+                            
         except Exception as e:
             logger.error("Error obtaining local IP: %s", e)
-            local_ip = "Unable to get IP"
-        finally:
-            s.close()
-        
-        if local_ip == "Unable to get IP":
-            return local_ip
-
-        # Split the IP address into parts
-        ip_parts = local_ip.split('.')
-        # Replace the last part with '255' to create the broadcast address
-        ip_parts[-1] = '255'
-        # Join the parts back together to form the broadcast address
-        broadcast_address = '.'.join(ip_parts)
-        logger.info("Broadcast address determined: %s", broadcast_address)
-        return broadcast_address
+            return "Unable to get IP"
 
     def discover_receivers(self):
         broadcast_address = self.get_broadcast()
