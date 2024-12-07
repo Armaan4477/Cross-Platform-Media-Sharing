@@ -790,18 +790,4 @@ public class SendFileActivity extends AppCompatActivity {
         closeSocket();
         executorService.shutdown();
     }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        // Close sockets on activity destruction
-        try {
-            if (socket != null) {
-                socket.close();
-                FileLogger.log("SendFileActivity", "Socket closed");
-            }
-        } catch (IOException e) {
-            FileLogger.log("SendFileActivity", "Error closing socket", e);
-        }
-    }
 }

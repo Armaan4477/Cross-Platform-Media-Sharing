@@ -480,21 +480,4 @@ public class ReceiveFileActivity extends AppCompatActivity {
             FileLogger.log("ReceiveFileActivity", "Error closing sockets", e);
         }
     }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        // Close sockets on activity destruction
-        try {
-            if (clientSocket != null && !clientSocket.isClosed()) {
-                clientSocket.close();
-            }
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-        } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
-        }
-        finish();
-    }
 }
