@@ -2,4 +2,4 @@ wheel
 PyQt6
 cryptography
 requests
-netifaces
+netifaces2
