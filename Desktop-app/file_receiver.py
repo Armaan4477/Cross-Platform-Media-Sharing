@@ -177,7 +177,7 @@ class ReceiveApp(QWidget):
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
 # Call the method to start typewriter effect
-        self.start_typewriter_effect("Waiting to connect to sender...")
+        self.start_typewriter_effect("Waiting to connect to sender")
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:

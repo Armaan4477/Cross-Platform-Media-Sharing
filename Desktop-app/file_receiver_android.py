@@ -344,7 +344,7 @@ class ReceiveAppPJava(QWidget):
         self.initUI()
         self.setFixedSize(853, 480)
         
-        self.current_text = "Waiting to receive files from an Android device..."  # The full text for the label
+        self.current_text = "Waiting to receive files from an Android device"  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
         self.progress_bar.setVisible(False)  # Initially hidden
@@ -503,7 +503,7 @@ class ReceiveAppPJava(QWidget):
 
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
-        self.label.setText("Receiving files from an Android device...")
+        self.label.setText("Receiving files from an Android device")
 
     def update_typewriter_effect(self):
         """Updates the label text one character at a time."""

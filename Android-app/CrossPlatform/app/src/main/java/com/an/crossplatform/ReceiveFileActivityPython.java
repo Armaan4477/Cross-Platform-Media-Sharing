@@ -99,13 +99,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         }
 
         if(osType.equals("Windows")) {
-            txt_waiting.setText("Waiting to receive files from a Windows device...");
+            txt_waiting.setText("Waiting to receive files from a Windows device");
         } else if (osType.equals("Linux")) {
-            txt_waiting.setText("Waiting to receive files from a Linux device...");
+            txt_waiting.setText("Waiting to receive files from a Linux device");
         } else if (osType.equals("Darwin")) {
-            txt_waiting.setText("Waiting to receive files from a macOS device...");
+            txt_waiting.setText("Waiting to receive files from a macOS device");
         } else {
-            txt_waiting.setText("Waiting to receive files from Desktop app...");
+            txt_waiting.setText("Waiting to receive files from Desktop app");
         }
         startConnectionTask();
     }
@@ -119,13 +119,13 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 if (connectionSuccessful) {
                     FileLogger.log("ReceiveFileActivityPython", "Connection established with the sender.");
                     if(osType.equals("Windows")) {
-                        txt_waiting.setText("Receiving files from a Windows device...");
+                        txt_waiting.setText("Receiving files from a Windows device");
                     } else if (osType.equals("Linux")) {
-                        txt_waiting.setText("Receiving files from a Linux device...");
+                        txt_waiting.setText("Receiving files from a Linux device");
                     } else if (osType.equals("Darwin")) {
-                        txt_waiting.setText("Receiving files from a macOS device...");
+                        txt_waiting.setText("Receiving files from a macOS device");
                     } else {
-                        txt_waiting.setText("Receiving files from Desktop app...");
+                        txt_waiting.setText("Receiving files from Desktop app");
                     }
                     executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
                 } else {

@@ -471,23 +471,23 @@ class ReceiveAppP(QWidget):
 
     def displaytxt(self):
         if self.sender_os == 'Windows':
-            return 'Waiting to receive files from a Windows device...'
+            return 'Waiting to receive files from a Windows device'
         elif self.sender_os == 'Linux':
-            return 'Waiting to receive files from a Linux device...'
+            return 'Waiting to receive files from a Linux device'
         elif self.sender_os == 'Darwin':
-            return 'Waiting to receive files from a macOS device...'
+            return 'Waiting to receive files from a macOS device'
         else:
-            return 'Waiting to receive files from Desktop app...'
+            return 'Waiting to receive files from Desktop app'
         
     def displaytxtreceive(self):
         if self.sender_os == 'Windows':
-            return 'Receiving files from a Windows device...'
+            return 'Receiving files from a Windows device'
         elif self.sender_os == 'Linux':
-            return 'Receiving files from a Linux device...'
+            return 'Receiving files from a Linux device'
         elif self.sender_os == 'Darwin':
-            return 'Receiving files from a macOS device...'
+            return 'Receiving files from a macOS device'
         else:
-            return 'Receiving files from Desktop app...'
+            return 'Receiving files from Desktop app'
 
     def openMainWindow(self):
         from main import MainApp
