@@ -76,7 +76,7 @@ class VersionCheck(QThread):
         # platform_name = 'buga'
         # platform_name = 'cuga'
             
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
         return url
 
 class MainApp(QWidget):

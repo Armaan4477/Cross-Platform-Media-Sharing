@@ -827,7 +827,7 @@ class PreferencesApp(QWidget):
         # platform_name = 'buga'
         # platform_name = 'cuga'
             
-        url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+        url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
         return url
     
     def get_update_download(self):
@@ -859,13 +859,23 @@ class PreferencesApp(QWidget):
             return None
 
         # Map platform combinations to download links
+
+        #main version
+        # download_links = {
+        #     ('windows', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
+        #     ('windows', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
+        #     ('linux', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20x64)',
+        #     ('linux', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20arm)',
+        #     ('macos', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
+        #     ('macos', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
+        # }
+
+        #beta version
         download_links = {
-            ('windows', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
-            ('windows', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
-            ('linux', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20x64)',
-            ('linux', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20arm)',
-            ('macos', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
-            ('macos', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
+            ('windows', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
+            ('windows', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
+            ('linux', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Linux',
+            ('macos', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Macos(arm).dmg',
         }
 
         key = (platform_os, platform_type)

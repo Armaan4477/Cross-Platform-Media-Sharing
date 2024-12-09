@@ -55,8 +55,7 @@ public class PreferencesActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Toast.makeText(PreferencesActivity.this, "Back navigation is disabled, Please use the Buttons", Toast.LENGTH_SHORT).show();
-                // Do nothing to disable back navigation
+                goToMainMenu();
             }
         });
 
@@ -122,7 +121,7 @@ public class PreferencesActivity extends AppCompatActivity {
             String apiVersion = null;
             try {
                 // Define the API URL
-                URL url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
+                URL url = new URL("https://datadashshare.vercel.app/api/platformNumberbeta?platform=android");
 
                 // Open a connection
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
