@@ -34,8 +34,8 @@ import androidx.activity.OnBackPressedCallback;
 /** @noinspection CallToPrintStackTrace*/
 public class DiscoverDevicesActivity extends AppCompatActivity {
 
-    private static final int DISCOVER_PORT = 12345; // Port for sending DISCOVER messages
-    private static final int RESPONSE_PORT = 12346; // Port for receiving responses
+    private static final int DISCOVER_PORT = 49185; // Port for sending DISCOVER messages
+    private static final int RESPONSE_PORT = 49186; // Port for receiving responses
     private Button btnDiscover, btnConnect;
     private ListView listDevices;
     private ArrayList<String> devices = new ArrayList<>();

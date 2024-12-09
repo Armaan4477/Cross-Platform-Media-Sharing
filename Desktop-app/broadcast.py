@@ -128,27 +128,37 @@ class BroadcastWorker(QThread):
         broadcast_address = self.get_broadcast()
         if broadcast_address == "Unable to get IP":
             return
+            
+        # Create new UDP socket
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            
+            # Bind to LISTEN_PORT to receive responses
             s.bind(('', LISTEN_PORT))
-
-            logger.info("Sending discover packet.")
+            logger.info("Sending discover packet to %s:%d", broadcast_address, BROADCAST_PORT)
+            
+            # Send discovery packet
             s.sendto(b'DISCOVER', (broadcast_address, BROADCAST_PORT))
-
+            
+            # Listen for responses with timeout
             s.settimeout(2)
             try:
                 while True:
                     message, address = s.recvfrom(1024)
                     message = message.decode()
-                    logger.info(f"Received message from {address[0]}: {message}")
+                    logger.info("Received response from %s: %s", address[0], message)
+                    
                     if message.startswith('RECEIVER:'):
                         device_name = message.split(':')[1]
-                        self.device_detected.emit({'ip': address[0], 'name': device_name})
+                        device_info = {'ip': address[0], 'name': device_name}
+                        logger.info("Found device: %s", device_info)
+                        self.device_detected.emit(device_info)
+                        
             except socket.timeout:
-                pass
+                logger.info("Discovery timeout reached")
             except Exception as e:
-                logger.error(f"Error during discovery: {e}")
+                logger.error("Error during discovery: %s", str(e))
 
     def connect_to_device(self, device_ip, device_name):
         try:

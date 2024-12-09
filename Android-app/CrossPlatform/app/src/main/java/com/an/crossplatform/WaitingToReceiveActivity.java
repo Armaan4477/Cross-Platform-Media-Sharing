@@ -31,12 +31,12 @@ import androidx.activity.OnBackPressedCallback;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
-    private static final int UDP_PORT = 12345; // Discovery port
+    private static final int UDP_PORT = 49185; // Discovery port
 
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private static final int JSON_EXCHANGE_PORT = 54314;
-    private int LISTEN_PORT = 12346;
+    private int LISTEN_PORT = 49186;
     private ServerSocket serverSocket;
     private DatagramSocket udpSocket;
     private Socket clientSocket;

@@ -6,8 +6,8 @@ import socket
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.6.3"  # Set the current version of the json config file
-app_version = "3.4.1"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "5.6.4"  # Set the current version of the json config file
+app_version = "3.4.2"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 
 def get_logger_file_path():
@@ -158,8 +158,8 @@ else:
     else:
         logger.info("Loaded configuration: %s", config_data)
 
-BROADCAST_PORT = 12345
-LISTEN_PORT = 12346
+BROADCAST_PORT = 49185
+LISTEN_PORT = 49186
 RECEIVER_JSON = 54314
 
 logger.info("Broadcast port: %d, Listen port: %d", BROADCAST_PORT, LISTEN_PORT)
