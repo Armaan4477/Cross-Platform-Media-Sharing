@@ -31,12 +31,11 @@ import androidx.activity.OnBackPressedCallback;
 
 public class WaitingToReceiveActivity extends AppCompatActivity {
 
-    private static final int UDP_PORT = 49185; // Discovery port
-
+    private static final int BROADCAST_PORT = 49185;  // Match Python BROADCAST_PORT
+    private static final int LISTEN_PORT = 49186;
     private String DEVICE_NAME;
     private String DEVICE_TYPE = "java"; // Device type for Android devices
     private static final int JSON_EXCHANGE_PORT = 54314;
-    private int LISTEN_PORT = 49186;
     private ServerSocket serverSocket;
     private DatagramSocket udpSocket;
     private Socket clientSocket;
@@ -114,35 +113,45 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private void startListeningForDiscover() {
         new Thread(() -> {
             try {
-                forceReleaseUDPPort(UDP_PORT);
-                forceReleaseUDPPort(LISTEN_PORT);
-                udpSocket = new DatagramSocket(UDP_PORT);
-                udpSocket.setSoTimeout(1000); // 1 second timeout
-                byte[] recvBuf = new byte[15000];
+                // Force release ports first
+                forceReleaseUDPPort(BROADCAST_PORT);
 
-                while (!tcpConnectionEstablished) { // Remove isRunning check here
+                // Create and configure UDP socket
+                udpSocket = new DatagramSocket(BROADCAST_PORT);
+                udpSocket.setSoTimeout(1000);
+                byte[] recvBuf = new byte[1024]; // Reduced buffer size
+
+                while (!tcpConnectionEstablished) {
                     try {
+                        // Wait for DISCOVER packet
                         DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
-                        FileLogger.log("WaitingToReceive", "Waiting for discovery packet...");
+                        FileLogger.log("WaitingToReceive", "Waiting for discovery packet on port " + BROADCAST_PORT);
                         udpSocket.receive(receivePacket);
 
-                        String message = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
+                        // Extract and verify message
+                        String message = new String(receivePacket.getData(), 0, receivePacket.getLength(), StandardCharsets.UTF_8).trim();
                         FileLogger.log("WaitingToReceive", "Received message: " + message);
 
-                        if (message.equals("DISCOVER")) {
+                        if ("DISCOVER".equals(message)) { // Exact match
                             InetAddress senderAddress = receivePacket.getAddress();
-                            byte[] sendData = ("RECEIVER:" + DEVICE_NAME).getBytes();
+
+                            // Format response exactly like Python: "RECEIVER:devicename"
+                            String response = "RECEIVER:" + DEVICE_NAME;
+                            byte[] sendData = response.getBytes(StandardCharsets.UTF_8);
+
+                            // Send response to LISTEN_PORT
                             DatagramPacket sendPacket = new DatagramPacket(
                                     sendData,
                                     sendData.length,
                                     senderAddress,
                                     LISTEN_PORT
                             );
+
                             udpSocket.send(sendPacket);
-                            FileLogger.log("WaitingToReceive", "Sent RECEIVER response to: " +
+                            FileLogger.log("WaitingToReceive", "Sent response: " + response + " to " +
                                     senderAddress.getHostAddress() + ":" + LISTEN_PORT);
 
-                            // Start TCP connection in new thread
+                            // Start TCP connection handling
                             new Thread(() -> establishTcpConnection(senderAddress)).start();
                         }
                     } catch (SocketException e) {
@@ -151,8 +160,8 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                             break;
                         }
                     } catch (IOException e) {
-                        // Timeout - continue listening
-                        continue;
+                        // Log timeout but continue listening
+                        FileLogger.log("WaitingToReceive", "UDP receive timeout");
                     }
                 }
             } catch (Exception e) {
