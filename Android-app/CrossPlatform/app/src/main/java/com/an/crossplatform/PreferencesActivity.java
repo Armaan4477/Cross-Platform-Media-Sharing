@@ -207,9 +207,9 @@ public class PreferencesActivity extends AppCompatActivity {
                 });
 
         if (showDownloadsButton) {
-            builder.setNegativeButton("Open Downloads Page", (dialog, which) -> {
+            builder.setNegativeButton("Open Beta Downloads Page", (dialog, which) -> {
                 // Open the downloads page in a browser
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download.html"));
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/beta"));
                 startActivity(browserIntent);
             });
         }
@@ -387,7 +387,7 @@ public class PreferencesActivity extends AppCompatActivity {
             saveJsonToFile(configJson.toString());
 
             // Notify the user that preferences were updated
-            Toast.makeText(this, "Preferences updated", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Settings updated", Toast.LENGTH_SHORT).show();
             FileLogger.log("PreferencesActivity", "Preferences updated: " + configJson.toString());
         } catch (Exception e) {
             FileLogger.log("PreferencesActivity", "Error creating JSON", e);
@@ -422,7 +422,7 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void goToMainMenu() {
-        // Navigate back to the main screen
+        Toast.makeText(this, "Settings Changes Discarded", Toast.LENGTH_SHORT).show();
         Intent mainIntent = new Intent(PreferencesActivity.this, MainActivity.class);
         startActivity(mainIntent);
         finish();

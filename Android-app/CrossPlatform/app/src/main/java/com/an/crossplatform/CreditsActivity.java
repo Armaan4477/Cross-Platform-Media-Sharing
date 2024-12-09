@@ -21,7 +21,7 @@ public class CreditsActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                // Do nothing to disable back navigation
+                closeBtn();
             }
         });
 
@@ -30,7 +30,7 @@ public class CreditsActivity extends AppCompatActivity {
 
         // Close button functionality
         Button closeButton = findViewById(R.id.close_button);
-        closeButton.setOnClickListener(v -> finish()); // Close activity
+        closeButton.setOnClickListener(v -> closeBtn());
     }
 
     private void setupLinkButtons() {
@@ -81,5 +81,9 @@ public class CreditsActivity extends AppCompatActivity {
     private void openLink(String url) {
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         startActivity(browserIntent);
+    }
+
+    private void closeBtn() {
+        finish();
     }
 }
