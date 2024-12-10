@@ -20,7 +20,7 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
-        self.setFixedSize(500, 550)  # Make the window smaller
+        self.setFixedSize(500, 600)  # Make the window smaller
 
     def initUI(self):
         self.setWindowTitle('Settings')
@@ -154,7 +154,7 @@ class PreferencesApp(QWidget):
         # Adjust the Credits button below the auto-update toggle
         self.credit_button = QPushButton('Credits', self)
         self.credit_button.setFont(QFont("Arial", 12))
-        self.credit_button.setFixedSize(60, 30)  # Revert to smaller size
+        self.credit_button.setFixedSize(65, 35)  # Revert to smaller size
         self.style_credit_button(self.credit_button)  # Use specific styling method
         self.credit_button.clicked.connect(self.show_credits)
         layout.addWidget(self.credit_button)
@@ -270,7 +270,7 @@ class PreferencesApp(QWidget):
         button.setGraphicsEffect(self.create_glow_effect())
 
     def style_credit_button(self, button):
-        button.setFixedSize(60, 30)
+        button.setFixedSize(65, 35)
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
             QPushButton {
@@ -642,7 +642,7 @@ class PreferencesApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 500, 550  # Updated to 16:9 ratio
+        window_width, window_height = 500, 600  # Updated to 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
