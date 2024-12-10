@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication, QComboBox
+    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication, QComboBox, QSizePolicy
 )
 from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl
@@ -20,69 +20,60 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
-        self.setFixedSize(500, 450)  # Adjusted height to accommodate new toggle
+        self.setFixedSize(500, 550)  # Make the window smaller
 
     def initUI(self):
         self.setWindowTitle('Settings')
-        self.setGeometry(100, 100, 500, 450)  # Adjusted height to accommodate new toggle
         self.center_window()
-        #com.an.Datadash
         self.set_background()
         self.displayversion()
-        #self.fetch_platform_value()
 
+        # Adjust main layout margins and spacing
         layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        # Top layout with version, channel, and buttons
-        top_layout = QHBoxLayout()
-        
-        # Left side with version and channel
-        version_channel_layout = QVBoxLayout()
-        
-        # Version label
-        self.version_label = QLabel('Version Number: ' + self.uga_version)
+        # Top layout as a vertical layout
+        top_layout = QVBoxLayout()
+        top_layout.setSpacing(10)
+
+        # Version label and Check for Update button side by side
+        version_update_layout = QHBoxLayout()
+        version_update_layout.setSpacing(5)
+
+        self.version_label = QLabel('Version: ' + self.uga_version)
         self.version_label.setFont(QFont("Arial", 14))
         self.style_label(self.version_label)
-        version_channel_layout.addWidget(self.version_label)
-        
-        # Channel layout
+        self.version_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Allow label to expand
+        version_update_layout.addWidget(self.version_label)
+
+        self.update_button = QPushButton('Check for Update', self)
+        self.update_button.setFont(QFont("Arial", 10))
+        self.update_button.setFixedSize(130, 30)  # Adjust button width if needed
+        self.style_update_button(self.update_button)
+        self.update_button.clicked.connect(self.fetch_platform_value)
+        version_update_layout.addWidget(self.update_button)
+
+        top_layout.addLayout(version_update_layout)
+
+        # Update Channel label and dropdown side by side
         channel_layout = QHBoxLayout()
+        channel_layout.setSpacing(5)
+
         self.channel_label = QLabel('Update Channel:')
         self.channel_label.setFont(QFont("Arial", 14))
         self.style_label(self.channel_label)
+        self.channel_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Allow label to expand
         channel_layout.addWidget(self.channel_label)
-        
+
         self.channel_dropdown = QComboBox()
         self.channel_dropdown.addItems(['Stable', 'Beta'])
         self.style_dropdown(self.channel_dropdown)
         self.channel_dropdown.currentIndexChanged.connect(self.update_channel_preference)
         channel_layout.addWidget(self.channel_dropdown)
-        version_channel_layout.addLayout(channel_layout)
-        
-        top_layout.addLayout(version_channel_layout)
-        
-        # Right side with credits and update buttons
-        right_buttons_layout = QVBoxLayout()
-        
-        # Credits button
-        self.credit_button = QPushButton('Credits', self)
-        self.credit_button.setFont(QFont("Arial", 10))
-        self.credit_button.setFixedSize(150, 30)
-        self.style_credit_button(self.credit_button)
-        self.credit_button.clicked.connect(self.show_credits)
-        right_buttons_layout.addWidget(self.credit_button)
-        
-        # Update button
-        self.update_button = QPushButton('Check for Update', self)
-        self.update_button.setFont(QFont("Arial", 10))
-        self.update_button.setFixedSize(150, 30)
-        self.style_update_button(self.update_button)
-        self.update_button.clicked.connect(self.fetch_platform_value)
-        right_buttons_layout.addWidget(self.update_button)
-        
-        right_buttons_layout.addStretch()  # Add stretch to keep buttons at top
-        top_layout.addLayout(right_buttons_layout)
-        
+
+        top_layout.addLayout(channel_layout)
+
         layout.addLayout(top_layout)
 
         # Device Name
@@ -93,10 +84,12 @@ class PreferencesApp(QWidget):
 
         # Horizontal layout for device name input and reset button
         device_name_layout = QHBoxLayout()
+        device_name_layout.setSpacing(10)
 
         self.device_name_input = QLineEdit(self)
         self.device_name_input.setFont(QFont("Arial", 16))
         self.device_name_input.setFixedHeight(30)
+        self.device_name_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.style_input(self.device_name_input)
         device_name_layout.addWidget(self.device_name_input)
 
@@ -109,7 +102,6 @@ class PreferencesApp(QWidget):
 
         layout.addLayout(device_name_layout)
 
-#com.an.Datadash
         # Save to Path
         self.save_to_path_label = QLabel('Save to Path:', self)
         self.save_to_path_label.setFont(QFont("Arial", 18, QFont.Weight.Bold))
@@ -119,10 +111,12 @@ class PreferencesApp(QWidget):
         self.save_to_path_input = QLineEdit(self)
         self.save_to_path_input.setFont(QFont("Arial", 16))
         self.save_to_path_input.setFixedHeight(30)
+        self.save_to_path_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.style_input(self.save_to_path_input)
         layout.addWidget(self.save_to_path_input)
 
         path_layout = QHBoxLayout()
+        path_layout.setSpacing(10)
         self.save_to_path_picker_button = QPushButton('Pick Directory', self)
         self.save_to_path_picker_button.setFont(QFont("Arial", 12))
         self.save_to_path_picker_button.setFixedSize(150, 40)
@@ -144,7 +138,6 @@ class PreferencesApp(QWidget):
         self.encryption_toggle.setFont(QFont("Arial", 18))
         self.style_checkbox(self.encryption_toggle)
         layout.addWidget(self.encryption_toggle)
-        #com.an.Datadash
 
         # Show Warning Toggle
         self.show_warning_toggle = QCheckBox('Show Warnings', self)
@@ -158,8 +151,17 @@ class PreferencesApp(QWidget):
         self.style_checkbox(self.show_update_toggle)
         layout.addWidget(self.show_update_toggle)
 
+        # Adjust the Credits button below the auto-update toggle
+        self.credit_button = QPushButton('Credits', self)
+        self.credit_button.setFont(QFont("Arial", 12))
+        self.credit_button.setFixedSize(60, 30)  # Revert to smaller size
+        self.style_credit_button(self.credit_button)  # Use specific styling method
+        self.credit_button.clicked.connect(self.show_credits)
+        layout.addWidget(self.credit_button)
+
         # Submit and Main Menu buttons
         buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(10)
 
         self.main_menu_button = QPushButton('Main Menu', self)
         self.main_menu_button.setFont(QFont("Arial", 12))
@@ -395,21 +397,19 @@ class PreferencesApp(QWidget):
         glow_effect.setColor(QColor(255, 255, 255, 100))
         return glow_effect
 
-#com.an.Datadash
     def resetDeviceName(self):
         self.device_name_input.setText(platform.node())
 
     def pickDirectory(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
-        if directory:
+        if (directory):
             self.save_to_path_input.setText(directory)
 
     def resetSavePath(self):
         self.save_to_path_input.setText(get_default_path())
 
     def displayversion(self):
-        config= get_config()
-        # self.version_label.setText('Version Number: ' + config["version"])
+        config = get_config()
         self.uga_version = config["app_version"]
 
     def loadPreferences(self):
@@ -420,8 +420,8 @@ class PreferencesApp(QWidget):
         self.save_to_path_input.setText(config["save_to_directory"])
         self.max_filesize = config["max_filesize"]
         self.encryption_toggle.setChecked(config["encryption"])
-        self.android_encryption=(config["android_encryption"])
-        self.swift_encryption=(config["swift_encryption"])
+        self.android_encryption = (config["android_encryption"])
+        self.swift_encryption = (config["swift_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.show_update_toggle.setChecked(config["check_update"])
         self.update_channel = config["update_channel"]
@@ -634,22 +634,18 @@ class PreferencesApp(QWidget):
         else:
             self.go_to_main_menu()
 
-
-
     def go_to_main_menu(self):
         self.hide()
         from main import MainApp
         self.main_app = MainApp(skip_version_check=True)
         self.main_app.show()
 
-    
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 500, 400
+        window_width, window_height = 500, 550  # Updated to 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
-
 
     def changes_made(self):
         current_preferences = {
@@ -675,7 +671,6 @@ class PreferencesApp(QWidget):
         logger.info("Opened Credits Dialog")
         credits_dialog = CreditsDialog()
         credits_dialog.exec()
-        #com.an.Datadash
 
     def show_help_dialog(self):
         help_dialog = QMessageBox(self)
@@ -744,7 +739,6 @@ class PreferencesApp(QWidget):
             }
         """)
         help_dialog.exec()
-        #com.an.Datadash
 
     def fetch_platform_value(self):
         url = self.get_platform_link()
