@@ -20,7 +20,7 @@ class PreferencesApp(QWidget):
         super().__init__()
         self.original_preferences = {}
         self.initUI()
-        self.setFixedSize(500, 600)  # Make the window smaller
+        self.setFixedSize(525, 600)  # Make the window smaller
 
     def initUI(self):
         self.setWindowTitle('Settings')
@@ -642,7 +642,7 @@ class PreferencesApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 500, 600  # Updated to 16:9 ratio
+        window_width, window_height = 525, 600  # Updated to 16:9 ratio
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
