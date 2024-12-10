@@ -58,7 +58,7 @@ class VersionCheck(QThread):
 
     def currentversion(self):
         config= get_config()
-        self.uga_version = config["app_version"]
+        self.uga_version = config["version"]
 
     def get_platform_link(self):
         channel = get_config()["update_channel"]

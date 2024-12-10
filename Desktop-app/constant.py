@@ -6,8 +6,7 @@ import socket
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.6.5"  # Set the current version of the json config file
-app_version = "3.4.3"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "3.4.3"  # Set the current version of the json config file (app version)
 
 
 def get_logger_file_path():
@@ -57,7 +56,7 @@ logger = logging.getLogger('FileSharing: ')
 
 logger.setLevel(logging.DEBUG)
 
-logger.info("App version: %s", app_version)
+logger.info("App version: %s", current_version)
 
 def get_config_file_path():
     if platform.system() == 'Windows':
@@ -116,7 +115,6 @@ if not os.path.exists(config_file):
 
     default_config = {
         "version": current_version,
-        "app_version": app_version,
         "device_name": platform.node(),
         "save_to_directory": file_path,
         "max_filesize": 1000,
@@ -146,7 +144,6 @@ else:
 
         default_config = {
             "version": current_version,
-            "app_version": app_version,
             "device_name": device_name,
             "save_to_directory": save_to_directory,
             "max_filesize": 1000,

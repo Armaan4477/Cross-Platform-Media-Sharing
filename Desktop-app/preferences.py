@@ -5,10 +5,9 @@ from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QDeskto
 from PyQt6.QtCore import Qt, QUrl
 import sys
 import platform
-from constant import get_config, write_config, get_default_path
+from constant import get_config, write_config, get_default_path, logger
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 from credits_dialog import CreditsDialog
-from constant import logger
 import requests
 import os
 import time
@@ -410,12 +409,11 @@ class PreferencesApp(QWidget):
 
     def displayversion(self):
         config = get_config()
-        self.uga_version = config["app_version"]
+        self.uga_version = config["version"]
 
     def loadPreferences(self):
         config = get_config()
         self.version = config["version"]
-        self.app_version = config["app_version"]
         self.device_name_input.setText(config["device_name"])
         self.save_to_path_input.setText(config["save_to_directory"])
         self.max_filesize = config["max_filesize"]
@@ -429,7 +427,6 @@ class PreferencesApp(QWidget):
         self.channel_dropdown.setCurrentIndex(channel_index)
         self.original_preferences = config.copy()
         logger.info("Loaded preferences- json_version: %s", self.version)
-        logger.info("Loaded preferences- app_version: %s", self.app_version)
         logger.info("Loaded preferences- android_encryption: %s", self.android_encryption)
         logger.info("Loaded preferences- swift_encryption: %s", self.swift_encryption)
         logger.info("Loaded preferences- show_warning: %s", self.show_warning_toggle.isChecked())
@@ -650,7 +647,6 @@ class PreferencesApp(QWidget):
     def changes_made(self):
         current_preferences = {
             "version": self.version,
-            "app_version": self.app_version,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "max_filesize": self.max_filesize,
