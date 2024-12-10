@@ -356,6 +356,7 @@ class PreferencesApp(QWidget):
         self.swift_encryption=(config["swift_encryption"])
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.show_update_toggle.setChecked(config["check_update"])
+        self.update_channel = config["update_channel"]
         self.original_preferences = config.copy()
         logger.info("Loaded preferences- json_version: %s", self.version)
         logger.info("Loaded preferences- app_version: %s", self.app_version)
@@ -584,6 +585,7 @@ class PreferencesApp(QWidget):
         current_preferences = {
             "version": self.version,
             "app_version": self.app_version,
+            "update_channel": self.update_channel,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "max_filesize": self.max_filesize,
