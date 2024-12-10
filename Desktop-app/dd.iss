@@ -1,6 +1,6 @@
 [Setup]
 AppName=DataDash
-AppVersion=3.4.2
+AppVersion=3.4.4
 DefaultDirName={commonpf64}\DataDash
 DefaultGroupName=DataDash
 OutputDir=Output
