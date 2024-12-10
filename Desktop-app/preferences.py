@@ -53,12 +53,12 @@ class PreferencesApp(QWidget):
         top_layout.addWidget(self.update_button)
 
         # Create the Help button
-        self.help_button = QPushButton('Help', self)
-        self.help_button.setFont(QFont("Arial", 10))
-        self.help_button.setFixedSize(80, 30)
-        self.style_help_button(self.help_button)
-        self.help_button.clicked.connect(self.show_help_dialog)
-        top_layout.addWidget(self.help_button)
+        self.credit_button = QPushButton('Credits', self)
+        self.credit_button.setFont(QFont("Arial", 10))
+        self.credit_button.setFixedSize(80, 30)
+        self.style_credit_button(self.credit_button)
+        self.credit_button.clicked.connect(self.show_credits)
+        top_layout.addWidget(self.credit_button)
 
         layout.addLayout(top_layout)
 
@@ -146,11 +146,11 @@ class PreferencesApp(QWidget):
         buttons_layout.addWidget(self.main_menu_button)
 
         # Credits Button
-        self.credits_button = QPushButton('Credits')
-        self.credits_button.setFont(QFont("Arial", 12))
-        self.style_button(self.credits_button)
-        self.credits_button.clicked.connect(self.show_credits)
-        buttons_layout.addWidget(self.credits_button)
+        self.help_button = QPushButton('Help')
+        self.help_button.setFont(QFont("Arial", 12))
+        self.style_button(self.help_button)
+        self.help_button.clicked.connect(self.show_help_dialog)
+        buttons_layout.addWidget(self.help_button)
 
         layout.addLayout(buttons_layout)
 
@@ -244,7 +244,7 @@ class PreferencesApp(QWidget):
         """)
         button.setGraphicsEffect(self.create_glow_effect())
 
-    def style_help_button(self, button):
+    def style_credit_button(self, button):
         button.setFixedSize(60, 30)
         button.setFont(QFont("Arial", 12))
         button.setStyleSheet("""
