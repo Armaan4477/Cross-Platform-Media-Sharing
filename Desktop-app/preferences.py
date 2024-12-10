@@ -55,6 +55,7 @@ class PreferencesApp(QWidget):
         self.channel_dropdown = QComboBox()
         self.channel_dropdown.addItems(['Stable', 'Beta'])
         self.style_dropdown(self.channel_dropdown)
+        self.channel_dropdown.currentIndexChanged.connect(self.update_channel_preference)
         channel_layout.addWidget(self.channel_dropdown)
         version_channel_layout.addLayout(channel_layout)
         
@@ -424,6 +425,8 @@ class PreferencesApp(QWidget):
         self.show_warning_toggle.setChecked(config["show_warning"])  # Load show_warning value
         self.show_update_toggle.setChecked(config["check_update"])
         self.update_channel = config["update_channel"]
+        channel_index = 0 if config["update_channel"] == "stable" else 1
+        self.channel_dropdown.setCurrentIndex(channel_index)
         self.original_preferences = config.copy()
         logger.info("Loaded preferences- json_version: %s", self.version)
         logger.info("Loaded preferences- app_version: %s", self.app_version)
@@ -1220,6 +1223,14 @@ class PreferencesApp(QWidget):
 
         return filename
         
+    def update_channel_preference(self, index):
+        channel = "stable" if index == 0 else "beta"
+        config = get_config()
+        if config["update_channel"] != channel:
+            config["update_channel"] = channel
+            write_config(config)
+            self.original_preferences["update_channel"] = channel
+            logger.info(f"Update channel changed to: {channel}")
 
 
 if __name__ == '__main__':
