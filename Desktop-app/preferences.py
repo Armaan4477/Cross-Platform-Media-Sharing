@@ -655,17 +655,21 @@ class PreferencesApp(QWidget):
         current_preferences = {
             "version": self.version,
             "app_version": self.app_version,
-            "update_channel": self.update_channel,
             "device_name": self.device_name_input.text(),
             "save_to_directory": self.save_to_path_input.text(),
             "max_filesize": self.max_filesize,
             "encryption": self.encryption_toggle.isChecked(),
             "android_encryption": self.android_encryption,
             "swift_encryption": self.swift_encryption,
-            "show_warning": self.show_warning_toggle.isChecked(),  # Get show_warning toggle state
+            "show_warning": self.show_warning_toggle.isChecked(),
             "check_update": self.show_update_toggle.isChecked()
         }
-        return current_preferences != self.original_preferences
+        
+        # Create comparison dict without update_channel
+        original_without_channel = self.original_preferences.copy()
+        original_without_channel.pop("update_channel", None)
+        
+        return current_preferences != original_without_channel
     
     def show_credits(self):
         logger.info("Opened Credits Dialog")
