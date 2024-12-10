@@ -826,7 +826,7 @@ class PreferencesApp(QWidget):
                 reply = msg_box.exec()
 
                 if reply == QMessageBox.StandardButton.Open:
-                    QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download.html"))
+                    self.download_page()
                 elif reply == QMessageBox.StandardButton.Apply:
                     logger.info(f"Download path: {self.get_update_download()}")
                 return fetched_version
@@ -1231,6 +1231,15 @@ class PreferencesApp(QWidget):
             write_config(config)
             self.original_preferences["update_channel"] = channel
             logger.info(f"Update channel changed to: {channel}")
+
+    def download_page(self):
+        channel = get_config()["update_channel"]
+        if channel == "beta":
+            QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/beta"))
+            logger.info("Opened beta page")
+        elif channel == "stable":
+            QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download"))
+            logger.info("Opened stable page")
 
 
 if __name__ == '__main__':
