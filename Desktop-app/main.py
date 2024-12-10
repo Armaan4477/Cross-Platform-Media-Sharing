@@ -61,6 +61,8 @@ class VersionCheck(QThread):
         self.uga_version = config["app_version"]
 
     def get_platform_link(self):
+        channel = get_config()["update_channel"]
+        logger.info(f"Checking for updates in channel: {channel}")
         if platform.system() == 'Windows':
                 platform_name = 'windows'
         elif platform.system() == 'Linux':
@@ -76,7 +78,11 @@ class VersionCheck(QThread):
         # platform_name = 'buga'
         # platform_name = 'cuga'
             
-        url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
+        if channel == "stable":
+            url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+            
+        elif channel == "beta":
+            url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
         return url
 
 class MainApp(QWidget):
