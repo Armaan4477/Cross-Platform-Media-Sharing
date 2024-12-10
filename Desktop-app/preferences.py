@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication
+    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QCheckBox, QHBoxLayout, QMessageBox, QApplication, QComboBox
 )
 from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl
@@ -33,33 +33,55 @@ class PreferencesApp(QWidget):
 
         layout = QVBoxLayout()
 
-        # Combined layout for version label, check for update button, and help button
+        # Top layout with version, channel, and buttons
         top_layout = QHBoxLayout()
         
-        # Create the Version label
+        # Left side with version and channel
+        version_channel_layout = QVBoxLayout()
+        
+        # Version label
         self.version_label = QLabel('Version Number: ' + self.uga_version)
         self.version_label.setFont(QFont("Arial", 14))
         self.style_label(self.version_label)
-        top_layout.addWidget(self.version_label)
+        version_channel_layout.addWidget(self.version_label)
         
-        top_layout.addStretch()  # Adds a spacer that pushes the buttons to the right
-
-        # Create the Check for Update button
-        self.update_button = QPushButton('Check for Update', self)
-        self.update_button.setFont(QFont("Arial", 10))
-        self.update_button.setFixedSize(250, 30)
-        self.style_update_button(self.update_button)
-        self.update_button.clicked.connect(self.fetch_platform_value)
-        top_layout.addWidget(self.update_button)
-
-        # Create the Help button
+        # Channel layout
+        channel_layout = QHBoxLayout()
+        self.channel_label = QLabel('Update Channel:')
+        self.channel_label.setFont(QFont("Arial", 14))
+        self.style_label(self.channel_label)
+        channel_layout.addWidget(self.channel_label)
+        
+        self.channel_dropdown = QComboBox()
+        self.channel_dropdown.addItems(['Stable', 'Beta'])
+        self.style_dropdown(self.channel_dropdown)
+        channel_layout.addWidget(self.channel_dropdown)
+        version_channel_layout.addLayout(channel_layout)
+        
+        top_layout.addLayout(version_channel_layout)
+        
+        # Right side with credits and update buttons
+        right_buttons_layout = QVBoxLayout()
+        
+        # Credits button
         self.credit_button = QPushButton('Credits', self)
         self.credit_button.setFont(QFont("Arial", 10))
-        self.credit_button.setFixedSize(80, 30)
+        self.credit_button.setFixedSize(150, 30)
         self.style_credit_button(self.credit_button)
         self.credit_button.clicked.connect(self.show_credits)
-        top_layout.addWidget(self.credit_button)
-
+        right_buttons_layout.addWidget(self.credit_button)
+        
+        # Update button
+        self.update_button = QPushButton('Check for Update', self)
+        self.update_button.setFont(QFont("Arial", 10))
+        self.update_button.setFixedSize(150, 30)
+        self.style_update_button(self.update_button)
+        self.update_button.clicked.connect(self.fetch_platform_value)
+        right_buttons_layout.addWidget(self.update_button)
+        
+        right_buttons_layout.addStretch()  # Add stretch to keep buttons at top
+        top_layout.addLayout(right_buttons_layout)
+        
         layout.addLayout(top_layout)
 
         # Device Name
@@ -307,6 +329,51 @@ class PreferencesApp(QWidget):
             }
         """)
         button.setGraphicsEffect(self.create_glow_effect())
+
+    def style_dropdown(self, dropdown):
+        dropdown.setFont(QFont("Arial", 12))
+        dropdown.setFixedWidth(120)
+        dropdown.setFixedHeight(30)
+        dropdown.setStyleSheet("""
+            QComboBox {
+                color: white;
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                border-radius: 4px;
+                padding: 5px;
+                min-width: 6em;
+            }
+            QComboBox:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QComboBox::drop-down {
+                border: none;
+                padding-right: 10px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid white;
+                width: 0;
+                height: 0;
+                margin-right: 5px;
+            }
+            QComboBox QAbstractItemView {
+                color: white;
+                background-color: rgb(47, 54, 66);
+                selection-background-color: rgb(75, 85, 98);
+                outline: none;
+            }
+        """)
+        dropdown.setGraphicsEffect(self.create_glow_effect())
 
     def set_background(self):
         self.setStyleSheet("""
@@ -828,6 +895,8 @@ class PreferencesApp(QWidget):
         return (v1_parts > v2_parts) - (v1_parts < v2_parts)
     
     def get_platform_link(self):
+        channel = get_config()["update_channel"]
+        logger.info(f"Checking for updates in channel: {channel}")
         if platform.system() == 'Windows':
                 platform_name = 'windows'
         elif platform.system() == 'Linux':
@@ -842,11 +911,17 @@ class PreferencesApp(QWidget):
         # platform_name = 'auga'
         # platform_name = 'buga'
         # platform_name = 'cuga'
+
+        if channel == "stable":
+            url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
             
-        url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
+        elif channel == "beta":
+            url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
         return url
     
     def get_update_download(self):
+        channel = get_config()["update_channel"]
+        logger.info(f"Checking for updates in channel: {channel}")
         # Determine platform OS and download path
         if platform.system() == 'Windows':
             platform_os = 'windows'
@@ -876,23 +951,25 @@ class PreferencesApp(QWidget):
 
         # Map platform combinations to download links
 
+        if channel == "stable":
         #main version
-        # download_links = {
-        #     ('windows', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
-        #     ('windows', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
-        #     ('linux', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20x64)',
-        #     ('linux', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20arm)',
-        #     ('macos', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
-        #     ('macos', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
-        # }
+            download_links = {
+                ('windows', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
+                ('windows', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
+                ('linux', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20x64)',
+                ('linux', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(linux%20arm)',
+                ('macos', 'x64'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
+                ('macos', 'arm'): 'https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
+            }
 
+        elif channel == "beta":
         #beta version
-        download_links = {
-            ('windows', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
-            ('windows', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
-            ('linux', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Linux',
-            ('macos', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Macos(arm).dmg',
-        }
+            download_links = {
+                ('windows', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
+                ('windows', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
+                ('linux', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Linux',
+                ('macos', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Macos(arm).dmg',
+            }
 
         key = (platform_os, platform_type)
         download_link = download_links.get(key)
