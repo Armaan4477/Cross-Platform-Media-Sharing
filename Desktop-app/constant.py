@@ -6,8 +6,8 @@ import socket
 
 # Define the config file name and current version
 config_file_name = ".config.json"
-current_version = "5.6.4"  # Set the current version of the json config file
-app_version = "3.4.2"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+current_version = "5.6.5"  # Set the current version of the json config file
+app_version = "3.4.3"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
 
 
 def get_logger_file_path():
@@ -124,7 +124,8 @@ if not os.path.exists(config_file):
         "android_encryption": False,
         "swift_encryption": False,
         "show_warning": True,
-        "check_update": True
+        "check_update": True,
+        "update_channel": "stable"
     }
 
     write_config(default_config, config_file)
@@ -140,6 +141,8 @@ else:
         device_name = config_data.get("device_name", platform.node())
         save_to_directory = config_data.get("save_to_directory", get_default_path())
         encryption = config_data.get("encryption", False)
+        channel = config_data.get("update_channel", "stable")
+        warnings = config_data.get("show_warning", True)
 
         default_config = {
             "version": current_version,
@@ -150,8 +153,9 @@ else:
             "encryption": encryption,
             "android_encryption": False,
             "swift_encryption": False,
-            "show_warning": True,
-            "check_update": True
+            "show_warning": warnings,
+            "check_update": True,
+            "update_channel": channel
         }
 
         write_config(default_config, config_file)
