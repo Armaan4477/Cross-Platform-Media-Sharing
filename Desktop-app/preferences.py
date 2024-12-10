@@ -676,9 +676,11 @@ class PreferencesApp(QWidget):
         help_dialog = QMessageBox(self)
         help_dialog.setWindowTitle("Help")
         help_dialog.setText("""
-        <b>version Number:</b> The version number of the application.
+        <b>Version:</b> The current version number of the application.
         <br><br>
         <b>Check for Update:</b> Check for the latest version of the application.
+        <br><br>
+        <b>Update Channel:</b> Choose between the stable and beta update channels.
         <br><br>
         <b>Device Name:</b> The name assigned to this device. You can reset it to the system's default.
         <br><br>
@@ -690,9 +692,9 @@ class PreferencesApp(QWidget):
         <br><br>
         <b>Auto-check for updates during app launch:</b> Enable or disable automatic version checks when the application is launched.
         <br><br>
-        <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
-        <br><br>
         <b>Credits:</b> View credits for the application.
+        <br><br>
+        <b>Main Menu:</b> Go back to the main application window. You will be prompted to save changes if any.
         """)
         help_dialog.setIcon(QMessageBox.Icon.Information)
 
