@@ -422,72 +422,86 @@ class PreferencesApp(QWidget):
             msg_box.exec()
             return
 
-        preferences = {
-            "version": self.version,
-            "app_version": self.app_version,
-            "device_name": device_name,
-            "save_to_directory": save_to_path,
-            "max_filesize": self.max_filesize,
-            "encryption": encryption,
-            "android_encryption": self.android_encryption,
-            "swift_encryption": self.swift_encryption,
-            "show_warning": show_warning,  # Save show_warning state
-            "check_update": check_update
-        }
+        # Create a dictionary of only the changed values
+        changed_preferences = {}
+        current_config = get_config()  # Get current config
 
-        write_config(preferences)
-        #com.an.Datadash
+        # Compare each field with original preferences and only include changed ones
+        if device_name != self.original_preferences["device_name"]:
+            changed_preferences["device_name"] = device_name
         
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Success")
-        msg_box.setText("Preferences saved successfully!")
-        msg_box.setIcon(QMessageBox.Icon.Information)
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        if save_to_path != self.original_preferences["save_to_directory"]:
+            changed_preferences["save_to_directory"] = save_to_path
+        
+        if encryption != self.original_preferences["encryption"]:
+            changed_preferences["encryption"] = encryption
+        
+        if show_warning != self.original_preferences["show_warning"]:
+            changed_preferences["show_warning"] = show_warning
+        
+        if check_update != self.original_preferences["check_update"]:
+            changed_preferences["check_update"] = check_update
 
-        # Apply custom style with gradient background and transparent text area
-        msg_box.setStyleSheet("""
-            QMessageBox {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,
-                    stop: 1 #505050
-                );
-                color: #FFFFFF;
-                font-size: 16px;
-            }
-            QLabel {
-                background-color: transparent; /* Make the label background transparent */
-            }
-            QPushButton {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255),
-                    stop: 1 rgba(75, 85, 98, 255)
-                );
-                color: white;
-                border-radius: 10px;
-                border: 1px solid rgba(0, 0, 0, 0.5);
-                padding: 4px;
-                font-size: 16px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),
-                    stop: 1 rgba(90, 100, 118, 255)
-                );
-            }
-            QPushButton:pressed {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),
-                    stop: 1 rgba(65, 75, 88, 255)
-                );
-            }
-        """)
-        msg_box.exec()
-        self.go_to_main_menu()
+        # If there are any changes, update the config
+        if changed_preferences:
+            # Update only changed fields in current config
+            current_config.update(changed_preferences)
+            write_config(current_config)
+            # Update original preferences with new values
+            self.original_preferences.update(changed_preferences)
 
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Success")
+            msg_box.setText("Preferences saved successfully!")
+            msg_box.setIcon(QMessageBox.Icon.Information)
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+            # Apply custom style with gradient background and transparent text area
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #b0b0b0,
+                        stop: 1 #505050
+                    );
+                    color: #FFFFFF;
+                    font-size: 16px;
+                }
+                QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                }
+                QPushButton {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(47, 54, 66, 255),
+                        stop: 1 rgba(75, 85, 98, 255)
+                    );
+                    color: white;
+                    border-radius: 10px;
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    padding: 4px;
+                    font-size: 16px;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(60, 68, 80, 255),
+                        stop: 1 rgba(90, 100, 118, 255)
+                    );
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0,
+                        stop: 0 rgba(35, 41, 51, 255),
+                        stop: 1 rgba(65, 75, 88, 255)
+                    );
+                }
+            """)
+            msg_box.exec()
+            self.go_to_main_menu()
+        else:
+            # If no changes were made, just go back to main menu
+            self.go_to_main_menu()
 
     def goToMainMenu(self):
         if self.changes_made():
