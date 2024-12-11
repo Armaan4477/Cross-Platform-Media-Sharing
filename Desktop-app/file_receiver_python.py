@@ -21,6 +21,7 @@ class ReceiveWorkerPython(QThread):
     decrypt_signal = pyqtSignal(list)
     close_connection_signal = pyqtSignal() 
     receiving_started = pyqtSignal()
+    transfer_finished = pyqtSignal()
     password = None
 
     def __init__(self, client_ip):
@@ -128,6 +129,7 @@ class ReceiveWorkerPython(QThread):
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
                     logger.debug("Received halt signal. Stopping file reception.")
+                    self.transfer_finished.emit()
                     break
                 else:
                     encrypted_transfer = False
@@ -370,7 +372,8 @@ class ReceiveAppP(QWidget):
         self.file_receiver = ReceiveWorkerPython(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)
+        self.file_receiver.transfer_finished.connect(self.onTransferFinished)
        
         
         # Start the typewriter effect
@@ -557,12 +560,13 @@ class ReceiveAppP(QWidget):
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.label.setText("File received successfully!")
-            self.open_dir_button.setVisible(True)  # Show the button when file is received
-            self.change_gif_to_success()  # Change GIF to success animation
-            self.close_button.setVisible(True)
-            # self.mainmenu_button.setVisible(True)
+
+    def onTransferFinished(self):
+        self.label.setText("File received successfully!")
+        self.open_dir_button.setVisible(True)  # Show the button when file is received
+        self.change_gif_to_success()  # Change GIF to success animation
+        self.close_button.setVisible(True)
+
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()

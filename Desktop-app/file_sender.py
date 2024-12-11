@@ -22,6 +22,7 @@ RECEIVER_DATA = 58000
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
+    transfer_finished = pyqtSignal()
 
     password = None
 
@@ -96,6 +97,7 @@ class FileSender(QThread):
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         self.client_skt.close()
+        self.transfer_finished.emit()
         #com.an.Datadash
 
     def get_temp_dir(self):
@@ -572,20 +574,21 @@ class SendApp(QWidget):
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
+        self.file_sender.transfer_finished.connect(self.onTransferFinished)
         self.file_sender.start()
         #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.status_label.setText("File transfer completed!")
-            self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
-            self.close_button.setVisible(True)
-            # self.mainmenu_button.setVisible(True)
-
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def onTransferFinished(self):
+        self.close_button.setVisible(True)
+        self.status_label.setText("File transfer completed!")
+        self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
+            
 
     def closeEvent(self, event):
         try:

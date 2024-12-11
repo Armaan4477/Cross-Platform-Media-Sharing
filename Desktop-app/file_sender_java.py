@@ -20,6 +20,7 @@ RECEIVER_DATA = 57341
 class FileSenderJava(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
+    transfer_finished = pyqtSignal()
     config = get_config()
     password = None
 
@@ -80,6 +81,7 @@ class FileSenderJava(QThread):
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         self.client_skt.close()
+        self.transfer_finished.emit()
 
     def get_temp_dir(self):
         system = platform.system()
@@ -359,7 +361,6 @@ class SendAppJava(QWidget):
          # Create 2 buttons for close and Transfer More Files
         # Keep them disabled until the file transfer is completed
         self.close_button = QPushButton('Close', self)
-        self.close_button.setEnabled(False)
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
@@ -500,24 +501,27 @@ class SendAppJava(QWidget):
         self.progress_bar.setVisible(True)
         self.file_sender_java.progress_update.connect(self.updateProgressBar)
         self.file_sender_java.file_send_completed.connect(self.fileSent)
+        self.file_sender_java.transfer_finished.connect(self.onTransferFinished)
         self.file_sender_java.start()
         #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.status_label.setText("File transfer completed!")
-            self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
-
+        # if value >= 100:
+            
             
             # Enable the close and Transfer More Files buttons
-            self.close_button.setEnabled(True)
-            self.close_button.setVisible(True)
             # self.mainmenu_button.setVisible(True)
 
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def onTransferFinished(self):
+        self.close_button.setVisible(True)
+        self.status_label.setText("File transfer completed!")
+        self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
+
 
     def closeEvent(self, event):
         try:

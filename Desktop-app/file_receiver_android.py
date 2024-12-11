@@ -19,6 +19,7 @@ class ReceiveWorkerJava(QThread):
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
     receiving_started = pyqtSignal()
+    transfer_finished = pyqtSignal()
     password = None
 
     def __init__(self, client_ip):
@@ -125,6 +126,7 @@ class ReceiveWorkerJava(QThread):
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
                     logger.debug("Received halt signal. Stopping file reception.")
+                    self.transfer_finished.emit()
                     break
                 else:
                     encrypted_transfer = False
@@ -344,24 +346,22 @@ class ReceiveAppPJava(QWidget):
         self.initUI()
         self.setFixedSize(853, 480)
         
-        self.current_text = "Waiting to receive files from an Android device"  # The full text for the label
-        self.displayed_text = ""  # Text that will appear with typewriter effect
-        self.char_index = 0  # Keeps track of the character index for typewriter effect
-        self.progress_bar.setVisible(False)  # Initially hidden
+        self.current_text = "Waiting to receive files from an Android device" 
+        self.displayed_text = ""
+        self.char_index = 0
+        self.progress_bar.setVisible(False)
         
         self.file_receiver = ReceiveWorkerJava(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)
+        self.file_receiver.transfer_finished.connect(self.onTransferFinished)
         #com.an.Datadash
        
-        
-        # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(50)  # Adjust speed of typewriter effect
+        self.typewriter_timer.start(50)
 
-        # Start the file receiving process and set progress bar visibility
         QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
 
     def initUI(self):
@@ -517,12 +517,7 @@ class ReceiveAppPJava(QWidget):
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.label.setText("File received successfully!")
-            self.open_dir_button.setVisible(True)  # Show the button when file is received
-            self.change_gif_to_success()  # Change GIF to success animation
-            self.close_button.setVisible(True)
-            # self.mainmenu_button.setVisible(True)
+
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
@@ -563,6 +558,12 @@ class ReceiveAppPJava(QWidget):
 
     def show_error_message(self, title, message, detailed_text):
         QMessageBox.critical(self, title, message)
+
+    def onTransferFinished(self):
+        self.label.setText("File received successfully!")
+        self.open_dir_button.setVisible(True)  # Show the button when file is received
+        self.change_gif_to_success()  # Change GIF to success animation
+        self.close_button.setVisible(True)
 
     def closeEvent(self, event):
         """Handle application close event"""
