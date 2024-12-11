@@ -6,7 +6,6 @@ File preview mode which only downloads and views the file without storing it (fi
 Armaan:
 Redo windows built app to avoid Defender blocking the whole app -python
 Send more files button and go to main menu button -python
-Stable and Beta channels for users to test out -python and android
 
 
 Nishal:
@@ -18,6 +17,7 @@ Samay:
 Auto Check for Updates in android app during app launch with option for user to enable/disable that feature -android
 Implement new config json overwrite feature like it is in python -android
 Send more files button and go to main menu button -android
+Stable and Beta channels for users to test out -android
 
 
 Sushant:
