@@ -169,6 +169,8 @@ jobs:
         run: |
           docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/Desktop-app \
             --platform linux/arm64 python:3.13 bash -c "
+              apt-get update &&
+              apt-get install -y qt5-qmake qtbase5-dev &&
               pip install pyinstaller && pip install -r requirements.txt &&
               pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
                 --icon=./logo.png --name=DataDash main.py &&
