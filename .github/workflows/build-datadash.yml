@@ -10,147 +10,147 @@ on:
   pull_request:
 
 jobs:
-  # build-macos-x64:
-  #   runs-on: macos-13
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v4
+  build-macos-x64:
+    runs-on: macos-13
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip3 install -r Desktop-app/requirements.txt
-  #         pip3 install pyinstaller
+      - name: Install dependencies
+        run: |
+          pip3 install -r Desktop-app/requirements.txt
+          pip3 install pyinstaller
 
-  #     - name: Build for macOS
-  #       run: |
-  #         cd Desktop-app
-  #         pyinstaller --onefile --windowed \
-  #         --icon=icon.icns \
-  #         --name="DataDash" \
-  #         --add-data "icons/*:icons" \
-  #         --add-data "assets/*:assets" \
-  #         --add-data "broadcast.py:." \
-  #         --add-data "constant.py:." \
-  #         --add-data "credits_dialog.py:." \
-  #         --add-data "crypt_handler.py:." \
-  #         --add-data "file_receiver.py:." \
-  #         --add-data "file_receiver_android.py:." \
-  #         --add-data "file_receiver_python.py:." \
-  #         --add-data "file_sender.py:." \
-  #         --add-data "file_sender_java.py:." \
-  #         --add-data "preferences.py:." \
-  #         main.py
+      - name: Build for macOS
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --windowed \
+          --icon=icon.icns \
+          --name="DataDash" \
+          --add-data "icons/*:icons" \
+          --add-data "assets/*:assets" \
+          --add-data "broadcast.py:." \
+          --add-data "constant.py:." \
+          --add-data "credits_dialog.py:." \
+          --add-data "crypt_handler.py:." \
+          --add-data "file_receiver.py:." \
+          --add-data "file_receiver_android.py:." \
+          --add-data "file_receiver_python.py:." \
+          --add-data "file_sender.py:." \
+          --add-data "file_sender_java.py:." \
+          --add-data "preferences.py:." \
+          main.py
 
-  #     - name: Install create-dmg
-  #       run: brew install create-dmg
+      - name: Install create-dmg
+        run: brew install create-dmg
 
-  #     - name: Create DMG
-  #       run: |
-  #         cd Desktop-app/dist
-  #         create-dmg \
-  #           --volname "DataDash" \
-  #           --window-pos 200 120 \
-  #           --window-size 400 400 \
-  #           --icon-size 128 \
-  #           --icon "DataDash.app" 100 150 \
-  #           --app-drop-link 300 150 \
-  #           --no-internet-enable \
-  #           "DataDash(macos-x64).dmg" \
-  #           "DataDash.app"
+      - name: Create DMG
+        run: |
+          cd Desktop-app/dist
+          create-dmg \
+            --volname "DataDash" \
+            --window-pos 200 120 \
+            --window-size 400 400 \
+            --icon-size 128 \
+            --icon "DataDash.app" 100 150 \
+            --app-drop-link 300 150 \
+            --no-internet-enable \
+            "DataDash(macos-x64).dmg" \
+            "DataDash.app"
 
-  #     - name: Upload macOS DMG
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: DataDash-macOS-x64
-  #         path: Desktop-app/dist/DataDash(macos-x64).dmg
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash-macOS-x64
+          path: Desktop-app/dist/DataDash(macos-x64).dmg
 
-  # build-macos-arm:
-  #   runs-on: macos-15
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v4
+  build-macos-arm:
+    runs-on: macos-15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip3 install -r Desktop-app/requirements.txt --break-system-packages
-  #         pip3 install pyinstaller --break-system-packages
+      - name: Install dependencies
+        run: |
+          pip3 install -r Desktop-app/requirements.txt --break-system-packages
+          pip3 install pyinstaller --break-system-packages
 
-  #     - name: Build for macOS
-  #       run: |
-  #         cd Desktop-app
-  #         pyinstaller --onefile --windowed \
-  #         --icon=icon.icns \
-  #         --name="DataDash" \
-  #         --add-data "icons/*:icons" \
-  #         --add-data "assets/*:assets" \
-  #         --add-data "broadcast.py:." \
-  #         --add-data "constant.py:." \
-  #         --add-data "credits_dialog.py:." \
-  #         --add-data "crypt_handler.py:." \
-  #         --add-data "file_receiver.py:." \
-  #         --add-data "file_receiver_android.py:." \
-  #         --add-data "file_receiver_python.py:." \
-  #         --add-data "file_sender.py:." \
-  #         --add-data "file_sender_java.py:." \
-  #         --add-data "preferences.py:." \
-  #         main.py
+      - name: Build for macOS
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --windowed \
+          --icon=icon.icns \
+          --name="DataDash" \
+          --add-data "icons/*:icons" \
+          --add-data "assets/*:assets" \
+          --add-data "broadcast.py:." \
+          --add-data "constant.py:." \
+          --add-data "credits_dialog.py:." \
+          --add-data "crypt_handler.py:." \
+          --add-data "file_receiver.py:." \
+          --add-data "file_receiver_android.py:." \
+          --add-data "file_receiver_python.py:." \
+          --add-data "file_sender.py:." \
+          --add-data "file_sender_java.py:." \
+          --add-data "preferences.py:." \
+          main.py
 
-  #     - name: Install create-dmg
-  #       run: brew install create-dmg
+      - name: Install create-dmg
+        run: brew install create-dmg
 
-  #     - name: Create DMG
-  #       run: |
-  #         cd Desktop-app/dist
-  #         create-dmg \
-  #           --volname "DataDash" \
-  #           --window-pos 200 120 \
-  #           --window-size 400 400 \
-  #           --icon-size 128 \
-  #           --icon "DataDash.app" 100 150 \
-  #           --app-drop-link 300 150 \
-  #           --no-internet-enable \
-  #           "DataDash(macos-arm).dmg" \
-  #           "DataDash.app"
+      - name: Create DMG
+        run: |
+          cd Desktop-app/dist
+          create-dmg \
+            --volname "DataDash" \
+            --window-pos 200 120 \
+            --window-size 400 400 \
+            --icon-size 128 \
+            --icon "DataDash.app" 100 150 \
+            --app-drop-link 300 150 \
+            --no-internet-enable \
+            "DataDash(macos-arm).dmg" \
+            "DataDash.app"
 
-  #     - name: Upload macOS DMG
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: DataDash-macOS-arm
-  #         path: Desktop-app/dist/DataDash(macos-arm).dmg
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash-macOS-arm
+          path: Desktop-app/dist/DataDash(macos-arm).dmg
      
-  # build-linux-x64:
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v4
+  build-linux-x64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.13'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r Desktop-app/requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/requirements.txt
 
-  #     - name: Install pyinstaller
-  #       run: pip install pyinstaller
+      - name: Install pyinstaller
+        run: pip install pyinstaller
 
-  #     - name: Clean previous builds
-  #       run: |
-  #         rm -rf Desktop-app/build Desktop-app/dist Desktop-app/DataDash\(linux\ x64\)
+      - name: Clean previous builds
+        run: |
+          rm -rf Desktop-app/build Desktop-app/dist Desktop-app/DataDash\(linux\ x64\)
 
-  #     - name: Build for Linux x64
-  #       run: |
-  #         cd Desktop-app
-  #         pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --name=DataDash main.py
-  #         mv dist/DataDash "../DataDash(linux x64)"
+      - name: Build for Linux x64
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --name=DataDash main.py
+          mv dist/DataDash "../DataDash(linux x64)"
 
-  #     - name: Upload Linux x64 artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: DataDash(linux x64)
-  #         path: DataDash\(linux\ x64\)
+      - name: Upload Linux x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(linux x64)
+          path: DataDash\(linux\ x64\)
 
 
   build-linux-arm:
@@ -184,40 +184,40 @@ jobs:
           name: DataDash(linux arm)
           path: Desktop-app/DataDash(linux arm)
 
-  # build-windows-x64:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v4
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.13'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r Desktop-app/requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/requirements.txt
 
-  #     - name: Install pyinstaller
-  #       run: pip install pyinstaller
+      - name: Install pyinstaller
+        run: pip install pyinstaller
 
-  #     - name: Build for Windows x64
-  #       run: |
-  #         cd Desktop-app
-  #         & pyinstaller --onefile --windowed --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+      - name: Build for Windows x64
+        run: |
+          cd Desktop-app
+          & pyinstaller --onefile --windowed --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
 
-  #     - name: Install Inno Setup
-  #       run: |
-  #         choco install innosetup -y
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup -y
 
-  #     - name: Create Installer
-  #       run: |
-  #         cd Desktop-app
-  #         & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' dd.iss
+      - name: Create Installer
+        run: |
+          cd Desktop-app
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' dd.iss
 
-  #     - name: Upload Windows Installer
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: DataDash(windows x64)
-  #         path: Desktop-app/Output/DataDashInstaller.exe
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(windows x64)
+          path: Desktop-app/Output/DataDashInstaller.exe
