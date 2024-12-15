@@ -1,5 +1,5 @@
 wheel
-PyQt6
+PyQt6-Qt6
 cryptography
 requests
 netifaces2
