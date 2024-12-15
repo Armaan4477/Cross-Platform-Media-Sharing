@@ -154,7 +154,7 @@ jobs:
 
 
   build-linux-arm:
-    runs-on: [ubuntu-22.04, arm64]
+    runs-on: [ubuntu-latest, arm64]
     steps:
       - name: Check out code
         uses: actions/checkout@v4
