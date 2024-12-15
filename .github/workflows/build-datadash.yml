@@ -173,7 +173,11 @@ jobs:
           docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app python:3.12-slim bash -c "\
             apt-get update && apt-get install -y python3-pip && \
             pip install pyinstaller && \
-            pip install -r requirements.txt && \
+            pip install wheel && \
+            pip install cryptography && \
+            pip install requests && \
+            pip install netifaces2 && \
+            pip install PyQt6 && \
             pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
               --icon=./logo.png --name=DataDash main.py && \
             mv dist/DataDash 'Desktop-app/DataDash(linux arm)'"
