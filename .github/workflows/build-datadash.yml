@@ -170,8 +170,9 @@ jobs:
 
       - name: Build application in ARM64 Docker container
         run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app linuxqt/qt6:arm64 "\
-            apt-get update && apt-get install -y python3-pip qt6-base-dev && \
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app python:3.12-slim bash -c "\
+            apt-get update && \
+            apt-get install -y python3-pyqt5 python3-pyqt6 qt6-base-dev qt6-tools build-essential && \
             pip install pyinstaller wheel cryptography requests netifaces2 PyQt6 && \
             pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
               --icon=./logo.png --name=DataDash main.py && \
