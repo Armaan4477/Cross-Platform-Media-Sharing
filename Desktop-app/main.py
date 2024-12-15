@@ -1,132 +1,106 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
-from PyQt6.QtGui import QScreen, QFont, QPalette, QPainter, QColor, QPen, QIcon, QLinearGradient, QPainterPath, QDesktopServices
-from PyQt6.QtCore import Qt, QTimer, QSize, QUrl
+from PyQt6.QtGui import QScreen, QFont, QColor, QIcon, QMovie
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread, pyqtSignal
 import sys
 import os
 from file_receiver import ReceiveApp
-from file_sender import SendApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
-from credits_dialog import CreditsDialog
-from constant import logger, get_config, PLATFORM_LINK
-from PyQt6.QtSvg import QSvgRenderer
-import math
+from constant import logger, get_config
 import platform
 import requests
+import ctypes
 
-class WifiAnimationWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(550, 500)
-        self.signal_strength = 0
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_signal)
-        self.timer.start(35)
+class VersionCheck(QThread):
+    update_available = pyqtSignal()
 
-    def update_signal(self):
-        self.signal_strength = (self.signal_strength + 1.5) % 145
-        self.update()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        center = self.rect().center()
-        max_radius = min(self.width(), self.height()) // 2
-
-        for i in range(3):
-            radius = max_radius * (i + 1) // 3
-            opacity = min(1, self.signal_strength / 100 * 3 - i)
-            painter.setPen(QPen(QColor(255, 255, 255, int(opacity * 255)), 2))
-            painter.drawArc(center.x() - radius, center.y() - max_radius // 2 - radius,
-                            radius * 2, radius * 2, 0, 180 * 16)
-            
-class IconButton(QPushButton):
-    def __init__(self, color_start=(77, 84, 96), color_end=(105, 115, 128), parent=None):
-        super().__init__(parent)
-        self.setFixedSize(42, 42)
-        self.color_start = color_start
-        self.color_end = color_end
-        #self.glow()
-        self.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Settings</b><br><i style='font-size: 12px;'>Click to configure</i>")
-
-    def glow(self):
-        glow_effect = QGraphicsDropShadowEffect()
-        glow_effect.setBlurRadius(15)
-        glow_effect.setXOffset(0)
-        glow_effect.setYOffset(0)
-        glow_effect.setColor(QColor(255, 255, 255, 100))
-        self.setGraphicsEffect(glow_effect)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        # Set the gradient brush for the circles
-        gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0, QColor(*self.color_start))
-        gradient.setColorAt(1, QColor(*self.color_end))
-
-        # Draw the circles first
-        painter.setBrush(gradient)
-        painter.setPen(QPen(QColor(0, 0, 0, 0)))  # Set pen to transparent
-
-        # Draw a settings (gear) icon
-        path = QPainterPath()
-
-        # Create a gear shape
-        center_x, center_y = 19, 19  # Center coordinates
-        inner_radius = 7               # Inner radius
-        outer_radius = 12              # Outer radius
-        tooth_length = 5               # Length of the teeth
-        tooth_width = 17               # Width of the teeth
-
-        # Draw outer circle
-        path.addEllipse(center_x - outer_radius, center_y - outer_radius, outer_radius * 2, outer_radius * 2)
-
-        # Draw inner circle
-        path.addEllipse(center_x - inner_radius, center_y - inner_radius, inner_radius * 2, inner_radius * 2)
-
-        # Draw gear teeth square shape (rectangle), 6 teeth in total, 1 tooth = 60 degrees, 30 degrees for each side,first tooth at 90 degrees
-        for i in range(6):
-            angle = 81 + i * 60
-            x1 = center_x + inner_radius * math.cos(math.radians(angle))
-            y1 = center_y + inner_radius * math.sin(math.radians(angle))
-            x2 = center_x + outer_radius * math.cos(math.radians(angle))
-            y2 = center_y + outer_radius * math.sin(math.radians(angle))
-            x3 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle))
-            y3 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle))
-            x4 = center_x + (outer_radius + tooth_length) * math.cos(math.radians(angle + tooth_width))
-            y4 = center_y + (outer_radius + tooth_length) * math.sin(math.radians(angle + tooth_width))
-            x5 = center_x + outer_radius * math.cos(math.radians(angle + tooth_width))
-            y5 = center_y + outer_radius * math.sin(math.radians(angle + tooth_width))
-            x6 = center_x + inner_radius * math.cos(math.radians(angle + tooth_width))
-            y6 = center_y + inner_radius * math.sin(math.radians(angle + tooth_width))
-
-            path.moveTo(x1, y1)
-            path.lineTo(x2, y2)
-            path.lineTo(x3, y3)
-            path.lineTo(x4, y4)
-            path.lineTo(x5, y5)
-            path.lineTo(x6, y6)
-            path.lineTo(x1, y1)
-
-        painter.drawPath(path)
-
-class MainApp(QWidget):
     def __init__(self):
         super().__init__()
-        self.initUI()
-        self.setFixedSize(853, 480) 
+        self.uga_version = None
 
-    def initUI(self):
+    def run(self):
+        self.currentversion()
+        self.get_platform_link()
+        fetched_version = self.fetch_platform_value()
+        if fetched_version and self.compare_versions(fetched_version, self.uga_version) > 0:
+            self.update_available.emit()
+
+    def fetch_platform_value(self):
+        url = self.get_platform_link()
+        logger.info(f"Fetching platform value from: {url}")
+        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+
+            data = response.json()
+            if "value" in data:
+                logger.info(f"Value for python: {data['value']}")
+                return data['value']
+            else:
+                logger.error(f"Value key not found in response: {data}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching platform value: {e}")
+            return None
+
+    def compare_versions(self, v1, v2):
+        v1_parts = [int(part) for part in v1.split('.')]
+        v2_parts = [int(part) for part in v2.split('.')]
+        
+        # Pad the shorter version with zeros
+        while len(v1_parts) < 4:
+            v1_parts.append(0)
+        while len(v2_parts) < 4:
+            v2_parts.append(0)
+        
+        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
+
+    def currentversion(self):
+        config= get_config()
+        self.uga_version = config["version"]
+
+    def get_platform_link(self):
+        channel = get_config()["update_channel"]
+        logger.info(f"Checking for updates in channel: {channel}")
+        if platform.system() == 'Windows':
+                platform_name = 'windows'
+        elif platform.system() == 'Linux':
+                platform_name = 'linux'
+        elif platform.system() == 'Darwin':
+                platform_name = 'macos'
+        else:
+                logger.error("Unsupported OS!")
+                return None
+
+        # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
+        # platform_name = 'auga'
+        # platform_name = 'buga'
+        # platform_name = 'cuga'
+            
+        if channel == "stable":
+            url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
+            
+        elif channel == "beta":
+            url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
+        return url
+
+class MainApp(QWidget):
+    def __init__(self, skip_version_check=False):
+        super().__init__()
+        self.initUI(skip_version_check)
+        self.setFixedSize(853, 480) 
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def initUI(self, skip_version_check=False):
         self.setWindowTitle('DataDash')
         self.setGeometry(100, 100, 853, 480)
         self.center_window()
         self.set_background()
-        self.displayversion()
-        self.check_update()
+        self.version_thread = VersionCheck()
+        self.version_thread.update_available.connect(self.showmsgbox)
+        if not skip_version_check:
+            self.check_update()
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -138,9 +112,33 @@ class MainApp(QWidget):
         header_layout = QHBoxLayout(header)
 
         # Create and add the IconButton instead of using SvgButton
-        icon_button = IconButton()  # Example colors
-        icon_button.clicked.connect(self.openSettings)  # Connect the clicked signal to the handler
-        header_layout.addWidget(icon_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        # Settings button
+        settings_button = QPushButton()
+        settings_button.setFixedSize(44, 44)
+        settings_icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings.svg")
+        settings_button.setIcon(QIcon(settings_icon_path))
+        settings_button.setIconSize(QSize(32, 32))
+        settings_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 30);
+                border-radius: 21px;
+            }
+        """)
+        settings_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Settings</b><br><i style='font-size: 12px;'>Click to configure</i>")
+        settings_button.clicked.connect(self.openSettings)
+
+        glow_effect = QGraphicsDropShadowEffect()
+        glow_effect.setBlurRadius(15)
+        glow_effect.setXOffset(0)
+        glow_effect.setYOffset(0)
+        glow_effect.setColor(QColor(255, 255, 255, 100))
+        settings_button.setGraphicsEffect(glow_effect)
+
+        header_layout.addWidget(settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # Add a stretch after the settings button
         header_layout.addStretch()
@@ -156,12 +154,17 @@ class MainApp(QWidget):
 
         main_layout.addWidget(header)
 
-        # Add some vertical space before the WiFi Animation Widget
-        main_layout.addSpacing(105)
+        # Reduce the vertical spacing before the GIF
+        main_layout.addSpacing(20)  # Decrease spacing from 105 to 50
 
         # Wifi Animation Widget
-        wifi_widget = WifiAnimationWidget()
-        main_layout.addWidget(wifi_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        gif_label = QLabel()
+        gif_label.setStyleSheet("background-color: transparent;")  # Add this line
+        movie = QMovie(os.path.join(os.path.dirname(__file__), "assets", "wifi.gif"))
+        gif_label.setMovie(movie)
+        movie.setScaledSize(QSize(500, 450))  # Decrease height from 500 to 400
+        movie.start()
+        main_layout.addWidget(gif_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
         icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
@@ -408,11 +411,6 @@ class MainApp(QWidget):
         self.preferences_app = PreferencesApp()
         self.preferences_app.show()
 
-    def show_credits(self):
-        logger.info("Opened Credits Dialog")
-        credits_dialog = CreditsDialog()
-        credits_dialog.exec()
-
     def openSettings(self):
         logger.info("Settings button clicked")
         self.preferences_handler()
@@ -420,109 +418,95 @@ class MainApp(QWidget):
     def check_update(self):
         if get_config()["check_update"]:
             logger.info("Checking for updates")
-            self.fetch_platform_value()
+            self.version_thread.start()
         else:
             logger.info("Update check disabled")
-            pass
-        #com.an.Datadash
+
+    def showmsgbox(self):
+        message = "You are on an older version. Please update."
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Version Check")
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
+
+        open_button = msg_box.button(QMessageBox.StandardButton.Open)
+        if open_button:
+            open_button.setText("Open Settings")
+
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 1,
+                    stop: 0 #b0b0b0,
+                    stop: 1 #505050
+                );
+                color: #FFFFFF;
+                font-size: 16px;
+            }
+            QLabel {
+                background-color: transparent;
+            }
+            QPushButton {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
+                );
+                color: white;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 4px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
+                );
+            }
+            QPushButton:pressed {
+                background: qlineargradient(
+                    x1: 0, y1: 0, x2: 1, y2: 0,
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
+                );
+            }
+        """)
+        reply = msg_box.exec()
+
+        if reply == QMessageBox.StandardButton.Open:
+            self.openSettings()
 
 
-    def fetch_platform_value(self):
-        url = PLATFORM_LINK
-        logger.info(f"Fetching platform value from: {url}")
-        
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-
-            data = response.json()
-            if "value" in data:
-                logger.info(f"Value for python: {data['value']}")
-                fetched_version = data['value']
-                
-                if self.compare_versions(fetched_version, self.uga_version) > 0:
-                    message = "You are on an older version. Please update."
-                    msg_box = QMessageBox(self)
-                    msg_box.setWindowTitle("Version Check")
-                    msg_box.setText(message)
-                    msg_box.setIcon(QMessageBox.Icon.Information)
-                    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Open)
-
-                    open_button = msg_box.button(QMessageBox.StandardButton.Open)
-                    if open_button:
-                        open_button.setText("Open Settings")
-
-                    msg_box.setStyleSheet("""
-                        QMessageBox {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 1,
-                                stop: 0 #b0b0b0,
-                                stop: 1 #505050
-                            );
-                            color: #FFFFFF;
-                            font-size: 16px;
-                        }
-                        QLabel {
-                            background-color: transparent;
-                        }
-                        QPushButton {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(47, 54, 66, 255),
-                                stop: 1 rgba(75, 85, 98, 255)
-                            );
-                            color: white;
-                            border-radius: 10px;
-                            border: 1px solid rgba(0, 0, 0, 0.5);
-                            padding: 4px;
-                            font-size: 16px;
-                        }
-                        QPushButton:hover {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(60, 68, 80, 255),
-                                stop: 1 rgba(90, 100, 118, 255)
-                            );
-                        }
-                        QPushButton:pressed {
-                            background: qlineargradient(
-                                x1: 0, y1: 0, x2: 1, y2: 0,
-                                stop: 0 rgba(35, 41, 51, 255),
-                                stop: 1 rgba(65, 75, 88, 255)
-                            );
-                        }
-                    """)
-                    reply = msg_box.exec()
-
-                    if reply == QMessageBox.StandardButton.Open:
-                        QTimer.singleShot(1, self.preferences_handler)
-
-                return fetched_version
-            else:
-                logger.error(f"Value key not found in response: {data}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching platform value: {e}")
-            return None
-
-    def compare_versions(self, v1, v2):
-        v1_parts = [int(part) for part in v1.split('.')]
-        v2_parts = [int(part) for part in v2.split('.')]
-        
-        # Pad the shorter version with zeros
-        while len(v1_parts) < 4:
-            v1_parts.append(0)
-        while len(v2_parts) < 4:
-            v2_parts.append(0)
-        
-        return (v1_parts > v2_parts) - (v1_parts < v2_parts)
-
-    def displayversion(self):
-        config= get_config()
-        self.uga_version = config["app_version"]
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    if platform.system() == 'Windows':
+        try:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            is_admin = False
+        if not is_admin:
+            # Relaunch the script with admin rights
+            script = os.path.abspath(sys.argv[0])
+            params = ' '.join(['"' + arg + '"' for arg in sys.argv[1:]])
+            result = ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+            if result <= 32:
+                # The user declined the UAC prompt or an error occurred
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setWindowTitle("Admin Privileges Required")
+                msg_box.setText("This application requires administrator privileges to run.")
+                msg_box.setWindowFlags(msg_box.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+                msg_box.raise_()
+                msg_box.activateWindow()
+                msg_box.exec()
+                sys.exit()
+            sys.exit()
     main = MainApp()
     main.show()
-    sys.exit(app.exec()) 
+    sys.exit(app.exec())
     #com.an.Datadash

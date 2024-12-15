@@ -15,11 +15,10 @@ import shutil
 
 RECEIVER_DATA = 57341
 
-class ReceiveWorkerJava(QThread):
+class ReceiveWorkerSwift(QThread):
     progress_update = pyqtSignal(int)
     decrypt_signal = pyqtSignal(list)
     receiving_started = pyqtSignal()
-    transfer_finished = pyqtSignal()
     password = None
 
     def __init__(self, client_ip):
@@ -126,7 +125,6 @@ class ReceiveWorkerJava(QThread):
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
                     logger.debug("Received halt signal. Stopping file reception.")
-                    self.transfer_finished.emit()
                     break
                 else:
                     encrypted_transfer = False
@@ -337,7 +335,7 @@ class ReceiveWorkerJava(QThread):
         except Exception as e:
             logger.error(f"Error during worker stop: {e}")
 
-class ReceiveAppPJava(QWidget):
+class ReceiveAppPSwift(QWidget):
     progress_update = pyqtSignal(int)
 
     def __init__(self, client_ip):
@@ -346,22 +344,24 @@ class ReceiveAppPJava(QWidget):
         self.initUI()
         self.setFixedSize(853, 480)
         
-        self.current_text = "Waiting to receive files from an Android device" 
-        self.displayed_text = ""
-        self.char_index = 0
-        self.progress_bar.setVisible(False)
+        self.current_text = "Waiting to receive files from a Swift device..."  # The full text for the label
+        self.displayed_text = ""  # Text that will appear with typewriter effect
+        self.char_index = 0  # Keeps track of the character index for typewriter effect
+        self.progress_bar.setVisible(False)  # Initially hidden
         
-        self.file_receiver = ReceiveWorkerJava(client_ip)
+        self.file_receiver = ReceiveWorkerSwift(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.receiving_started.connect(self.show_progress_bar)
-        self.file_receiver.transfer_finished.connect(self.onTransferFinished)
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
         #com.an.Datadash
        
+        
+        # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(50)
+        self.typewriter_timer.start(50)  # Adjust speed of typewriter effect
 
+        # Start the file receiving process and set progress bar visibility
         QMetaObject.invokeMethod(self.file_receiver, "start", Qt.ConnectionType.QueuedConnection)
 
     def initUI(self):
@@ -503,8 +503,9 @@ class ReceiveAppPJava(QWidget):
 
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
-        self.label.setText("Receiving files from an Android device")
+        self.label.setText("Receiving files from a Swift device...")
 
+    
     def update_typewriter_effect(self):
         """Updates the label text one character at a time."""
         if self.char_index < len(self.current_text):
@@ -517,7 +518,12 @@ class ReceiveAppPJava(QWidget):
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-
+        if value >= 100:
+            self.label.setText("File received successfully!")
+            self.open_dir_button.setVisible(True)  # Show the button when file is received
+            self.change_gif_to_success()  # Change GIF to success animation
+            self.close_button.setVisible(True)
+            # self.mainmenu_button.setVisible(True)
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
@@ -541,7 +547,26 @@ class ReceiveAppPJava(QWidget):
                     os.startfile(receiving_dir)
                 
                 elif current_os == 'Linux':
-                    subprocess.Popen(["xdg-open", receiving_dir])
+                    # First attempt to use graphical file managers
+                    if shutil.which("xdg-open"):
+                        subprocess.Popen(["xdg-open", receiving_dir])
+                    else:
+                        # Check for specific file managers
+                        possible_file_managers = ["gio", "nautilus", "thunar", "pcmanfm", "dolphin", "nemo", "konqueror", "caja"]
+                        for fm in possible_file_managers:
+                            if shutil.which(fm):
+                                subprocess.Popen([fm, receiving_dir])
+                                break
+                        else:
+                            # If no graphical file manager is found, fallback to opening in terminal
+                            try:
+                                terminal = shutil.which("x-terminal-emulator") or shutil.which("gnome-terminal") or shutil.which("konsole") or shutil.which("xterm")
+                                if terminal:
+                                    subprocess.Popen([terminal, "--working-directory", receiving_dir])
+                                else:
+                                    logger.error("No graphical file manager or terminal emulator found.")
+                            except Exception as terminal_error:
+                                logger.error("Failed to open directory in terminal: %s", str(terminal_error))
                 
                 elif current_os == 'Darwin':  # macOS
                     subprocess.Popen(["open", receiving_dir])
@@ -558,12 +583,6 @@ class ReceiveAppPJava(QWidget):
 
     def show_error_message(self, title, message, detailed_text):
         QMessageBox.critical(self, title, message)
-
-    def onTransferFinished(self):
-        self.label.setText("File received successfully!")
-        self.open_dir_button.setVisible(True)  # Show the button when file is received
-        self.change_gif_to_success()  # Change GIF to success animation
-        self.close_button.setVisible(True)
 
     def closeEvent(self, event):
         """Handle application close event"""
@@ -605,6 +624,6 @@ class ReceiveAppPJava(QWidget):
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    receive_app = ReceiveAppPJava()
+    receive_app = ReceiveAppPSwift()
     receive_app.show()
     app.exec()

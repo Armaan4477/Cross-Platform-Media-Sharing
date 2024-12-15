@@ -3,6 +3,7 @@ package com.an.crossplatform;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,10 +38,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        FileLogger.init(this);
+        getVersionName();
         requestStoragePermissions();
 
         createConfigFileIfNotExists();
         //createdownloadfolder();
+
 
         Button btnSend = findViewById(R.id.btn_send);
         Button btnReceive = findViewById(R.id.btn_receive);
@@ -78,6 +82,24 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
             startActivity(intent);
         });
+    }
+
+    private String getVersionName() {
+        try {
+            // Fetch version name from the app's PackageInfo
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String versionName = packageInfo.versionName;
+
+            // Log the version name
+            FileLogger.log("AppVersion", "Version Name: " + versionName);
+
+            return versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            FileLogger.log("AppVersion", "Version Name not found", e);
+            return "Unknown";
+        }
+
     }
 
     private void requestStoragePermissions() {
@@ -136,12 +158,12 @@ public class MainActivity extends AppCompatActivity {
         try {
             // Use external storage for the folder path
             File configDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");
-            Log.e("MainActivity", "Config directory path: " + configDir.getAbsolutePath());
+            FileLogger.log("MainActivity", "Config directory path: " + configDir.getAbsolutePath());
             // Create the config directory if it doesn't exist
             if (!configDir.exists()) {
                 boolean folderCreated = configDir.mkdirs();
                 if (!folderCreated) {
-                    Log.e("MainActivity", "Failed to create config directory");
+                    FileLogger.log("MainActivity", "Failed to create config directory");
                     return;
                 }
             }
@@ -163,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!mediaDir.exists()) {
                         boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
                         if (!dirCreated) {
-                            Log.e("MainActivity", "Failed to create media directory");
+                            FileLogger.log("MainActivity", "Failed to create media directory");
                             return;
                         }
                     }
@@ -178,23 +200,23 @@ public class MainActivity extends AppCompatActivity {
 
                     jsonObject.put("device_name", deviceName);
                     jsonObject.put("saveToDirectory", saveToDirectory); // Updated saveToDirectory
-                    Log.d("MainActivity", "saveToDirectory: " + saveToDirectory);
+                    FileLogger.log("MainActivity", "saveToDirectory: " + saveToDirectory);
                     jsonObject.put("maxFileSize", 1000000);  // 1 MB
                     jsonObject.put("encryption", false);
 
                     // Write JSON data to the file
                     try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
                         fileOutputStream.write(jsonObject.toString().getBytes());
-                        Log.d("MainActivity", "Config file created and written successfully.");
+                        FileLogger.log("MainActivity", "Config file created and written successfully.");
                     }
                 } else {
-                    Log.e("MainActivity", "Failed to create config.json");
+                    FileLogger.log("MainActivity", "Failed to create config.json");
                 }
             } else {
-                Log.d("MainActivity", "Config file already exists.");
+                FileLogger.log("MainActivity", "Config file already exists.");
             }
         } catch (Exception e) {
-            Log.e("MainActivity", "Error creating or writing to config.json", e);
+            FileLogger.log("MainActivity", "Error creating or writing to config.json", e);
         }
     }
 
@@ -202,23 +224,23 @@ public class MainActivity extends AppCompatActivity {
 //        try {
 //            // Set up the path to the Downloads/DataDash directory
 //            File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
-//            Log.e("MainActivity", "DataDash download directory path: " + downloadDir.getAbsolutePath());
+//            FileLogger.log("MainActivity", "DataDash download directory path: " + downloadDir.getAbsolutePath());
 //
 //            // Create the DataDash directory if it doesn't exist
 //            if (!downloadDir.exists()) {
 //                boolean folderCreated = downloadDir.mkdirs();
 //                if (!folderCreated) {
-//                    Log.e("MainActivity", "Failed to create DataDash download directory");
+//                    FileLogger.log("MainActivity", "Failed to create DataDash download directory");
 //                    return;
 //                } else {
-//                    Log.d("MainActivity", "DataDash download directory created successfully");
+//                    FileLogger.log("MainActivity", "DataDash download directory created successfully");
 //                }
 //            } else {
-//                Log.d("MainActivity", "DataDash download directory already exists");
+//                FileLogger.log("MainActivity", "DataDash download directory already exists");
 //            }
 //
 //        } catch (Exception e) {
-//            Log.e("MainActivity", "Error creating DataDash download directory", e);
+//            FileLogger.log("MainActivity", "Error creating DataDash download directory", e);
 //        }
 //    }
 

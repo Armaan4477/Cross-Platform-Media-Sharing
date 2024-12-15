@@ -4,22 +4,59 @@ import os
 import logging
 import socket
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(levelname)s %(name)s %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
+# Define the config file name and current version
+config_file_name = ".config.json"
+current_version = "4.0.0"  # Set the current version of the json config file (app version)
+
+
+def get_logger_file_path():
+    if platform.system() == 'Windows':
+        logger_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'Temp' ,  'DataDash')
+    elif platform.system() == 'Linux':
+        logger_dir = os.path.join(os.path.expanduser('~'), '.cache', 'DataDash')
+    elif platform.system() == 'Darwin':  # macOS
+        logger_dir = os.path.join(os.path.expanduser('~/Library/Caches'), 'DataDash')
+    else:
+        return None
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(logger_dir, exist_ok=True)
+    return logger_dir
+
+
+# Create logger directory and set up the log file path
+log_dir = get_logger_file_path()
+if (log_dir is None):
+    raise RuntimeError("Unsupported OS!")
+    
+log_file_path = os.path.join(log_dir, 'datadashlog.txt')
+
+# Configure the logger
+logger = logging.getLogger('FileSharing: ')
+logger.setLevel(logging.DEBUG)
+
+# Create a formatter with date and time
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+
+# Create a FileHandler to write logs to 'datadashlog.txt'
+file_handler = logging.FileHandler(log_file_path, mode='a')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+
+# Create a StreamHandler for console output
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+
+# Add handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 logger = logging.getLogger('FileSharing: ')
 
 logger.setLevel(logging.DEBUG)
 
-# Define the config file name and current version
-config_file_name = ".config.json"
-current_version = "5.5.4"  # Set the current version of the json config file
-app_version = "3.3.2"  # Set the current version of the application, note: while incrementing app_version, also increment current_version otherwise the app_version wont update for users.
+logger.info("App version: %s", current_version)
 
 def get_config_file_path():
     if platform.system() == 'Windows':
@@ -78,14 +115,15 @@ if not os.path.exists(config_file):
 
     default_config = {
         "version": current_version,
-        "app_version": app_version,
         "device_name": platform.node(),
         "save_to_directory": file_path,
         "max_filesize": 1000,
         "encryption": False,
         "android_encryption": False,
+        "swift_encryption": False,
         "show_warning": True,
-        "check_update": True
+        "check_update": True,
+        "update_channel": "stable"
     }
 
     write_config(default_config, config_file)
@@ -101,70 +139,29 @@ else:
         device_name = config_data.get("device_name", platform.node())
         save_to_directory = config_data.get("save_to_directory", get_default_path())
         encryption = config_data.get("encryption", False)
+        channel = config_data.get("update_channel", "stable")
+        warnings = config_data.get("show_warning", True)
 
         default_config = {
             "version": current_version,
-            "app_version": app_version,
             "device_name": device_name,
             "save_to_directory": save_to_directory,
             "max_filesize": 1000,
             "encryption": encryption,
             "android_encryption": False,
-            "show_warning": True,
-            "check_update": True
+            "swift_encryption": False,
+            "show_warning": warnings,
+            "check_update": True,
+            "update_channel": channel
         }
 
         write_config(default_config, config_file)
     else:
         logger.info("Loaded configuration: %s", config_data)
 
-def get_broadcast():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        logger.info("Local IP determined: %s", local_ip)
-    except Exception as e:
-        logger.error("Error obtaining local IP: %s", e)
-        local_ip = "Unable to get IP"
-    finally:
-        s.close()
-    
-    if local_ip == "Unable to get IP":
-        return local_ip
+BROADCAST_PORT = 49185
+LISTEN_PORT = 49186
+RECEIVER_JSON = 54314
 
-    # Split the IP address into parts
-    ip_parts = local_ip.split('.')
-    # Replace the last part with '255' to create the broadcast address
-    ip_parts[-1] = '255'
-    # Join the parts back together to form the broadcast address
-    broadcast_address = '.'.join(ip_parts)
-    logger.info("Broadcast address determined: %s", broadcast_address)
-    return broadcast_address
-
-def get_platform_link():
-    if platform.system() == 'Windows':
-            platform_name = 'windows'
-    elif platform.system() == 'Linux':
-            platform_name = 'linux'
-    elif platform.system() == 'Darwin':
-            platform_name = 'macos'
-    else:
-            logger.error("Unsupported OS!")
-            return None
-
-    # for testing use the following line and comment the above lines, auga=older version, buga=newer version and cuga=latest version
-    # platform_name = 'auga'
-    # platform_name = 'buga'
-    # platform_name = 'cuga'
-        
-    url = f"https://datadashshare.vercel.app/api/platformNumber?platform=python_{platform_name}"
-    return url
-
-BROADCAST_ADDRESS = get_broadcast()
-BROADCAST_PORT = 12345
-LISTEN_PORT = 12346
-PLATFORM_LINK = get_platform_link()
-
-logger.info("Broadcast address: %s, Broadcast port: %d, Listen port: %d", BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT)
+logger.info("Broadcast port: %d, Listen port: %d", BROADCAST_PORT, LISTEN_PORT)
 #com.an.Datadash

@@ -1,5 +1,7 @@
 import json
 import platform
+import tempfile
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
     QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit,
@@ -10,7 +12,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt
 import os
 import socket
 import struct
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from constant import get_config, logger
 from crypt_handler import encrypt_file
 from time import sleep
 
@@ -20,6 +22,7 @@ RECEIVER_DATA = 58000
 class FileSender(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
+    transfer_finished = pyqtSignal()
 
     password = None
 
@@ -94,9 +97,34 @@ class FileSender(QThread):
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         self.client_skt.close()
+        self.transfer_finished.emit()
         #com.an.Datadash
 
+    def get_temp_dir(self):
+        system = platform.system()
+        if system == "Windows":
+            temp_dir = Path(os.getenv('LOCALAPPDATA')) / 'Temp' / 'DataDash'
+        elif system == "Darwin":  # macOS
+            temp_dir = Path.home() / 'Library' / 'Caches' / 'DataDash'
+        elif system == "Linux":  # Linux and others
+            temp_dir = Path.home() / '.cache' / 'DataDash'
+        else:
+            logger.error(f"Unsupported platform: {system}")
+        
+        try:
+            os.makedirs(str(temp_dir), exist_ok=True)
+            logger.debug(f"Created/verified temp directory: {temp_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create temp directory: {e}")
+            # Fallback to system temp directory
+            temp_dir = Path(tempfile.gettempdir()) / 'DataDash'
+            os.makedirs(str(temp_dir), exist_ok=True)
+            logger.debug(f"Using fallback temp directory: {temp_dir}")
+        
+        return temp_dir
+
     def create_metadata(self, folder_path=None, file_paths=None):
+        temp_dir = self.get_temp_dir()
         if folder_path:
             metadata = []
             for root, dirs, files in os.walk(folder_path):
@@ -117,7 +145,7 @@ class FileSender(QThread):
                     })
             metadata.append({'base_folder_name': os.path.basename(folder_path), 'path': '.delete', 'size': 0})
             metadata_json = json.dumps(metadata)
-            metadata_file_path = os.path.join(folder_path, 'metadata.json')
+            metadata_file_path = os.path.join(temp_dir, 'metadata.json')
             with open(metadata_file_path, 'w') as f:
                 f.write(metadata_json)
             self.metadata_created = True
@@ -131,7 +159,7 @@ class FileSender(QThread):
                     'size': file_size
                 })
             metadata_json = json.dumps(metadata)
-            metadata_file_path = os.path.join(os.path.dirname(file_paths[0]), 'metadata.json')
+            metadata_file_path = os.path.join(temp_dir, 'metadata.json')
             with open(metadata_file_path, 'w') as f:
                 f.write(metadata_json)
             self.metadata_created = True
@@ -449,7 +477,8 @@ class SendApp(QWidget):
         #com.an.Datadash
 
     def selectFile(self):
-        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files')
+        documents= self.get_default_path()
+        file_paths, _ = QFileDialog.getOpenFileNames(self, 'Open Files', documents)
         if file_paths:
             self.file_path_display.clear()
             for file_path in file_paths:
@@ -458,12 +487,24 @@ class SendApp(QWidget):
             self.checkReadyToSend()
 
     def selectFolder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        documents= self.get_default_path()
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select Folder', documents)
         if folder_path:
             self.file_path_display.clear()
             self.file_path_display.append(folder_path)
             self.file_paths = [folder_path]
             self.checkReadyToSend()
+
+    def get_default_path(self):
+        if platform.system() == 'Windows':
+            return os.path.expanduser('~\\Documents')
+        elif platform.system() == 'Linux':
+            return os.path.expanduser('~/Documents')
+        elif platform.system() == 'Darwin':  # macOS
+            return os.path.expanduser('~/Documents')
+        else:
+            logger.error("Unsupported OS!")
+            return os.path.expanduser('~')  # Fallback to home directory
 
     def checkReadyToSend(self):
         if self.file_paths:
@@ -533,20 +574,21 @@ class SendApp(QWidget):
         self.progress_bar.setVisible(True)
         self.file_sender.progress_update.connect(self.updateProgressBar)
         self.file_sender.file_send_completed.connect(self.fileSent)
+        self.file_sender.transfer_finished.connect(self.onTransferFinished)
         self.file_sender.start()
         #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.status_label.setText("File transfer completed!")
-            self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
-            self.close_button.setVisible(True)
-            # self.mainmenu_button.setVisible(True)
-
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
+
+    def onTransferFinished(self):
+        self.close_button.setVisible(True)
+        self.status_label.setText("File transfer completed!")
+        self.status_label.setStyleSheet("color: white; font-size: 18px; background-color: transparent;")
+            
 
     def closeEvent(self, event):
         try:

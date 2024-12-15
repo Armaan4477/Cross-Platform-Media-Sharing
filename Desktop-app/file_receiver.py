@@ -9,19 +9,19 @@ from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication,QHBoxLayout
 )
 from PyQt6.QtGui import QScreen, QMovie, QKeySequence, QKeyEvent
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, get_config, logger
+from constant import BROADCAST_PORT, LISTEN_PORT, get_config, logger, RECEIVER_JSON
 from crypt_handler import decrypt_file, Decryptor
 from time import sleep
 import json
 from file_receiver_python import ReceiveAppP
 from file_receiver_android import ReceiveAppPJava
+from file_receiver_swift import ReceiveAppPSwift
 
-SENDER_JSON = 53000
-RECEIVER_JSON = 54000
 
 class FileReceiver(QThread):
-    show_receive_app_p_signal = pyqtSignal()  # Signal to show the ReceiveAppP window
+    show_receive_app_p_signal = pyqtSignal(str)  # Modify signal to accept OS info
     show_receive_app_p_signal_java = pyqtSignal()  # Signal to show the ReceiveAppP window for Java devices
+    show_receive_app_p_signal_swift = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -83,14 +83,20 @@ class FileReceiver(QThread):
         device_json = self.client_socket.recv(device_json_size).decode()
         self.device_info = json.loads(device_json)
         sender_device_type = self.device_info.get("device_type", "unknown")
+        sender_os = self.device_info.get("os", "unknown")  # Extract sender's OS
         if sender_device_type == "python":
             logger.debug("Connected to a Python device.")
-            self.show_receive_app_p_signal.emit()
+            self.show_receive_app_p_signal.emit(sender_os)  # Pass OS info
             sleep(1)  # Wait for the signal to be processed
             self.cleanup_sockets() # Clean up before proceeding
         elif sender_device_type == "java":
-            logger.debug("Connected to a Java device, but this feature is not implemented yet.")
+            logger.debug("Connected to a Java device.")
             self.show_receive_app_p_signal_java.emit()
+            sleep(1)
+            self.cleanup_sockets()
+        elif sender_device_type == "swift":
+            logger.debug("Connected to a Swift device.")
+            self.show_receive_app_p_signal_swift.emit()
             sleep(1)
             self.cleanup_sockets()
         else:
@@ -162,15 +168,16 @@ class ReceiveApp(QWidget):
         self.setLayout(layout)
 
         self.file_receiver = FileReceiver()
-        self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)  # Connect the signal to the slot
+        self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)
         self.file_receiver.show_receive_app_p_signal_java.connect(self.show_receive_app_p_java)
+        self.file_receiver.show_receive_app_p_signal_swift.connect(self.show_receive_app_p_swift)
         self.file_receiver.start()
         #com.an.Datadash
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
 # Call the method to start typewriter effect
-        self.start_typewriter_effect("Waiting for Connection...")
+        self.start_typewriter_effect("Waiting to connect to sender")
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
@@ -182,7 +189,7 @@ class ReceiveApp(QWidget):
         self.main_app.show()
         self.close()
 
-    def start_typewriter_effect(self, full_text, interval=100):
+    def start_typewriter_effect(self, full_text, interval=50):
         """Starts the typewriter effect to show text character by character."""
         self.full_text = full_text
         self.text_index = 0
@@ -223,11 +230,11 @@ class ReceiveApp(QWidget):
         #com.an.Datadash
 
 
-    def show_receive_app_p(self):
+    def show_receive_app_p(self, sender_os):
         client_ip = self.file_receiver.client_ip
         """Slot to show the ReceiveAppP window on the main thread."""
         self.hide()
-        self.receive_app_p = ReceiveAppP(client_ip)
+        self.receive_app_p = ReceiveAppP(client_ip, sender_os)
         self.receive_app_p.show()
 
     def show_receive_app_p_java(self):
@@ -236,6 +243,13 @@ class ReceiveApp(QWidget):
         self.hide()
         self.receive_app_p_java = ReceiveAppPJava(client_ip)
         self.receive_app_p_java.show()
+
+    def show_receive_app_p_swift(self):
+        client_ip = self.file_receiver.client_ip
+        """Slot to show the ReceiveAppP window on the main thread."""
+        self.hide()
+        self.receive_app_p_swift = ReceiveAppPSwift(client_ip)
+        self.receive_app_p_swift.show()
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())

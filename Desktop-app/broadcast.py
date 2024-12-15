@@ -10,12 +10,11 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence,QKeyEvent
-from constant import BROADCAST_ADDRESS, BROADCAST_PORT, LISTEN_PORT, logger, get_config
+from constant import BROADCAST_PORT, LISTEN_PORT, logger, get_config, RECEIVER_JSON
 from file_sender import SendApp
 from file_sender_java import SendAppJava
-
-SENDER_JSON = 53000
-RECEIVER_JSON = 54000
+from file_sender_swift import SendAppSwift
+import netifaces
 
 class CircularDeviceButton(QWidget):
     def __init__(self, device_name, device_ip, parent=None):
@@ -82,6 +81,7 @@ class BroadcastWorker(QThread):
     device_detected = pyqtSignal(dict)
     device_connected = pyqtSignal(str, str, dict)
     device_connected_java = pyqtSignal(str, str, dict)
+    device_connected_swift = pyqtSignal(str, str, dict)
 
     def __init__(self):
         super().__init__()
@@ -90,26 +90,75 @@ class BroadcastWorker(QThread):
         self.receiver_data = None
 
     def run(self):
+        # Start discovering receivers directly
         self.discover_receivers()
 
+    def get_broadcast(self):
+        try:
+            # Get all network interfaces
+            for interface in netifaces.interfaces():
+                # Skip loopback interface
+                if interface.startswith('lo'):
+                    continue
+                    
+                addrs = netifaces.ifaddresses(interface)
+                
+                # Check for IPv4 addresses
+                if netifaces.AF_INET in addrs:
+                    for addr in addrs[netifaces.AF_INET]:
+                        ip = addr['addr']
+                        # Skip loopback addresses
+                        if not ip.startswith('127.'):
+                            logger.info("Local IP determined: %s", ip)
+                            # Split IP and create broadcast
+                            ip_parts = ip.split('.')
+                            ip_parts[-1] = '255'
+                            broadcast_address = '.'.join(ip_parts)
+                            logger.info("Broadcast address determined: %s", broadcast_address)
+                            return broadcast_address
+
+            logger.error("No valid network interface found")
+            return "Unable to get IP"
+                            
+        except Exception as e:
+            logger.error("Error obtaining local IP: %s", e)
+            return "Unable to get IP"
+
     def discover_receivers(self):
+        broadcast_address = self.get_broadcast()
+        if broadcast_address == "Unable to get IP":
+            return
+            
+        # Create new UDP socket
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            
+            # Bind to LISTEN_PORT to receive responses
             s.bind(('', LISTEN_PORT))
-
-            s.sendto(b'DISCOVER', (BROADCAST_ADDRESS, BROADCAST_PORT))
-
+            logger.info("Sending discover packet to %s:%d", broadcast_address, BROADCAST_PORT)
+            
+            # Send discovery packet
+            s.sendto(b'DISCOVER', (broadcast_address, BROADCAST_PORT))
+            
+            # Listen for responses with timeout
             s.settimeout(2)
             try:
                 while True:
                     message, address = s.recvfrom(1024)
                     message = message.decode()
+                    logger.info("Received response from %s: %s", address[0], message)
+                    
                     if message.startswith('RECEIVER:'):
                         device_name = message.split(':')[1]
-                        self.device_detected.emit({'ip': address[0], 'name': device_name})
+                        device_info = {'ip': address[0], 'name': device_name}
+                        logger.info("Found device: %s", device_info)
+                        self.device_detected.emit(device_info)
+                        
             except socket.timeout:
-                pass
+                logger.info("Discovery timeout reached")
+            except Exception as e:
+                logger.error("Error during discovery: %s", str(e))
 
     def connect_to_device(self, device_ip, device_name):
         try:
@@ -141,6 +190,8 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
             elif device_type == 'java':
                 self.device_connected_java.emit(device_ip, device_name, self.receiver_data)
+            elif device_type == 'swift':
+                self.device_connected_swift.emit(device_ip, device_name, self.receiver_data)
             else:
                 raise ValueError("Unsupported device type")
 
@@ -187,6 +238,7 @@ class Broadcast(QWidget):
         self.broadcast_worker.device_detected.connect(self.add_device)
         self.broadcast_worker.device_connected.connect(self.show_send_app)
         self.broadcast_worker.device_connected_java.connect(self.show_send_app_java)
+        self.broadcast_worker.device_connected_swift.connect(self.show_send_app_swift)
 
         self.animation_offset = 0
         self.animation_timer = QTimer(self)
@@ -458,6 +510,63 @@ class Broadcast(QWidget):
         self.send_app_java.show()
         #com.an.Datadash
 
+    def show_send_app_swift(self, device_ip, device_name, receiver_data):
+        
+        if get_config()["encryption"] and get_config()["show_warning"]:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Input Error")
+                msg_box.setText("You have encryption Enabled, unfortunately android tranfer doesn't support that yet. Clicking ok will bypass your encryption settings for this file transfer.")
+                msg_box.setIcon(QMessageBox.Icon.Critical)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+                # Apply custom style with gradient background
+                msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 1,
+                            stop: 0 #b0b0b0,
+                            stop: 1 #505050
+                        );
+                        color: #FFFFFF;
+                        font-size: 16px;
+                    }
+                    QLabel {
+                    background-color: transparent; /* Make the label background transparent */
+                    }
+                    QPushButton {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(47, 54, 66, 255),
+                            stop: 1 rgba(75, 85, 98, 255)
+                        );
+                        color: white;
+                        border-radius: 10px;
+                        border: 1px solid rgba(0, 0, 0, 0.5);
+                        padding: 4px;
+                        font-size: 16px;
+                    }
+                    QPushButton:hover {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(60, 68, 80, 255),
+                            stop: 1 rgba(90, 100, 118, 255)
+                        );
+                    }
+                    QPushButton:pressed {
+                        background: qlineargradient(
+                            x1: 0, y1: 0, x2: 1, y2: 0,
+                            stop: 0 rgba(35, 41, 51, 255),
+                            stop: 1 rgba(65, 75, 88, 255)
+                        );
+                    }
+                """)
+                msg_box.exec() 
+        
+        self.hide()
+        self.send_app_swift = SendAppSwift(device_ip, device_name, receiver_data)
+        self.send_app_swift.show()
+        #com.an.Datadash
+
     def closeEvent(self, event):
         # Ensure socket is forcefully closed
         try:
@@ -489,4 +598,4 @@ if __name__ == '__main__':
     broadcast_app = Broadcast()
     broadcast_app.show()
     sys.exit(app.exec()) 
-    #com.an.Datadash   
+    #com.an.Datadash

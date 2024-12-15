@@ -11,6 +11,7 @@ from PyQt6.QtGui import QScreen,QMovie,QFont,QKeyEvent,QKeySequence
 from constant import get_config, logger
 from crypt_handler import decrypt_file, Decryptor
 import time
+import shutil
 
 SENDER_DATA = 57000
 RECEIVER_DATA = 58000
@@ -20,6 +21,7 @@ class ReceiveWorkerPython(QThread):
     decrypt_signal = pyqtSignal(list)
     close_connection_signal = pyqtSignal() 
     receiving_started = pyqtSignal()
+    transfer_finished = pyqtSignal()
     password = None
 
     def __init__(self, client_ip):
@@ -127,6 +129,7 @@ class ReceiveWorkerPython(QThread):
                         self.decrypt_signal.emit(self.encrypted_files)
                     self.encrypted_files = []
                     logger.debug("Received halt signal. Stopping file reception.")
+                    self.transfer_finished.emit()
                     break
                 else:
                     encrypted_transfer = False
@@ -353,14 +356,15 @@ class ReceiveWorkerPython(QThread):
 class ReceiveAppP(QWidget):
     progress_update = pyqtSignal(int)
 
-    def __init__(self, client_ip):
+    def __init__(self, client_ip, sender_os):
         super().__init__()
         self.client_ip = client_ip
+        self.sender_os = sender_os  # Store sender's OS
         self.initUI()
         self.setFixedSize(853, 480)
         #com.an.Datadash
         
-        self.current_text = "Waiting for file..."  # The full text for the label
+        self.current_text = self.displaytxt()  # The full text for the label
         self.displayed_text = ""  # Text that will appear with typewriter effect
         self.char_index = 0  # Keeps track of the character index for typewriter effect
         self.progress_bar.setVisible(False)  # Initially hidden
@@ -368,13 +372,14 @@ class ReceiveAppP(QWidget):
         self.file_receiver = ReceiveWorkerPython(client_ip)
         self.file_receiver.progress_update.connect(self.updateProgressBar)
         self.file_receiver.decrypt_signal.connect(self.decryptor_init)
-        self.file_receiver.receiving_started.connect(self.show_progress_bar)  # Connect new signal
+        self.file_receiver.receiving_started.connect(self.show_progress_bar)
+        self.file_receiver.transfer_finished.connect(self.onTransferFinished)
        
         
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
         self.typewriter_timer.timeout.connect(self.update_typewriter_effect)
-        self.typewriter_timer.start(100)  # Adjust speed of typewriter effect
+        self.typewriter_timer.start(50)  # Adjust speed of typewriter effect
 
         # Start the file receiving process directly on the main thread
         self.file_receiver.start()
@@ -467,6 +472,26 @@ class ReceiveAppP(QWidget):
         if event.key() == Qt.Key.Key_Escape:
             self.openMainWindow()
 
+    def displaytxt(self):
+        if self.sender_os == 'Windows':
+            return 'Waiting to receive files from a Windows device'
+        elif self.sender_os == 'Linux':
+            return 'Waiting to receive files from a Linux device'
+        elif self.sender_os == 'Darwin':
+            return 'Waiting to receive files from a macOS device'
+        else:
+            return 'Waiting to receive files from Desktop app'
+        
+    def displaytxtreceive(self):
+        if self.sender_os == 'Windows':
+            return 'Receiving files from a Windows device'
+        elif self.sender_os == 'Linux':
+            return 'Receiving files from a Linux device'
+        elif self.sender_os == 'Darwin':
+            return 'Receiving files from a macOS device'
+        else:
+            return 'Receiving files from Desktop app'
+
     def openMainWindow(self):
         from main import MainApp
         self.main_window = MainApp()
@@ -519,6 +544,7 @@ class ReceiveAppP(QWidget):
 
     def show_progress_bar(self):
         self.progress_bar.setVisible(True)
+        self.label.setText(self.displaytxtreceive())
 
     
     def update_typewriter_effect(self):
@@ -534,12 +560,13 @@ class ReceiveAppP(QWidget):
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        if value >= 100:
-            self.label.setText("File received successfully!")
-            self.open_dir_button.setVisible(True)  # Show the button when file is received
-            self.change_gif_to_success()  # Change GIF to success animation
-            self.close_button.setVisible(True)
-            # self.mainmenu_button.setVisible(True)
+
+    def onTransferFinished(self):
+        self.label.setText("File received successfully!")
+        self.open_dir_button.setVisible(True)  # Show the button when file is received
+        self.change_gif_to_success()  # Change GIF to success animation
+        self.close_button.setVisible(True)
+
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
@@ -554,9 +581,7 @@ class ReceiveAppP(QWidget):
             self.decryptor.show()
 
     def open_receiving_directory(self):
-
-        receiving_dir = get_config()["save_to_directory"]
-        #com.an.Datadash
+        receiving_dir = get_config().get("save_to_directory", "")
         
         if receiving_dir:
             try:
@@ -564,15 +589,23 @@ class ReceiveAppP(QWidget):
                 
                 if current_os == 'Windows':
                     os.startfile(receiving_dir)
+                
                 elif current_os == 'Linux':
                     subprocess.Popen(["xdg-open", receiving_dir])
+                
                 elif current_os == 'Darwin':  # macOS
                     subprocess.Popen(["open", receiving_dir])
+                
                 else:
                     raise NotImplementedError(f"Unsupported OS: {current_os}")
             
+            except FileNotFoundError as fnfe:
+                logger.error("No file manager or terminal emulator found on Linux: %s", fnfe)
             except Exception as e:
                 logger.error("Failed to open directory: %s", str(e))
+        else:
+            logger.error("No receiving directory configured.")
+
 
     def show_error_message(self, title, message, detailed_text):
         QMessageBox.critical(self, title, message)

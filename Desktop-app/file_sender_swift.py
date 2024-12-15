@@ -17,10 +17,9 @@ from time import sleep
 
 RECEIVER_DATA = 57341
 
-class FileSenderJava(QThread):
+class FileSenderSwift(QThread):
     progress_update = pyqtSignal(int)
     file_send_completed = pyqtSignal(str)
-    transfer_finished = pyqtSignal()
     config = get_config()
     password = None
 
@@ -62,7 +61,7 @@ class FileSenderJava(QThread):
         # Reload config on each file transfer session
         self.config = get_config()
 
-        self.encryption_flag = self.config['android_encryption']
+        self.encryption_flag = self.config['swift_encryption']
         # logger.debug("Encryption flag: %s", self.encryption_flag)
 
         for file_path in self.file_paths:
@@ -81,7 +80,6 @@ class FileSenderJava(QThread):
         logger.debug("Sent halt signal")
         self.client_skt.send('encyp: h'.encode())
         self.client_skt.close()
-        self.transfer_finished.emit()
 
     def get_temp_dir(self):
         system = platform.system()
@@ -241,7 +239,7 @@ class Receiver(QListWidgetItem):
     def updateText(self):
         self.setText(f"{self._name} ({self._ip_address})")
 
-class SendAppJava(QWidget):
+class SendAppSwift(QWidget):
     config = get_config()
 
     def __init__(self,ip_address,device_name,receiver_data):
@@ -255,7 +253,7 @@ class SendAppJava(QWidget):
 
     def initUI(self):
         self.config = get_config()
-        logger.debug("Encryption : %s", self.config['android_encryption'])
+        logger.debug("Encryption : %s", self.config['swift_encryption'])
         self.setWindowTitle('Send File')
         self.setGeometry(100, 100, 400, 300)
         self.center_window()
@@ -310,7 +308,7 @@ class SendAppJava(QWidget):
         content_layout.addWidget(self.file_path_display)
 
         # Password input (if encryption is enabled)
-        if self.config['android_encryption']:
+        if self.config['swift_encryption']:
             password_layout = QHBoxLayout()
             self.password_label = QLabel('Encryption Password:')
             self.password_label.setStyleSheet("color: white; font-size: 14px;")
@@ -361,6 +359,7 @@ class SendAppJava(QWidget):
          # Create 2 buttons for close and Transfer More Files
         # Keep them disabled until the file transfer is completed
         self.close_button = QPushButton('Close', self)
+        self.close_button.setEnabled(False)
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
         content_layout.addWidget(self.close_button)
@@ -490,38 +489,35 @@ class SendAppJava(QWidget):
         ip_address = self.ip_address
         print(self.file_paths)
 
-        if self.config['android_encryption']:
+        if self.config['swift_encryption']:
             password = self.password_input.text()
             if not self.password_input.text():
                 QMessageBox.critical(None, "Password Error", "Please enter a password.")
                 return
 
         self.send_button.setVisible(False)
-        self.file_sender_java = FileSenderJava(ip_address, self.file_paths, password, self.receiver_data)
+        self.file_sender_swift = FileSenderSwift(ip_address, self.file_paths, password, self.receiver_data)
         self.progress_bar.setVisible(True)
-        self.file_sender_java.progress_update.connect(self.updateProgressBar)
-        self.file_sender_java.file_send_completed.connect(self.fileSent)
-        self.file_sender_java.transfer_finished.connect(self.onTransferFinished)
-        self.file_sender_java.start()
+        self.file_sender_swift.progress_update.connect(self.updateProgressBar)
+        self.file_sender_swift.file_send_completed.connect(self.fileSent)
+        self.file_sender_swift.start()
         #com.an.Datadash
 
     def updateProgressBar(self, value):
         self.progress_bar.setValue(value)
-        # if value >= 100:
-            
+        if value >= 100:
+            self.status_label.setText("File transfer completed!")
+            self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
+
             
             # Enable the close and Transfer More Files buttons
+            self.close_button.setEnabled(True)
+            self.close_button.setVisible(True)
             # self.mainmenu_button.setVisible(True)
 
 
     def fileSent(self, file_path):
         self.status_label.setText(f"File sent: {file_path}")
-
-    def onTransferFinished(self):
-        self.close_button.setVisible(True)
-        self.status_label.setText("File transfer completed!")
-        self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
-
 
     def closeEvent(self, event):
         try:
@@ -546,7 +542,7 @@ class SendAppJava(QWidget):
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    send_app = SendAppJava()
+    send_app = SendAppSwift()
     send_app.show()
     sys.exit(app.exec())
     #com.an.Datadash

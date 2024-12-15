@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.an.crossplatform.R;
@@ -16,12 +18,19 @@ public class CreditsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.credits); // Set your layout
 
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                closeBtn();
+            }
+        });
+
         // Set up links for each person
         setupLinkButtons();
 
         // Close button functionality
         Button closeButton = findViewById(R.id.close_button);
-        closeButton.setOnClickListener(v -> finish()); // Close activity
+        closeButton.setOnClickListener(v -> closeBtn());
     }
 
     private void setupLinkButtons() {
@@ -72,5 +81,9 @@ public class CreditsActivity extends AppCompatActivity {
     private void openLink(String url) {
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         startActivity(browserIntent);
+    }
+
+    private void closeBtn() {
+        finish();
     }
 }

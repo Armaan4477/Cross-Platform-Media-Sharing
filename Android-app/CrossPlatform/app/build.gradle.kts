@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace = "com.an.crossplatform"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.an.crossplatform"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
-        versionName = "7.7.6"
+        versionName = "8.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -26,9 +26,10 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+    buildToolsVersion = "35.0.0"
 }
 
 dependencies {
