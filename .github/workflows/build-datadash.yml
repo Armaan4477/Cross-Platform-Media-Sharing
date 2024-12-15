@@ -154,14 +154,14 @@ jobs:
 
 
   build-linux-arm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
       - name: Set up QEMU for ARM emulation
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/arm64
 
@@ -171,7 +171,7 @@ jobs:
       - name: Build application in ARM64 Docker container
         run: |
           docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app python:3.12-slim bash -c "\
-            apt-get update && apt-get install -y python3-pip && \
+            apt-get update && apt-get install -y python3-pip && sudo apt-get install qt6-base-dev &&\
             pip install pyinstaller && \
             pip install wheel && \
             pip install cryptography && \
