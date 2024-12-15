@@ -152,31 +152,26 @@ jobs:
           name: DataDash(linux x64)
           path: DataDash\(linux\ x64\)
 
-
   build-linux-arm:
-    runs-on: ubuntu-24.04
-
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up QEMU for ARM emulation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build application in ARM64 Docker container
+      - name: Install Docker and QEMU for ARM emulation
         run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app python:3.12-slim bash -c "\
-            apt-get update && \
-            apt-get install -y python3-pyqt5 python3-pyqt6 qt6-base-dev qt6-tools build-essential && \
-            pip install pyinstaller wheel cryptography requests netifaces2 PyQt6 && \
-            pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
-              --icon=./logo.png --name=DataDash main.py && \
-            mv dist/DataDash 'Desktop-app/DataDash(linux arm)'"
+          sudo apt-get update
+          sudo apt-get install -y qemu qemu-user-static
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Build for Linux ARM using Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/Desktop-app \
+            --platform linux/arm64 python:3.13 bash -c "
+              pip install pyinstaller && pip install -r requirements.txt &&
+              pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
+                --icon=./logo.png --name=DataDash main.py &&
+              mv dist/DataDash '/workspace/Desktop-app/DataDash(linux arm)'"
 
       - name: Upload Linux ARM artifact
         uses: actions/upload-artifact@v4
