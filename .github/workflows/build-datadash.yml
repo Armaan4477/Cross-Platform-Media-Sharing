@@ -154,27 +154,29 @@ jobs:
 
 
   build-linux-arm:
-    runs-on: [ubuntu-latest, arm64]
+    runs-on: ubuntu-latest
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up QEMU for ARM emulation
+        uses: docker/setup-qemu-action@v2
         with:
-          python-version: '3.12'
+          platforms: linux/arm64
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          pip install pyinstaller
-          pip install -r requirements.txt
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build for Linux ARM
+      - name: Build application in ARM64 Docker container
         run: |
-          pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
-            --icon=./logo.png --name=DataDash main.py
-          mv dist/DataDash 'Desktop-app/DataDash(linux arm)'
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" -w /app python:3.12-buster bash -c "\
+            apt-get update && apt-get install -y python3-pip && \
+            pip install pyinstaller && \
+            pip install -r requirements.txt && \
+            pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
+              --icon=./logo.png --name=DataDash main.py && \
+            mv dist/DataDash 'Desktop-app/DataDash(linux arm)'"
 
       - name: Upload Linux ARM artifact
         uses: actions/upload-artifact@v4
