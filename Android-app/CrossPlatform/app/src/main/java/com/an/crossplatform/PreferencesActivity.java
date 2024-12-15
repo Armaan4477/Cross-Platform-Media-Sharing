@@ -121,7 +121,7 @@ public class PreferencesActivity extends AppCompatActivity {
             String apiVersion = null;
             try {
                 // Define the API URL
-                URL url = new URL("https://datadashshare.vercel.app/api/platformNumberbeta?platform=android");
+                URL url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
 
                 // Open a connection
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -209,7 +209,7 @@ public class PreferencesActivity extends AppCompatActivity {
         if (showDownloadsButton) {
             builder.setNegativeButton("Open Beta Downloads Page", (dialog, which) -> {
                 // Open the downloads page in a browser
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/beta"));
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download"));
                 startActivity(browserIntent);
             });
         }
