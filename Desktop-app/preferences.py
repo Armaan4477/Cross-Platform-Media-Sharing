@@ -964,10 +964,12 @@ class PreferencesApp(QWidget):
         elif channel == "beta":
         #beta version
             download_links = {
-                ('windows', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
-                ('windows', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Windows.exe',
-                ('linux', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Linux',
-                ('macos', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/Macos(arm).dmg',
+               ('windows', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(windows%20x64).exe',
+                ('windows', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(windows%20arm).exe',
+                ('linux', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(linux%20x64)',
+                ('linux', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(linux%20arm)',
+                ('macos', 'x64'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(macos%20x64).dmg',
+                ('macos', 'arm'): 'https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(macos%20arm).dmg',
             }
 
         key = (platform_os, platform_type)
