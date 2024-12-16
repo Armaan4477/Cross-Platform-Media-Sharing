@@ -130,7 +130,7 @@ class FileSender(QThread):
             for root, dirs, files in os.walk(folder_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    relative_path = os.path.relpath(file_path, folder_path)
+                    relative_path = os.path.relpath(file_path, folder_path).replace('\\', '/')
                     file_size = os.path.getsize(file_path)
                     metadata.append({
                         'path': relative_path,
@@ -138,7 +138,7 @@ class FileSender(QThread):
                     })
                 for dir in dirs:
                     dir_path = os.path.join(root, dir)
-                    relative_path = os.path.relpath(dir_path, folder_path)
+                    relative_path = os.path.relpath(dir_path, folder_path).replace('\\', '/')
                     metadata.append({
                         'path': relative_path + '/',
                         'size': 0
