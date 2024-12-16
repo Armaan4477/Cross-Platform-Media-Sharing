@@ -5,9 +5,7 @@ on:
     branches:
       - main
       - workflow
-      - Builds
       - Builds-armaan
-  pull_request:
 
 jobs:
   build-macos-x64:
