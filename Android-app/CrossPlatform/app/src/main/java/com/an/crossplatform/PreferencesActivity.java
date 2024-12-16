@@ -207,7 +207,7 @@ public class PreferencesActivity extends AppCompatActivity {
                 });
 
         if (showDownloadsButton) {
-            builder.setNegativeButton("Open Beta Downloads Page", (dialog, which) -> {
+            builder.setNegativeButton("Open Downloads Page", (dialog, which) -> {
                 // Open the downloads page in a browser
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download"));
                 startActivity(browserIntent);
