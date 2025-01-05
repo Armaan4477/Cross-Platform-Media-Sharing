@@ -51,13 +51,14 @@
 ## Screenshots
 
 ### Main Screen
-![Main Screen](#)
-
-### File Transfer Process
-![File Transfer](#)
+![Main Screen](./Desktop-app/assets/readme%20img/python/mainscreenpy.jpg)
 
 ### Settings Menu
-![Settings](#)
+![Settings](./Desktop-app/assets/readme%20img/python/settingspy.jpg)
+
+### iscovery
+![File Transfer](./Desktop-app/assets/readme%20img/python/discoverypy.jpg)
+
 
 ---
 
