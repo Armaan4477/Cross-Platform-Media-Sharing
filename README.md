@@ -64,7 +64,7 @@ This project was made possible through the efforts of an incredible team:
 
 ## 🌱 App results
 
-### Desktop-App
+### Desktop App
   <table align-items="center" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; background-color: #ffffff;">
   <thead>
     <tr>
@@ -126,8 +126,117 @@ This project was made possible through the efforts of an incredible team:
       </td>
     </tr>
   </tbody>
+  <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Check for Updates</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/help.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/checkforupdates.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
 </table>
+
+### Android App
+    
+   \
+    <table align-items="center" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; background-color: #ffffff;">
+  <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Main Menu</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Discovery</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">file select</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/main menu.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/discovery.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/file select.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
+   <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">File Sending </th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">file Sending Complete</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">waiting to connect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/file sending.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/file sending complete.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/waiting to connect.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
+   <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">waiting to receive</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">file receiving</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">file receive complete</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/waiting to receive.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/file receiving.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/file receiving completed.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
+  <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Check for Updates</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/settings.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/help.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/checkforupdates.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
 ---
+
 ## 🌱 Contributing
 
 We welcome contributions! Feel free to fork the repository, create a branch, and submit a pull request. For major changes, please open an issue first to discuss your proposed changes.
