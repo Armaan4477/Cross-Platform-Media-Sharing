@@ -76,7 +76,7 @@ This project was made possible through the efforts of an incredible team:
   <tbody>
     <tr>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="400" height=""style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/discovery.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
@@ -128,21 +128,21 @@ This project was made possible through the efforts of an incredible team:
   </tbody>
   <thead>
     <tr>
-      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
-      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>     
       <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Check for Updates</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>  
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/checkforupdates.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/help.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </td>
-      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/checkforupdates.png" width="400" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
     </tr>
   </tbody>
@@ -215,25 +215,30 @@ This project was made possible through the efforts of an incredible team:
   <thead>
     <tr>
       <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
-      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
       <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Check for Updates</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/settings.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </td>
-      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/help.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </td>
+      </td
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/checkforupdates.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/help.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
     </tr>
   </tbody>
 </table>
 
+#### How to Update
+ 1. Open the Settings menu
+ 2. Select "Check for Updates"
+ 3. If an update is available, click "Download Latest Version"
+ 4. Follow the installation prompts on the Downloads page
 
 ---
 
