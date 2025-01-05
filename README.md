@@ -151,7 +151,7 @@ This project was made possible through the efforts of an incredible team:
 ### Android App
     
    
-    <table align-items="center" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; background-color: #ffffff;">
+ <table align-items="center" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; background-color: #ffffff;">
   <thead>
     <tr>
       <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Main Menu</th>
