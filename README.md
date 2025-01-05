@@ -231,11 +231,6 @@ This project was made possible through the efforts of an incredible team:
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/help.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
     </tr>
-    <tr>
-      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/phone/missing_screenshot.png" width="400" height="500" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </td>
-    </tr>
   </tbody>
 </table>
 
