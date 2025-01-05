@@ -234,7 +234,7 @@ This project was made possible through the efforts of an incredible team:
   </tbody>
 </table>
 
-#### How to Update
+### 🎥  How to Update
  1. Open the Settings menu
  2. Select "Check for Updates"
  3. If an update is available, click "Download Latest Version"
