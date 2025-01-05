@@ -62,6 +62,16 @@ This project was made possible through the efforts of an incredible team:
 
 ---
 
+## 🌱 App results
+
+<table>
+  <tr>
+    <td>Main Menu<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="200"/></td>
+    <td>Discovery<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/discovery.png" width="200"/></td>
+    <td>Settings<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="200"/></td>
+  </tr>
+  
+---
 ## 🌱 Contributing
 
 We welcome contributions! Feel free to fork the repository, create a branch, and submit a pull request. For major changes, please open an issue first to discuss your proposed changes.
