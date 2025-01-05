@@ -68,8 +68,8 @@ This project was made possible through the efforts of an incredible team:
   <thead>
     <tr>
       <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Main Menu</th>
-      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
-      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Discovery</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">File Sending</th>
     </tr>
   </thead>
   <tbody>
@@ -78,10 +78,10 @@ This project was made possible through the efforts of an incredible team:
         <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/discovery.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
       <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
-        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/help.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/file sending.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
       </td>
     </tr>
   </tbody>
