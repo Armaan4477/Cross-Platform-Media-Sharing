@@ -64,13 +64,51 @@ This project was made possible through the efforts of an incredible team:
 
 ## 🌱 App results
 
-<table>
-  <tr>
-    <td>Main Menu<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="200"/></td>
-    <td>Discovery<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/discovery.png" width="200"/></td>
-    <td>Settings<img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="200"/></td>
-  </tr>
-  
+  <table align-items="center" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; background-color: #ffffff;">
+  <thead>
+    <tr>
+      <th text-items="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Main Menu</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Settings</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Help Menu</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/main menu.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/settings.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/help.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+      </td>
+    </tr>
+  </tbody>
+  <!--<thead>
+    <tr>
+      <th text-align ="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Discovery</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Waiting for Sender</th>
+      <th text-align="center" style="padding: 12px; background-color: #f6f8fa; border: 1px solid #ddd; font-size: 16px; font-weight: 600;">Image Title 6</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="./Desktop-app/assets/readme img/screenshots/screenshots/mac/discovery.png" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <p style="margin: 10px 0; color: #666; font-size: 14px;">Description for image 4</p>
+      </td>
+      <td text-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="path/to/image5.jpg" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <p style="margin: 10px 0; color: #666; font-size: 14px;">Description for image 5</p>
+      </td>
+      <td tetx-align="center" style="padding: 15px; border: 1px solid #ddd; vertical-align: top;">
+        <img src="path/to/image6.jpg" width="200" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <p style="margin: 10px 0; color: #666; font-size: 14px;">Description for image 6</p>
+      </td>
+    </tr>
+  </tbody>--->
+</table>
 ---
 ## 🌱 Contributing
 
