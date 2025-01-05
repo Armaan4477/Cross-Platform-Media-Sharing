@@ -55,10 +55,9 @@ Whether you're using **Windows**, **Mac**, **Linux**, or **Android**, DataDash p
 
 This project was made possible through the efforts of an incredible team:
 
-- **Samay Pandey**: Project Lead.
-- **Armaan Nakhuda** and **Yash Patil**: Co-developers.
+-  **Armaan Nakhuda** , **Samay Pandey** and **Yash Patil**: Project Developers.
 - **Aarya Walve**: Website Developer.
-- **Special thanks** to **Urmi** and **Nishal Poojary** for their support.
+- **Special thanks** to **Adwait Patil** , **Nishal Poojary** and **Urmi Joshi** and  for their support.
 - Additional thanks to everyone who contributed through testing, feedback, and UI/UX suggestions.
 
 ---
