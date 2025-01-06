@@ -34,7 +34,7 @@ Whether you're using **Windows**, **Mac**, **Linux**, or **Android**, DataDash p
 
 #### For Android:
 1. Download the APK file from the [DataDash website](https://datadashshare.vercel.app/download).
-2. Install the APK on your Android device (requires Android 11-14).
+2. Install the APK on your Android device.
 
 ---
 ## ✍️ Requirements
