@@ -37,7 +37,22 @@ Whether you're using **Windows**, **Mac**, **Linux**, or **Android**, DataDash p
 2. Install the APK on your Android device (requires Android 11-14).
 
 ---
+## ✍️ Requirements
 
+#### Minimum Requirements:
+- **Windows:** Windows 10
+- **Linux:** 20.04
+- **macOS:** macOS Ventura
+- **Android:** Android 11
+
+
+#### Recommended Requirements:
+- **Windows:** Windows 11
+- **Linux:** 24.04
+- **macOS:** macOS Sequoia
+- **Android:** Android 14
+
+---
 ## 🎥  How It Works
 
 1. **Discover Devices**: The sender discovers available receivers on the network.
