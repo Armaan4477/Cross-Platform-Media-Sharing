@@ -1,25 +1,18 @@
 Pending priority work:
-1) Android Encryption.
 2) Send more files button and go to main menu button in python and Android.
-3) Auto Check for Updates in android app during app launch with option for user to enable/disable that feature
-4) Make a inbuilt updater in android to download the latest versions and place it in the downloads folder.
 5) Redo windows built app to avoid Defender blocking the whole app.
-6) Bug fix in android app for self discovery(kill sender if receiver is activated and vice versa).
 7) Implement new config json overwrite feature like it is in python.
-8) Stable and Beta channels for users to test out.
 
 
 
 Overall FUTURE IDEAS:
-1) Add X button on individual files for android and python so the user can deselect a fike if select by nistake instead of completely selecting again.
 2) Device discovery using bluetooth- Python/Android/IOS
 3) File transfer over bluetooth- Python/Android (bluetooth doesnt work well with non apple devices)
 4) File transfer over wifi direct- Python/Android/IOS
 5) IpadOS/IOS app
 6) Can give priority to some file from new optional window if its needed urgently when many files are shared at once- Python/Android/IOS
 7) When file is selected to be sent show the size of the file that has been selected in the window- Python/Android/IOS
-8) Optional Encryption- Android
-   Optional Encryption- IOS
+8) Optional Encryption- IOS
 9) Add confirmation dialog which ask the user if they are sure to receive the file or not, give prompt to sender that file sharing was cancelled- Python/Android/IOS
 10) When file is sent give button to ask if they want to send one more file- Python/Android/IOS
 11) Add button to go back to main send receive Window- Python/Android/IOS
@@ -30,7 +23,7 @@ Overall FUTURE IDEAS:
 16) Background run and transfer mode- Python/Android/IOS
 17) Notifications for the app, implement after background run mode- Python/Android/IOS
 18) Send notes along with files- Python/Android/IOS
-19) Advaned telemetry which shows copy speed approx time remaining and total time- Python/Android/IOS
+19) Advaned telemetry which shows copy speed approx time remaining and total time- Android/IOS
 20) Pause and resume feature- Python/Android/IOS
 21) Auto Pause incase of network loss, resume when connection is reestablished- Python/Android/IOS
 22) When sending a folder show the number of total files, number of files completed and number of files remaining.
