@@ -96,51 +96,61 @@ class BroadcastWorker(QThread):
         self.config_manager = ConfigManager()
         self.config_manager.start()
         self.running = True
+        self.max_iterations = 120  # Match Java implementation
 
     def run(self):
         logger.info("Starting receiver discovery process")
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
-                # Configure socket
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.settimeout(2.0)
+                s.settimeout(1.0)  # 1 second timeout to match Java sleep
                 s.bind(('', LISTEN_PORT))
 
-                start_time = time.time()
-                timeout_duration = 8.0
                 broadcast_address = BROADCAST_ADDRESS
                 message = "DISCOVER".encode('utf-8')
+                iteration = 0
 
-                logger.info(f"Sending DISCOVER message to {broadcast_address}:{BROADCAST_PORT}")
-                s.sendto(message, (broadcast_address, BROADCAST_PORT))
+                logger.info(f"Starting discovery broadcast loop to {broadcast_address}:{BROADCAST_PORT}")
+                
+                while iteration < self.max_iterations and self.running:
+                    # Send discovery packet
+                    s.sendto(message, (broadcast_address, BROADCAST_PORT))
+                    logger.info(f"Sent DISCOVER message iteration: {iteration + 1}")
 
-                while (time.time() - start_time) < timeout_duration and self.running:
+                    # Try to receive responses for 1 second
                     try:
-                        data, addr = s.recvfrom(1024)
-                        message = data.decode()
-                        logger.info(f"Received response from {addr[0]}: {message}")
+                        while True:
+                            data, addr = s.recvfrom(1024)
+                            message_received = data.decode()
+                            logger.info(f"Received response from {addr[0]}: {message_received}")
 
-                        if message.startswith('RECEIVER:'):
-                            device_name = message.split(':')[1]
-                            device_info = {
-                                'ip': addr[0],
-                                'name': device_name
-                            }
-                            logger.info(f"Found valid device: {device_info}")
-                            self.device_detected.emit(device_info)
+                            if message_received.startswith('RECEIVER:'):
+                                device_name = message_received.split(':')[1]
+                                device_info = {
+                                    'ip': addr[0],
+                                    'name': device_name
+                                }
+                                logger.info(f"Found valid device: {device_info}")
+                                self.device_detected.emit(device_info)
 
                     except socket.timeout:
-                        logger.debug("Socket timeout while waiting for response")
-                        continue
+                        # Timeout is expected, continue to next iteration
+                        pass
                     except Exception as e:
                         logger.error(f"Error processing response: {str(e)}")
-                        continue
+
+                    iteration += 1
+                    if not self.running:
+                        logger.info("Discovery stopped by user")
+                        break
+
+                    time.sleep(1)  # Match Java implementation's sleep
 
         except Exception as e:
             logger.error(f"Critical broadcast error: {str(e)}")
         finally:
-            logger.info("Discovery process completed")
+            logger.info("Discovery process completed after {iteration} iterations")
 
     def connect_to_device(self, device_ip, device_name):
         logger.info(f"Initiating connection to device {device_name} ({device_ip})")
@@ -210,10 +220,12 @@ class BroadcastWorker(QThread):
 
     def stop(self):
         self.running = False
+        logger.info("Stopping discovery process")
         if self.client_socket:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
+                logger.info("Closed client socket")
             except Exception as e:
                 logger.error(f"Error stopping socket: {str(e)}")
                 #com.an.Datadash
