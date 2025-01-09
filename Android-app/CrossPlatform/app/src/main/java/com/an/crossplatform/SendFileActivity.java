@@ -1,6 +1,7 @@
 package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.icu.text.LocaleDisplayNames;
 import android.net.Uri;
@@ -100,8 +101,17 @@ public class SendFileActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                closeAllSockets();
-                Toast.makeText(SendFileActivity.this,  "Device Disconnected", Toast.LENGTH_SHORT).show();
+
+                new AlertDialog.Builder(SendFileActivity.this)
+                        .setTitle("Exit")
+                        .setMessage("Are you sure you want to cancel the transfer?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            dialog.dismiss();
+                            closeAllSockets();
+                            Toast.makeText(SendFileActivity.this,  "Device Disconnected", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         });
 

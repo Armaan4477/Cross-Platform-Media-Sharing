@@ -110,7 +110,7 @@ class BroadcastWorker(QThread):
                 
                 s.settimeout(2.0)
                 start_time = time.time()
-                timeout_duration = 2.0
+                timeout_duration = 8.0
 
                 logger.debug("Sending DISCOVER broadcast")
                 s.sendto(b'DISCOVER', ('255.255.255.255', BROADCAST_PORT))
