@@ -95,50 +95,52 @@ class BroadcastWorker(QThread):
         self.receiver_data = None
         self.config_manager = ConfigManager()
         self.config_manager.start()
+        self.running = True
 
     def run(self):
         logger.info("Starting receiver discovery process")
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            try:
-                logger.debug("Setting socket options")
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
+                # Configure socket
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                
-                logger.debug(f"Binding to LISTEN_PORT {LISTEN_PORT}")
-                s.bind(('', LISTEN_PORT))
-                logger.info("Sending discover packet to 255.255.255.255:49185")
-                
                 s.settimeout(2.0)
+                s.bind(('', LISTEN_PORT))
+
                 start_time = time.time()
                 timeout_duration = 8.0
+                broadcast_address = BROADCAST_ADDRESS
+                message = "DISCOVER".encode('utf-8')
 
-                logger.debug("Sending DISCOVER broadcast")
-                s.sendto(b'DISCOVER', ('255.255.255.255', BROADCAST_PORT))
-                
-                while (time.time() - start_time) < timeout_duration:
+                logger.info(f"Sending DISCOVER message to {broadcast_address}:{BROADCAST_PORT}")
+                s.sendto(message, (broadcast_address, BROADCAST_PORT))
+
+                while (time.time() - start_time) < timeout_duration and self.running:
                     try:
-                        logger.debug("Waiting for discovery responses...")
-                        message, address = s.recvfrom(1024)
-                        message = message.decode()
-                        logger.info(f"Received response from {address[0]}: {message}")
-                        
+                        data, addr = s.recvfrom(1024)
+                        message = data.decode()
+                        logger.info(f"Received response from {addr[0]}: {message}")
+
                         if message.startswith('RECEIVER:'):
                             device_name = message.split(':')[1]
-                            device_info = {'ip': address[0], 'name': device_name}
+                            device_info = {
+                                'ip': addr[0],
+                                'name': device_name
+                            }
                             logger.info(f"Found valid device: {device_info}")
                             self.device_detected.emit(device_info)
-                            
+
                     except socket.timeout:
                         logger.debug("Socket timeout while waiting for response")
                         continue
                     except Exception as e:
-                        logger.error(f"Error processing discovery response: {str(e)}")
-                        break
-                
-                logger.info(f"Discovery completed after {time.time() - start_time:.2f} seconds")
-            
-            except Exception as e:
-                logger.error(f"Critical error during discovery process: {str(e)}")
+                        logger.error(f"Error processing response: {str(e)}")
+                        continue
+
+        except Exception as e:
+            logger.error(f"Critical broadcast error: {str(e)}")
+        finally:
+            logger.info("Discovery process completed")
 
     def connect_to_device(self, device_ip, device_name):
         logger.info(f"Initiating connection to device {device_name} ({device_ip})")
@@ -207,14 +209,13 @@ class BroadcastWorker(QThread):
         event.accept()  # Accept the window close event
 
     def stop(self):
-        # Method to manually stop the socket
+        self.running = False
         if self.client_socket:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
                 self.client_socket.close()
-                logger.info("Socket closed manually.")
             except Exception as e:
-                logger.error(f"Error closing socket: {str(e)}")
+                logger.error(f"Error stopping socket: {str(e)}")
                 #com.an.Datadash
 
 
