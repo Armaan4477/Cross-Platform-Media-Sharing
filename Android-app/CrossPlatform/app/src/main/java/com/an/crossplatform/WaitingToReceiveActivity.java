@@ -49,6 +49,8 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
+        forceReleaseUDPPort();
+        forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -113,7 +115,6 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     private void startListeningForDiscover() {
         new Thread(() -> {
             try {
-                forceReleaseUDPPort(BROADCAST_PORT);
                 udpSocket = new DatagramSocket(BROADCAST_PORT);  // Listen on port 49185
                 udpSocket.setBroadcast(true);
                 udpSocket.setSoTimeout(1000);
@@ -210,7 +211,6 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         Socket socket = null;
 
         try {
-            forceReleasePort(JSON_EXCHANGE_PORT);
             serverSocket = new ServerSocket(JSON_EXCHANGE_PORT);
             FileLogger.log("WaitingToReceive", "Waiting for incoming connections on port " + JSON_EXCHANGE_PORT);
 
@@ -288,10 +288,13 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
         }
     }
 
-    private void forceReleasePort(int port) {
+    private void forceReleasePort() {
+        int port1 =JSON_EXCHANGE_PORT;
+        int port2=57341;
+        int port3=63152;
         try {
             // Find and kill process using the port
-            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -301,7 +304,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
             }
@@ -309,14 +312,60 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             // Wait briefly for port to be fully released
             Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
+        }
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port2);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port2);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port2, e);
+        }
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port3);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port3);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port3, e);
         }
     }
 
-    private void forceReleaseUDPPort(int port) {
+    private void forceReleaseUDPPort() {
+        int port1=49185;
+        int port2=49186;
         try {
             // Find and kill process using the UDP port
-            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -326,7 +375,7 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port);
+                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port1);
                     }
                 }
             }
@@ -334,7 +383,30 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
             // Wait briefly for port to be fully released
             Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port, e);
+            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port1, e);
+        }
+
+        try {
+            // Find and kill process using the UDP port
+            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port2);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith("COMMAND")) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port2);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port2, e);
         }
     }
 

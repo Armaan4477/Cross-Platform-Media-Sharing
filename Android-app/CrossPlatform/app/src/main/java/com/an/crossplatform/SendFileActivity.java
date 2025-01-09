@@ -95,6 +95,7 @@ public class SendFileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
+        forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -533,7 +534,6 @@ public class SendFileActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                forceReleasePort(FILE_TRANSFER_PORT);
                 socket = new Socket();
                 socket.setReuseAddress(true); // Add this to prevent port binding issues
                 FileLogger.log("SendFileActivity", "Attempting connection to " + ip + ":" + FILE_TRANSFER_PORT);
@@ -827,29 +827,31 @@ public class SendFileActivity extends AppCompatActivity {
             }
         }
 
-        private void forceReleasePort(int port) {
-            try {
-                // Find and kill process using the port
-                Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
+    }
 
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("LISTEN")) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length > 1) {
-                            String pid = parts[1];
-                            Runtime.getRuntime().exec("kill -9 " + pid);
-                            FileLogger.log("SendFileActivity", "Killed process " + pid + " using port " + port);
-                        }
+    private void forceReleasePort() {
+        int port1 =FILE_TRANSFER_PORT;
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
-
-                // Wait briefly for port to be fully released
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                FileLogger.log("SendFileActivity", "Error releasing port: " + port, e);
             }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
     }
     private void closeSocket() {

@@ -73,6 +73,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
+        forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -117,7 +118,6 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private class ConnectionTask implements Runnable {
         @Override
         public void run() {
-            forceReleasePort(PORT);
             boolean connectionSuccessful = initializeConnection();
             runOnUiThread(() -> {
                 if (connectionSuccessful) {
@@ -488,10 +488,11 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         System.exit(0); // Ensure complete shutdown
     }
 
-    private void forceReleasePort(int port) {
+    private void forceReleasePort() {
+        int port1 =PORT;
         try {
             // Find and kill process using the port
-            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -501,15 +502,15 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
     }
 

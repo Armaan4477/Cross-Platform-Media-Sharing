@@ -92,6 +92,7 @@ public class SendFileActivityPython extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
+        forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -511,7 +512,6 @@ public class SendFileActivityPython extends AppCompatActivity {
         public void run() {
             // Initialize connection
             try {
-                forceReleasePort(57341);
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(ip, 57341), 10000);
                 FileLogger.log("SendFileActivity", "Socket connected: " + socket.isConnected());
@@ -804,30 +804,6 @@ public class SendFileActivityPython extends AppCompatActivity {
             }
         }
 
-        private void forceReleasePort(int port) {
-            try {
-                // Find and kill process using the port
-                Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("LISTEN")) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length > 1) {
-                            String pid = parts[1];
-                            Runtime.getRuntime().exec("kill -9 " + pid);
-                            FileLogger.log("SendFileActivity", "Killed process " + pid + " using port " + port);
-                        }
-                    }
-                }
-
-                // Wait briefly for port to be fully released
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                FileLogger.log("SendFileActivity", "Error releasing port: " + port, e);
-            }
-        }
     }
 
 
@@ -851,6 +827,31 @@ public class SendFileActivityPython extends AppCompatActivity {
             FileLogger.log("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
         }
         return encryption;
+    }
+    private void forceReleasePort() {
+        int port1 =57341;
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
+        }
     }
 
     private void closeAllSockets() {

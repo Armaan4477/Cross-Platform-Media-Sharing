@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
         ImageButton btnPreferences = findViewById(R.id.btn_preferences);
 
         btnSend.setOnClickListener(v -> {
-            forceReleaseUDPPort();
             if (!isWifiConnected()) {
                 showNetworkWarning("Please note: No Wifi connection detected. Connection to other devices may fail.",
                         true,
@@ -71,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (shouldShowWarning()) {
-                forceReleaseUDPPort();
                 showNetworkWarning(
                         "Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.",
                         false,
