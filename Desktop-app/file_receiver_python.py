@@ -54,6 +54,8 @@ class ReceiveWorkerPython(QThread):
     update_files_table_signal = pyqtSignal(list)
     # Add new signal for file rename events
     file_renamed_signal = pyqtSignal(str, str)  # old_name, new_name
+    # Add new signal
+    transfer_stats_update = pyqtSignal(float, float, float)  # speed, eta, elapsed
 
     def __init__(self, client_ip):
         super().__init__()
@@ -69,6 +71,10 @@ class ReceiveWorkerPython(QThread):
         self.config_manager = ConfigManager()
         self.config_manager.start()
         #com.an.Datadash
+        self.start_time = None
+        self.last_update_time = None
+        self.last_bytes_received = 0
+        self.total_bytes_received = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -138,6 +144,8 @@ class ReceiveWorkerPython(QThread):
             self.server_skt.close()
 
     def receive_files(self):
+        self.start_time = time.time()
+        self.last_update_time = time.time()
         self.broadcasting = False
         self.folder_transfer = False
         logger.debug("File reception started.")
@@ -261,6 +269,7 @@ class ReceiveWorkerPython(QThread):
                     # Receive file data in chunks
                     with open(file_path, "wb") as f:
                         while received_size < file_size:
+                            current_time = time.time()
                             chunk_size = min(CHUNK_SIZE_DESKTOP, file_size - received_size)
                             data = self._receive_data(self.client_skt, chunk_size)
                             if not data:
@@ -269,6 +278,18 @@ class ReceiveWorkerPython(QThread):
                             f.write(data)
                             received_size += len(data)
                             received_total += len(data)
+                            self.total_bytes_received = received_total
+                            
+                            # Calculate transfer statistics every 0.5 seconds
+                            if current_time - self.last_update_time >= 0.5:
+                                elapsed = current_time - self.start_time
+                                speed = (received_total - self.last_bytes_received) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
+                                remaining_bytes = total_bytes - received_total
+                                eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
+                                
+                                self.transfer_stats_update.emit(speed, eta, elapsed)
+                                self.last_update_time = current_time
+                                self.last_bytes_received = received_total
                             
                             if self.folder_transfer:
                                 folder_received_bytes += len(data)
@@ -476,6 +497,8 @@ class ReceiveAppP(QWidget):
         self.file_receiver.update_files_table_signal.connect(self.update_files_table)
         self.file_name_map = {}  # Add dictionary to track renamed files
         self.file_receiver.file_renamed_signal.connect(self.handle_file_rename)
+        # Connect the stats update signal
+        self.file_receiver.transfer_stats_update.connect(self.update_transfer_stats)
 
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
@@ -577,6 +600,19 @@ class ReceiveAppP(QWidget):
             }
         """)
         layout.addWidget(self.progress_bar)
+
+        # Add transfer stats label
+        self.transfer_stats_label = QLabel()
+        self.transfer_stats_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 12px;
+                background: transparent;
+                padding: 5px;
+            }
+        """)
+        self.transfer_stats_label.setVisible(False)
+        layout.addWidget(self.transfer_stats_label)
 
         # Buttons
         buttons_layout = QHBoxLayout()
@@ -812,6 +848,16 @@ class ReceiveAppP(QWidget):
                     progress_item.setData(Qt.ItemDataRole.UserRole, progress)
                     self.files_table.setItem(row, 2, progress_item)
                     break
+
+    def update_transfer_stats(self, speed, eta, elapsed):
+        """Update the transfer statistics label"""
+        if not self.transfer_stats_label.isVisible():
+            self.transfer_stats_label.setVisible(True)
+            
+        eta_str = time.strftime("%H:%M:%S", time.gmtime(eta))
+        elapsed_str = time.strftime("%H:%M:%S", time.gmtime(elapsed))
+        stats_text = f"Speed: {speed:.2f} MB/s | ETA: {eta_str} | Elapsed: {elapsed_str}"
+        self.transfer_stats_label.setText(stats_text)
 
     def onTransferFinished(self):
         # Adjust the top section to be more compact

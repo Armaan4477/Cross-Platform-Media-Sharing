@@ -17,6 +17,7 @@ from loges import logger
 from crypt_handler import encrypt_file
 from time import sleep
 from portsss import RECEIVER_DATA_DESKTOP, CHUNK_SIZE_DESKTOP
+import time
 
 class ProgressBarDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -56,6 +57,7 @@ class FileSender(QThread):
     file_count_update = pyqtSignal(int, int, int)  # total_files, files_sent, files_pending
     file_progress_update = pyqtSignal(str, int)  # file_path, progress
     overall_progress_update = pyqtSignal(int)  # overall progress
+    transfer_stats_update = pyqtSignal(float, float, float)  # speed, eta, elapsed
 
     password = None
 
@@ -71,6 +73,9 @@ class FileSender(QThread):
         self.files_sent = 0
         self.total_size = self.calculate_total_size()
         self.sent_size = 0
+        self.start_time = None
+        self.last_update_time = None
+        self.last_bytes_sent = 0
 
     def count_total_files(self):
         total = 0
@@ -312,13 +317,30 @@ class FileSender(QThread):
         self.client_skt.send(struct.pack('<Q', file_size))
         #com.an.Datadash
 
+        if not self.start_time:
+            self.start_time = time.time()
+        self.last_update_time = time.time()
+
         with open(file_path, 'rb') as f:
             while sent_size < file_size:
+                current_time = time.time()
                 data = f.read(CHUNK_SIZE_DESKTOP)
                 self.client_skt.sendall(data)
                 sent_size += len(data)
-                self.file_progress_update.emit(file_path, sent_size * 100 // file_size)
                 self.sent_size += len(data)
+                
+                # Calculate transfer statistics every 0.5 seconds
+                if current_time - self.last_update_time >= 0.5:
+                    elapsed = current_time - self.start_time
+                    speed = (self.sent_size - self.last_bytes_sent) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
+                    remaining_bytes = self.total_size - self.sent_size
+                    eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
+                    
+                    self.transfer_stats_update.emit(speed, eta, elapsed)
+                    self.last_update_time = current_time
+                    self.last_bytes_sent = self.sent_size
+
+                self.file_progress_update.emit(file_path, sent_size * 100 // file_size)
                 overall_progress = self.sent_size * 100 // self.total_size
                 self.overall_progress_update.emit(overall_progress)
 
@@ -615,6 +637,20 @@ class SendApp(QWidget):
         self.file_table.setItemDelegate(ProgressBarDelegate())
         main_layout.addWidget(self.file_table)
 
+                
+        # Add transfer stats label
+        self.transfer_stats_label = QLabel()
+        self.transfer_stats_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 12px;
+                background: transparent;
+                padding: 5px;
+            }
+        """)
+        self.transfer_stats_label.setVisible(False)
+        main_layout.addWidget(self.transfer_stats_label)
+
         # File counts label
         self.file_counts_label = QLabel("Total files: 0 | Completed: 0 | Pending: 0")
         self.file_counts_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
@@ -887,6 +923,7 @@ class SendApp(QWidget):
         self.file_sender.file_count_update.connect(self.updateFileCounts)
         self.file_sender.file_progress_update.connect(self.updateFileProgressBar)
         self.file_sender.overall_progress_update.connect(self.updateOverallProgressBar)
+        self.file_sender.transfer_stats_update.connect(self.updateTransferStats)
         self.file_sender.start()
         #com.an.Datadash
 
@@ -927,6 +964,10 @@ class SendApp(QWidget):
 
     def updateOverallProgressBar(self, value):
         self.progress_bar.setValue(value)
+
+    def updateTransferStats(self, speed, eta, elapsed):
+        self.transfer_stats_label.setText(f"Speed: {speed:.2f} MB/s | ETA: {eta:.2f} s | Elapsed: {elapsed:.2f} s")
+        self.transfer_stats_label.setVisible(True)
 
     def onTransferFinished(self):
         self.close_button.setVisible(True)
