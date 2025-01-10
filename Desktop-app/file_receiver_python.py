@@ -56,6 +56,7 @@ class ReceiveWorkerPython(QThread):
     file_renamed_signal = pyqtSignal(str, str)  # old_name, new_name
     # Add new signal
     transfer_stats_update = pyqtSignal(float, float, float)  # speed, eta, elapsed
+    file_count_update = pyqtSignal(int, int, int)  # total_files, files_received, files_pending
 
     def __init__(self, client_ip):
         super().__init__()
@@ -75,6 +76,8 @@ class ReceiveWorkerPython(QThread):
         self.last_update_time = None
         self.last_bytes_received = 0
         self.total_bytes_received = 0
+        self.total_files = 0
+        self.files_received = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -316,6 +319,10 @@ class ReceiveWorkerPython(QThread):
                             except Exception as e:
                                 logger.error(f"Error calculating progress: {str(e)}")
 
+                    self.files_received += 1
+                    files_pending = self.total_files - self.files_received
+                    self.file_count_update.emit(self.total_files, self.files_received, files_pending)
+
             except ZeroDivisionError as zde:
                 logger.error(f"Division by zero error: {str(zde)}")
                 continue
@@ -351,6 +358,17 @@ class ReceiveWorkerPython(QThread):
                 # Send full metadata for individual files
                 self.update_files_table_signal.emit(metadata)
                 
+            # Count total files from metadata
+            if metadata and metadata[-1].get('base_folder_name', ''):
+                # For folder transfers, count all files (excluding folders and .delete)
+                self.total_files = sum(1 for item in metadata[:-1] 
+                                     if not item['path'].endswith('/') and item['path'] != '.delete')
+            else:
+                # For individual files
+                self.total_files = len(metadata)
+                
+            self.file_count_update.emit(self.total_files, 0, self.total_files)
+            
             return metadata
         except UnicodeDecodeError as e:
             logger.error("Unicode decode error: %s", e)
@@ -499,6 +517,8 @@ class ReceiveAppP(QWidget):
         self.file_receiver.file_renamed_signal.connect(self.handle_file_rename)
         # Connect the stats update signal
         self.file_receiver.transfer_stats_update.connect(self.update_transfer_stats)
+        # Connect the file count update signal
+        self.file_receiver.file_count_update.connect(self.updateFileCounts)
 
         # Start the typewriter effect
         self.typewriter_timer = QTimer(self)
@@ -584,6 +604,17 @@ class ReceiveAppP(QWidget):
         self.files_table.setColumnWidth(2, 200)
         self.files_table.setItemDelegate(ProgressBarDelegate())
         layout.addWidget(self.files_table)
+
+        # Add file counts label
+        self.file_counts_label = QLabel("Total files: 0 | Completed: 0 | Pending: 0")
+        self.file_counts_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 14px;
+                background-color: transparent;
+            }
+        """)
+        layout.addWidget(self.file_counts_label)
 
         # Overall progress bar at bottom
         self.progress_bar = QProgressBar()
@@ -858,6 +889,12 @@ class ReceiveAppP(QWidget):
         elapsed_str = time.strftime("%H:%M:%S", time.gmtime(elapsed))
         stats_text = f"Speed: {speed:.2f} MB/s | ETA: {eta_str} | Elapsed: {elapsed_str}"
         self.transfer_stats_label.setText(stats_text)
+
+    def updateFileCounts(self, total_files, files_received, files_pending):
+        """Update the file counts label with current transfer progress"""
+        self.file_counts_label.setText(
+            f"Total files: {total_files} | Completed: {files_received} | Pending: {files_pending}"
+        )
 
     def onTransferFinished(self):
         # Adjust the top section to be more compact
