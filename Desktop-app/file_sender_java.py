@@ -880,6 +880,7 @@ class SendAppJava(QWidget):
         self.file_sender_java.file_progress_update.connect(self.updateFileProgressBar)
         self.file_sender_java.overall_progress_update.connect(self.updateProgressBar)
         self.file_sender_java.file_count_update.connect(self.updateFileCounts)
+        self.file_sender_java.transfer_stats_update.connect(self.updateTransferStats)  # Add this line
         self.file_sender_java.start()
         #com.an.Datadash
 
