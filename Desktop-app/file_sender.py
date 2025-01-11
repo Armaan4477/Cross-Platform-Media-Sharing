@@ -21,7 +21,7 @@ import time
 
 class ProgressBarDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
-        if index.column() == 3:  # Progress column (changed from 2 to 3)
+        if index.column() == 4:
             progress = index.data(Qt.ItemDataRole.UserRole)
             if progress is not None:
                 progressBar = QProgressBar()
@@ -612,7 +612,7 @@ class SendApp(QWidget):
         self.file_table.setMinimumHeight(200)  # Add minimum height
         self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
         self.file_table.setColumnCount(5)
-        self.file_table.setHorizontalHeaderLabels(['Serial No.', 'Remove', 'File Name', 'Size', 'Progress'])
+        self.file_table.setHorizontalHeaderLabels(['Sr No.', 'Remove', 'File Name', 'Size', 'Progress'])
         self.file_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
