@@ -133,14 +133,20 @@ class FileSenderJava(QThread):
                 if os.path.isdir(file_path):
                     if not self.metadata_created:
                         metadata_file_path = self.create_metadata(folder_path=file_path)
-                        self.send_file(metadata_file_path, encrypted_transfer=False)
+                        self.send_file(metadata_file_path, encrypted_transfer=False, count=False)
                         self.metadata_created = True
+                    # Count total files before sending folder
+                    folder_total = sum([len(files) for _, _, files in os.walk(file_path)])
+                    self.total_files = folder_total
+                    self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
                     self.send_folder(file_path)
                 else:
                     if not self.metadata_created:
                         metadata_file_path = self.create_metadata(file_paths=self.file_paths)
-                        self.send_file(metadata_file_path, encrypted_transfer=False)
+                        self.send_file(metadata_file_path, encrypted_transfer=False, count=False)
                         self.metadata_created = True
+                    self.total_files = len(self.file_paths)
+                    self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
                     self.send_file(file_path, encrypted_transfer=self.encryption_flag)
             
             # Send halt signal after all transfers complete
@@ -244,11 +250,7 @@ class FileSenderJava(QThread):
                 folder_progress = folder_sent_size * 100 // folder_total_size
                 self.file_progress_update.emit(folder_path, folder_progress)
 
-                self.files_sent += 1
-                files_pending = self.total_files - self.files_sent
-                self.file_count_update.emit(self.total_files, self.files_sent, files_pending)
-
-    def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
+    def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False, count=True):
         logger.debug("Sending file: %s", file_path)
 
         # Handle file encryption if needed
@@ -303,6 +305,12 @@ class FileSenderJava(QThread):
 
                     overall_progress = self.sent_size * 100 // self.total_size
                     self.overall_progress_update.emit(overall_progress)
+
+            if count:
+                self.files_sent += 1
+                files_pending = self.total_files - self.files_sent
+                self.file_count_update.emit(self.total_files, self.files_sent, files_pending)
+                logger.debug(f"File count update: total={self.total_files}, sent={self.files_sent}, pending={files_pending}")
 
             # Clean up encrypted file if it was created
             if encrypted_transfer:
@@ -902,7 +910,7 @@ class SendAppJava(QWidget):
         self.status_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
 
     def updateFileCounts(self, total_files, files_sent, files_pending):
-        self.status_label.setText(f"Total files: {total_files} | Completed: {files_sent} | Pending: {files_pending}")
+        self.file_counts_label.setText(f"Total files: {total_files} | Completed: {files_sent} | Pending: {files_pending}")
 
     def closeEvent(self, event):
         try:
