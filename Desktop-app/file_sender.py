@@ -420,8 +420,15 @@ class SendApp(QWidget):
     def add_file_to_table(self, file_path):
      row_position = self.file_table.rowCount()
      self.file_table.insertRow(row_position)
+     
+     # Serial Number (Column 0)
+     serial_number = row_position + 1
+     serial_item = QTableWidgetItem(str(serial_number))
+     serial_item.setFlags(serial_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+     serial_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+     self.file_table.setItem(row_position, 0, serial_item)
 
-     # Remove button (Column 0)
+     # Remove button (Column 1)
      remove_button = QPushButton("X")
      remove_button.setStyleSheet("""
          QPushButton {
@@ -448,15 +455,15 @@ class SendApp(QWidget):
      button_layout.addWidget(remove_button)
      button_layout.setContentsMargins(2, 2, 2, 2)
      button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-     self.file_table.setCellWidget(row_position, 0, button_widget)
+     self.file_table.setCellWidget(row_position, 1, button_widget)
 
-     # File name (Column 1)
+     # File name (Column 2)
      if os.path.isdir(file_path):
         folder_name = os.path.basename(file_path)
         name_item = QTableWidgetItem(folder_name)
         name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
         name_item.setToolTip(file_path)
-        self.file_table.setItem(row_position, 1, name_item)
+        self.file_table.setItem(row_position, 2, name_item)
 
         total_size = self.get_folder_size(file_path)
         file_count = sum([len(files) for _, _, files in os.walk(file_path)])
@@ -465,27 +472,32 @@ class SendApp(QWidget):
         name_item = QTableWidgetItem(os.path.basename(file_path))
         name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
         name_item.setToolTip(file_path)
-        self.file_table.setItem(row_position, 1, name_item)
+        self.file_table.setItem(row_position, 2, name_item)
 
         total_size = os.path.getsize(file_path)
         size_str = self.format_size(total_size)
 
-     # Size (Column 2)
+     # Size (Column 3)
      size_item = QTableWidgetItem(size_str)
      size_item.setFlags(size_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-     self.file_table.setItem(row_position, 2, size_item)
+     self.file_table.setItem(row_position, 3, size_item)
 
-     # Progress (Column 3) 
+     # Progress (Column 4) 
      progress_item = QTableWidgetItem()
      progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-     self.file_table.setItem(row_position, 3, progress_item)
+     self.file_table.setItem(row_position, 4, progress_item)
      self.file_progress_bars[file_path] = progress_item
 
     def remove_file(self, file_path):
      for row in range(self.file_table.rowCount()):
-        name_item = self.file_table.item(row, 1)
+        name_item = self.file_table.item(row, 2)  # Updated to 'File Name' column
         if name_item and name_item.toolTip() == file_path:
             self.file_table.removeRow(row)
+            # Update Serial Numbers
+            for i in range(row, self.file_table.rowCount()):
+                serial_item = self.file_table.item(i, 0)
+                if serial_item:
+                    serial_item.setText(str(i + 1))
             if file_path in self.file_paths:
                 self.file_paths.remove(file_path)
             if file_path in self.file_progress_bars:
@@ -599,8 +611,8 @@ class SendApp(QWidget):
         self.file_table = QTableWidget()
         self.file_table.setMinimumHeight(200)  # Add minimum height
         self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
-        self.file_table.setColumnCount(4)
-        self.file_table.setHorizontalHeaderLabels(['Remove', 'File Name', 'Size', 'Progress'])
+        self.file_table.setColumnCount(5)
+        self.file_table.setHorizontalHeaderLabels(['Serial No.', 'Remove', 'File Name', 'Size', 'Progress'])
         self.file_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
@@ -628,15 +640,19 @@ class SendApp(QWidget):
         
         # Configure columns
         self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(0, 60)  # Remove button column
-        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Filename column
-        self.file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(2, 100)  # Size column
+        self.file_table.setColumnWidth(0, 60)  # Serial Number column
+        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(1, 60)  # Remove button column
+        self.file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # Filename column
         self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(3, 200)  # Progress column
+        self.file_table.setColumnWidth(3, 100)  # Size column
+        self.file_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(4, 200)  # Progress column
         self.file_table.setItemDelegate(ProgressBarDelegate())
         main_layout.addWidget(self.file_table)
 
+        # Hide vertical headers to remove the extra column
+        self.file_table.verticalHeader().setVisible(False)
                 
         # Add transfer stats label
         self.transfer_stats_label = QLabel()
@@ -845,7 +861,7 @@ class SendApp(QWidget):
         if total_size >= 1024 * 1024 * 1024:  # GB
             size_str = f"{total_size / (1024 * 1024 * 1024):.2f} GB"
         elif total_size >= 1024 * 1024:  # MB
-            size_str = f"{total_size / (1024 * 1024):.2f} MB"
+            size_str = f"{total_size / (1024 * 1024)::.2f} MB"
         elif total_size >= 1024:  # KB
             size_str = f"{total_size / 1024:.2f} KB"
         else:  # Bytes
