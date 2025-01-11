@@ -1,6 +1,4 @@
 Aarya:
-Add X button on individual files for android and python so the user can deselect a file if select by mistake instead of completely selecting again- python
-Add confirmation dialog which ask the receiver if they are sure to connect or not, give prompt to sender that the connection was cancelled-python
 File preview mode which only downloads and views the file without storing it (files smaller than 100mb)- python
 
 
