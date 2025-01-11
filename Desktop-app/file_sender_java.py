@@ -331,85 +331,6 @@ class SendAppJava(QWidget):
 
     def on_config_updated(self, config):
         self.current_config = config
-        
-    def add_file_to_table(self, file_path):
-     row_position = self.file_table.rowCount()
-     self.file_table.insertRow(row_position)
-
-    # Create X button
-     remove_button = QPushButton("X")
-     remove_button.setStyleSheet("""
-         QPushButton {
-             background-color: #ff4d4d;
-             color: white;
-             border: none;
-             padding: 2px 5px;
-             border-radius: 2px;
-             margin: 2px;
-             max-width: 50px;
-         }
-         QPushButton:hover {
-             background-color: #ff1a1a;
-         }
-         QPushButton:pressed {
-            background-color: #cc0000;
-        }
-     """)
-     remove_button.clicked.connect(lambda checked, fp=file_path: self.remove_file(fp))
-    
-     button_widget = QWidget()
-     button_widget.setStyleSheet("background: transparent;")
-     button_layout = QHBoxLayout(button_widget)
-     button_layout.addWidget(remove_button)
-     button_layout.setContentsMargins(2, 2, 2, 2)
-     button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-     self.file_table.setCellWidget(row_position, 0, button_widget)
-
-     if os.path.isdir(file_path):
-        folder_name = os.path.basename(file_path)
-        name_item = QTableWidgetItem(folder_name)
-        name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-        name_item.setToolTip(file_path)
-        self.file_table.setItem(row_position, 1, name_item)
-
-        total_size = self.get_folder_size(file_path)
-        file_count = sum([len(files) for _, _, files in os.walk(file_path)])
-        size_str = self.format_size(total_size, file_count)
-     else:
-        name_item = QTableWidgetItem(os.path.basename(file_path))
-        name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-        name_item.setToolTip(file_path)
-        self.file_table.setItem(row_position, 1, name_item)
-
-        total_size = os.path.getsize(file_path)
-        size_str = self.format_size(total_size)
-
-        size_item = QTableWidgetItem(size_str)
-        size_item.setFlags(size_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-        self.file_table.setItem(row_position, 2, size_item)
-
-        progress_item = QTableWidgetItem()
-        progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-        self.file_table.setItem(row_position, 3, progress_item)
-        self.file_progress_bars[file_path] = progress_item
-
-
-
-
-    def remove_file(self, file_path):
-     for row in range(self.file_table.rowCount()):
-        name_item = self.file_table.item(row, 1)
-        if name_item and name_item.toolTip() == file_path:
-            self.file_table.removeRow(row)
-            if file_path in self.file_paths:
-                self.file_paths.remove(file_path)
-            if file_path in self.file_progress_bars:
-                del self.file_progress_bars[file_path]
-            break
-    
-     if self.file_table.rowCount() == 0:
-        self.send_button.setVisible(False)
-     self.checkReadyToSend()
 
     def initUI(self):
         logger.debug("Encryption : %s", self.config_manager.get_config()["encryption"])
@@ -452,42 +373,26 @@ class SendAppJava(QWidget):
 
         content_layout.addLayout(button_layout)
 
-         # Files table
+        # File path display
         self.file_table = QTableWidget()
-        self.file_table.setColumnCount(4)
-        self.file_table.setHorizontalHeaderLabels(['Remove', 'File Name', 'Size', 'Progress'])
+        self.file_table.setColumnCount(2)
+        self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.file_table.setHorizontalHeaderLabels(["File Path", "Progress"])
+        self.file_table.verticalHeader().setVisible(False)
+        self.file_table.horizontalHeader().setVisible(False)
+        self.file_table.setShowGrid(False)
         self.file_table.setStyleSheet("""
             QTableWidget {
-                background-color: #1f242d;
-                color: white;
-                border: none;
-                gridline-color: #2f3642;
-            }
-            QHeaderView::section {
                 background-color: #2f3642;
                 color: white;
-                padding: 5px;
-                border: none;
+                border: 1px solid #4b5562;
+                border-radius: 5px;
             }
             QTableWidget::item {
-                background-color: transparent;
                 padding: 5px;
             }
-             QTableWidget::item:column(0) {
-                background-color: #2b5797;
-                padding: 5px;
-    }
-       """)
-
-      # Configure columns
-        self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(0, 60)
-        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(2, 100)
-        self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(3, 100)
-        self.file_table.setItemDelegate(ProgressBarDelegate(self))
+        """)
         content_layout.addWidget(self.file_table)
         
         # Add progress tracking
@@ -663,7 +568,28 @@ class SendAppJava(QWidget):
         if self.file_paths:
             self.send_button.setVisible(True)
 
-
+    def add_file_to_table(self, file_path):
+        row_position = self.file_table.rowCount()
+        self.file_table.insertRow(row_position)
+        file_item = QTableWidgetItem(file_path)
+        file_item.setFlags(file_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+        self.file_table.setItem(row_position, 0, file_item)
+        progress_bar = QProgressBar()
+        progress_bar.setFixedWidth(150)
+        progress_bar.setStyleSheet("""
+            QProgressBar {
+                background-color: #2f3642;
+                color: white;
+                border: 1px solid #4b5562;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+            }
+        """)
+        self.file_table.setCellWidget(row_position, 1, progress_bar)
+        self.file_progress_bars[file_path] = progress_bar
 
     def updateFileProgressBar(self, file_path, value):
         if file_path not in self.file_progress_bars:
