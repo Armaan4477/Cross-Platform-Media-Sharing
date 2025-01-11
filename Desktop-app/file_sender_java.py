@@ -4,18 +4,50 @@ import tempfile
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QMessageBox, QWidget, QVBoxLayout, QPushButton, QListWidget, 
-    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit, QHBoxLayout, QFrame, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate
+    QProgressBar, QLabel, QFileDialog, QApplication, QListWidgetItem, QTextEdit, QLineEdit, QSizePolicy,
+    QHBoxLayout, QFrame, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate, QGraphicsDropShadowEffect
 )
-from PyQt6.QtGui import QScreen, QFont, QKeyEvent, QKeySequence
+from PyQt6.QtGui import QScreen, QFont, QColor, QKeyEvent, QKeySequence, QIcon
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QElapsedTimer, QTimer, QSize
 import os
 import socket
 import struct
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from constant import ConfigManager
 from loges import logger
 from crypt_handler import encrypt_file
 from time import sleep
 from portsss import RECEIVER_DATA_ANDROID,CHUNK_SIZE_ANDROID
+
+class ProgressBarDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        if index.column() == 4:
+            progress = index.data(Qt.ItemDataRole.UserRole)
+            if progress is not None:
+                progressBar = QProgressBar()
+                progressBar.setStyleSheet("""
+                    QProgressBar {
+                        background-color: #2f3642;
+                        color: white;
+                        border: 1px solid #4b5562;
+                        border-radius: 5px;
+                        text-align: center;
+                    }
+                    QProgressBar::chunk {
+                        background-color: #4CAF50;
+                    }
+                """)
+                progressBar.setGeometry(option.rect)
+                progressBar.setValue(progress)
+                progressBar.setTextVisible(True)
+                painter.save()
+                painter.translate(option.rect.topLeft())
+                progressBar.render(painter)
+                painter.restore()
+            return
+        super().paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        return None  # Disable editing
 
 class FileSenderJava(QThread):
     progress_update = pyqtSignal(int)
@@ -329,6 +361,8 @@ class SendAppJava(QWidget):
         self.ip_address = ip_address
         self.device_name = device_name
         self.receiver_data = receiver_data
+        self.file_progress_bars = {}
+        self.encryption_enabled = self.config_manager.get_config()["encryption"]
         self.initUI()
         self.progress_bar.setVisible(False)
         self.setFixedSize(853, 480) 
@@ -365,104 +399,155 @@ class SendAppJava(QWidget):
 
     def initUI(self):
         logger.debug("Encryption : %s", self.config_manager.get_config()["encryption"])
-        self.setWindowTitle('Send File')
-        self.setGeometry(100, 100, 400, 300)
+        self.setWindowTitle('DataDash: Send File')
+        self.setFixedSize(853, 480)
         self.center_window()
-        self.set_background()
 
+        # Main layout
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
-        # Header
-        header = QFrame()
-        header.setFixedHeight(70)
-        header.setStyleSheet("background-color: #333; padding: 0px;")
-        header_layout = QHBoxLayout(header)
-
+        # Top section with title
+        top_layout = QHBoxLayout()
+        
         title_label = QLabel("DataDash: Send File")
-        title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: white;")
-        header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 24px;
+                background: transparent;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+        top_layout.addWidget(title_label)
+        top_layout.addStretch()
+        main_layout.addLayout(top_layout)
 
-        main_layout.addWidget(header)
-
-        # Content area
-        content_layout = QVBoxLayout()
-        content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
-        #com.an.Datadash
-
-        # File selection buttons
+        # File selection buttons in horizontal layout
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(15)  # More space between buttons
+        
+        # Select Files button with correct icon
         self.file_button = self.create_styled_button('Select Files')
+        self.file_button.setFixedSize(150, 50)
+        self.file_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons", "Files.svg")))  # Changed from file.svg
+        self.file_button.setIconSize(QSize(24, 24))
         self.file_button.clicked.connect(self.selectFile)
-        button_layout.addWidget(self.file_button)
-
+        
+        # Select Folder button with correct icon
         self.folder_button = self.create_styled_button('Select Folder')
+        self.folder_button.setFixedSize(150, 50)
+        self.folder_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons", "Folders.svg")))  # Changed from folder.svg
+        self.folder_button.setIconSize(QSize(24, 24))
         self.folder_button.clicked.connect(self.selectFolder)
+        
+        button_layout.addWidget(self.file_button)
         button_layout.addWidget(self.folder_button)
+        button_layout.addStretch()
+        main_layout.addLayout(button_layout)
 
-        content_layout.addLayout(button_layout)
-
-        # File path display
+        # Files table - Fixed height and stretch
         self.file_table = QTableWidget()
-        self.file_table.setColumnCount(4)  # Changed from 2 to 4
-        self.file_table.setHorizontalHeaderLabels(['Remove', 'File Name', 'Size', 'Progress'])
-        self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(0, 60)  # Remove button width
-        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(2, 100)  # Size column width
-        self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        self.file_table.setColumnWidth(3, 200)  # Progress column width
-        self.file_table.setItemDelegate(ProgressBarDelegate())
-        self.file_table.verticalHeader().setVisible(False)
-        self.file_table.horizontalHeader().setVisible(False)
-        self.file_table.setShowGrid(False)
+        self.file_table.setMinimumHeight(200)  # Add minimum height
+        self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
+        self.file_table.setColumnCount(5)
+        self.file_table.setHorizontalHeaderLabels(['Sr No.', 'Remove', 'File Name', 'Size', 'Progress'])
         self.file_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
                 color: white;
                 border: 1px solid #4b5562;
-                border-radius: 5px;
+                border-radius: 10px;
+                gridline-color: #4b5562;
+                padding: 5px;
+            }
+            QHeaderView::section {
+                background-color: #1f242d;
+                color: white;
+                padding: 8px;
+                border: 1px solid #4b5562;
+                font-weight: bold;
             }
             QTableWidget::item {
                 padding: 5px;
+                border-bottom: 1px solid #4b5562;
+            }
+            QTableWidget::item:selected {
+                background-color: #3d4452;
             }
         """)
-        content_layout.addWidget(self.file_table)
         
-        # Add progress tracking
-        self.file_progress_bars = {}
+        # Configure columns
+        self.file_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(0, 60)  # Serial Number column
+        self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(1, 60)  # Remove button column
+        self.file_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # Filename column
+        self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(3, 100)  # Size column
+        self.file_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.file_table.setColumnWidth(4, 200)  # Progress column
+        self.file_table.setItemDelegate(ProgressBarDelegate())
+        main_layout.addWidget(self.file_table)
+
+        # Hide vertical headers to remove the extra column
+        self.file_table.verticalHeader().setVisible(False)
+                
+        # Add transfer stats label
+        self.transfer_stats_label = QLabel()
+        self.transfer_stats_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 12px;
+                background: transparent;
+                padding: 5px;
+            }
+        """)
+        self.transfer_stats_label.setVisible(False)
+        main_layout.addWidget(self.transfer_stats_label)
+
+        # File counts label
+        self.file_counts_label = QLabel("Total files: 0 | Completed: 0 | Pending: 0")
+        self.file_counts_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
+        main_layout.addWidget(self.file_counts_label)
 
         # Password input (if encryption is enabled)
-        if self.config_manager.get_config()['encryption']:
+        if self.encryption_enabled:
             password_layout = QHBoxLayout()
-            self.password_label = QLabel('Encryption Password:')
-            self.password_label.setStyleSheet("color: white; font-size: 14px; background-color: transparent;")
-            password_layout.addWidget(self.password_label)
-
+            password_layout.setSpacing(10)
+            
+            self.password_label = QLabel('🔒 Encryption Password:')
+            self.password_label.setStyleSheet("""
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                background-color: transparent;
+            """)
+            
             self.password_input = QLineEdit()
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
             self.password_input.setStyleSheet("""
                 QLineEdit {
                     background-color: #2f3642;
                     color: white;
-                    border: 1px solid #4b5562;
-                    border-radius: 5px;
-                    padding: 5px;
+                    border: 2px solid #4b5562;
+                    border-radius: 8px;
+                    padding: 8px;
+                    font-size: 14px;
+                }
+                QLineEdit:focus {
+                    border: 2px solid #6c7989;
                 }
             """)
+            self.password_input.setFixedHeight(35)
+            
+            password_layout.addWidget(self.password_label)
             password_layout.addWidget(self.password_input)
-            content_layout.addLayout(password_layout)
+            main_layout.addLayout(password_layout)
 
-        # Send button
-        self.send_button = self.create_styled_button('Send Files')
-        self.send_button.setVisible(False)
-        self.send_button.clicked.connect(self.sendSelectedFiles)
-        content_layout.addWidget(self.send_button, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        # Progress bar
+        # Overall progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
             QProgressBar {
@@ -476,28 +561,60 @@ class SendAppJava(QWidget):
                 background-color: #4CAF50;
             }
         """)
-        content_layout.addWidget(self.progress_bar)
+        main_layout.addWidget(self.progress_bar)
 
         # Status label
         self.status_label = QLabel("")
-        self.status_label.setStyleSheet("color: white; font-size: 14px;")
-        self.style_label(self.status_label)
-        content_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 18px;
+                font-weight: bold;
+                background-color: transparent;
+                padding: 10px;
+            }
+        """)
+        main_layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-         # Create 2 buttons for close and Transfer More Files
-        # Keep them disabled until the file transfer is completed
-        self.close_button = QPushButton('Close', self)
+        # Bottom buttons layout
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(15)
+        
+        # Send button with same style as main menu
+        self.send_button = self.create_styled_button('Send')  # Changed text to match main menu style
+        self.send_button.setFixedSize(150, 50)
+        self.send_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), "icons", "send.svg")))
+        self.send_button.setIconSize(QSize(24, 24))
+        self.send_button.clicked.connect(self.sendSelectedFiles)  # Add this line to connect the click signal
+        self.send_button.setVisible(False)
+        glow = QGraphicsDropShadowEffect()
+        glow.setBlurRadius(15)
+        glow.setXOffset(0)
+        glow.setYOffset(0)
+        glow.setColor(QColor(255, 255, 255, 100))
+        self.send_button.setGraphicsEffect(glow)
+        
+        self.close_button = self.create_styled_button('Close', with_radius=False)
+        self.close_button.setFixedSize(120, 35)
         self.close_button.setVisible(False)
         self.close_button.clicked.connect(self.close)
-        content_layout.addWidget(self.close_button)
-
-        self.mainmenu_button = self.create_styled_button('Main Menu')
+        
+        self.mainmenu_button = self.create_styled_button('Main Menu', with_radius=False)
+        self.mainmenu_button.setFixedSize(120, 35)
         self.mainmenu_button.setVisible(False)
         self.mainmenu_button.clicked.connect(self.openMainWindow)
-        content_layout.addWidget(self.mainmenu_button)
-
-        main_layout.addLayout(content_layout)
+        
+        # Center the buttons
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.send_button)
+        buttons_layout.addWidget(self.close_button)
+        buttons_layout.addWidget(self.mainmenu_button)
+        buttons_layout.addStretch()
+        
+        main_layout.addLayout(buttons_layout)
+        
         self.setLayout(main_layout)
+        self.set_background()
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
@@ -509,41 +626,52 @@ class SendAppJava(QWidget):
         self.main_window.show()
         self.close()
 
-    def create_styled_button(self, text):
+    def create_styled_button(self, text, with_radius=True):
+        """Enhanced button styling with optional radius and improved visuals"""
         button = QPushButton(text)
-        button.setFixedSize(150, 50)
-        button.setFont(QFont("Arial", 14))
-        button.setStyleSheet("""
-            QPushButton {
+        radius = "25px" if with_radius else "8px"
+        button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        button.setStyleSheet(f"""
+            QPushButton {{
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #2f3642,
-                    stop: 1 #4b5562
+                    stop: 0 rgba(47, 54, 66, 255),
+                    stop: 1 rgba(75, 85, 98, 255)
                 );
                 color: white;
-                border-radius: 25px;
+                border-radius: {radius};
                 border: 1px solid rgba(0, 0, 0, 0.5);
+                padding: 6px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #3c4450,
-                    stop: 1 #5a6476
+                    stop: 0 rgba(60, 68, 80, 255),
+                    stop: 1 rgba(90, 100, 118, 255)
                 );
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 #232933,
-                    stop: 1 #414b58
+                    stop: 0 rgba(35, 41, 51, 255),
+                    stop: 1 rgba(65, 75, 88, 255)
                 );
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background: #666;
                 color: #aaa;
-            }
+            }}
         """)
+        
+        # Add glow effect
+        glow = QGraphicsDropShadowEffect()
+        glow.setBlurRadius(15)
+        glow.setXOffset(0)
+        glow.setYOffset(0)
+        glow.setColor(QColor(255, 255, 255, 100))
+        button.setGraphicsEffect(glow)
+        
         return button
 
     def set_background(self):
@@ -627,85 +755,105 @@ class SendAppJava(QWidget):
         if file_count is not None:
             size_str += f" ({file_count} items)"
         return size_str
+    
+    def show_message_box(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Critical)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
 
     def add_file_to_table(self, file_path):
-        row_position = self.file_table.rowCount()
-        self.file_table.insertRow(row_position)
+     row_position = self.file_table.rowCount()
+     self.file_table.insertRow(row_position)
+     
+     # Serial Number (Column 0)
+     serial_number = row_position + 1
+     serial_item = QTableWidgetItem(str(serial_number))
+     serial_item.setFlags(serial_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+     serial_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+     self.file_table.setItem(row_position, 0, serial_item)
 
-        # Remove button (Column 0)
-        remove_button = QPushButton("X")
-        remove_button.setStyleSheet("""
-            QPushButton {
-                background-color: #ff4d4d;
-                color: white;
-                border: none;
-                padding: 2px 5px;
-                border-radius: 2px;
-                margin: 2px;
-                max-width: 50px;
-            }
-            QPushButton:hover {
-                background-color: #ff1a1a;
-            }
-            QPushButton:pressed {
-                background-color: #cc0000;
-            }
-        """)
-        remove_button.clicked.connect(lambda checked, fp=file_path: self.remove_file(fp))
-        
-        button_widget = QWidget()
-        button_widget.setStyleSheet("background: transparent;")
-        button_layout = QHBoxLayout(button_widget)
-        button_layout.addWidget(remove_button)
-        button_layout.setContentsMargins(2, 2, 2, 2)
-        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.file_table.setCellWidget(row_position, 0, button_widget)
+     # Remove button (Column 1)
+     remove_button = QPushButton("X")
+     remove_button.setStyleSheet("""
+         QPushButton {
+             background-color: #ff4d4d;
+             color: white;
+             border: none;
+             padding: 2px 5px;
+             border-radius: 2px;
+             margin: 2px;
+             max-width: 50px;
+         }
+         QPushButton:hover {
+             background-color: #ff1a1a;
+         }
+         QPushButton:pressed {
+            background-color: #cc0000;
+        }
+     """)
+     remove_button.clicked.connect(lambda checked, fp=file_path: self.remove_file(fp))
+    
+     button_widget = QWidget()
+     button_widget.setStyleSheet("background: transparent;")
+     button_layout = QHBoxLayout(button_widget)
+     button_layout.addWidget(remove_button)
+     button_layout.setContentsMargins(2, 2, 2, 2)
+     button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+     self.file_table.setCellWidget(row_position, 1, button_widget)
 
-        # File name (Column 1)
-        if os.path.isdir(file_path):
-            folder_name = os.path.basename(file_path)
-            name_item = QTableWidgetItem(folder_name)
-            name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            name_item.setToolTip(file_path)
-            self.file_table.setItem(row_position, 1, name_item)
+     # File name (Column 2)
+     if os.path.isdir(file_path):
+        folder_name = os.path.basename(file_path)
+        name_item = QTableWidgetItem(folder_name)
+        name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+        name_item.setToolTip(file_path)
+        self.file_table.setItem(row_position, 2, name_item)
 
-            total_size = self.get_folder_size(file_path)
-            file_count = sum([len(files) for _, _, files in os.walk(file_path)])
-            size_str = self.format_size(total_size, file_count)
-        else:
-            name_item = QTableWidgetItem(os.path.basename(file_path))
-            name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-            name_item.setToolTip(file_path)
-            self.file_table.setItem(row_position, 1, name_item)
+        total_size = self.get_folder_size(file_path)
+        file_count = sum([len(files) for _, _, files in os.walk(file_path)])
+        size_str = self.format_size(total_size, file_count)
+     else:
+        name_item = QTableWidgetItem(os.path.basename(file_path))
+        name_item.setFlags(name_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+        name_item.setToolTip(file_path)
+        self.file_table.setItem(row_position, 2, name_item)
 
-            total_size = os.path.getsize(file_path)
-            size_str = self.format_size(total_size)
+        total_size = os.path.getsize(file_path)
+        size_str = self.format_size(total_size)
 
-        # Size (Column 2)
-        size_item = QTableWidgetItem(size_str)
-        size_item.setFlags(size_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
-        self.file_table.setItem(row_position, 2, size_item)
+     # Size (Column 3)
+     size_item = QTableWidgetItem(size_str)
+     size_item.setFlags(size_item.flags() ^ Qt.ItemFlag.ItemIsEditable)
+     self.file_table.setItem(row_position, 3, size_item)
 
-        # Progress (Column 3)
-        progress_item = QTableWidgetItem()
-        progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-        self.file_table.setItem(row_position, 3, progress_item)
-        self.file_progress_bars[file_path] = progress_item
+     # Progress (Column 4) 
+     progress_item = QTableWidgetItem()
+     progress_item.setData(Qt.ItemDataRole.UserRole, 0)
+     self.file_table.setItem(row_position, 4, progress_item)
+     self.file_progress_bars[file_path] = progress_item
 
     def remove_file(self, file_path):
-        for row in range(self.file_table.rowCount()):
-            name_item = self.file_table.item(row, 1)
-            if name_item and name_item.toolTip() == file_path:
-                self.file_table.removeRow(row)
-                if file_path in self.file_paths:
-                    self.file_paths.remove(file_path)
-                if file_path in self.file_progress_bars:
-                    del self.file_progress_bars[file_path]
-                break
+     for row in range(self.file_table.rowCount()):
+        name_item = self.file_table.item(row, 2)  # Updated to 'File Name' column
+        if name_item and name_item.toolTip() == file_path:
+            self.file_table.removeRow(row)
+            # Update Serial Numbers
+            for i in range(row, self.file_table.rowCount()):
+                serial_item = self.file_table.item(i, 0)
+                if serial_item:
+                    serial_item.setText(str(i + 1))
+            if file_path in self.file_paths:
+                self.file_paths.remove(file_path)
+            if file_path in self.file_progress_bars:
+                del self.file_progress_bars[file_path]
+            break
     
-        if self.file_table.rowCount() == 0:
-            self.send_button.setVisible(False)
-        self.checkReadyToSend()
+     if self.file_table.rowCount() == 0:
+        self.send_button.setVisible(False)
+     self.checkReadyToSend()
 
     def updateFileProgressBar(self, file_path, value):
         if file_path not in self.file_progress_bars:
@@ -785,7 +933,7 @@ class SendAppJava(QWidget):
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    send_app = SendAppJava()
+    send_app = SendAppJava("127.0.0.1", "Test Device", None)
     send_app.show()
     sys.exit(app.exec())
     #com.an.Datadash
