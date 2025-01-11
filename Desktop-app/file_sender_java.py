@@ -16,6 +16,7 @@ from constant import ConfigManager
 from loges import logger
 from crypt_handler import encrypt_file
 from time import sleep
+import time
 from portsss import RECEIVER_DATA_ANDROID,CHUNK_SIZE_ANDROID
 
 class ProgressBarDelegate(QStyledItemDelegate):
@@ -56,6 +57,7 @@ class FileSenderJava(QThread):
     file_count_update = pyqtSignal(int, int, int)  # total_files, files_sent, files_pending
     file_progress_update = pyqtSignal(str, int)  # file_path, progress
     overall_progress_update = pyqtSignal(int)  # overall progress
+    transfer_stats_update = pyqtSignal(float, float, float)
     password = None
 
     def __init__(self, ip_address, file_paths, password=None, receiver_data=None):
@@ -70,6 +72,9 @@ class FileSenderJava(QThread):
         self.files_sent = 0
         self.total_size = self.calculate_total_size()
         self.sent_size = 0
+        self.start_time = None
+        self.last_update_time = None
+        self.last_bytes_sent = 0
         #com.an.Datadash
 
     def count_total_files(self):
@@ -269,10 +274,15 @@ class FileSenderJava(QThread):
             # Send file size
             self.client_skt.send(struct.pack('<Q', file_size))
 
+            if not self.start_time:
+                self.start_time = time.time()
+            self.last_update_time = time.time()
+
             # Send file data with progress updates
             sent_size = 0
             with open(file_path, 'rb') as f:
                 while sent_size < file_size:
+                    current_time = time.time()
                     chunk = f.read(CHUNK_SIZE_ANDROID)
                     if not chunk:
                         break
@@ -280,6 +290,17 @@ class FileSenderJava(QThread):
                     sent_size += len(chunk)
                     self.file_progress_update.emit(file_path, sent_size * 100 // file_size)
                     self.sent_size += len(chunk)
+
+                    if current_time - self.last_update_time >= 0.5:
+                        elapsed = current_time - self.start_time
+                        speed = (self.sent_size - self.last_bytes_sent) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
+                        remaining_bytes = self.total_size - self.sent_size
+                        eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
+                        
+                        self.transfer_stats_update.emit(speed, eta, elapsed)
+                        self.last_update_time = current_time
+                        self.last_bytes_sent = self.sent_size
+
                     overall_progress = self.sent_size * 100 // self.total_size
                     self.overall_progress_update.emit(overall_progress)
 
@@ -319,37 +340,6 @@ class Receiver(QListWidgetItem):
     
     def updateText(self):
         self.setText(f"{self._name} ({self._ip_address})")
-
-class ProgressBarDelegate(QStyledItemDelegate):
-    def paint(self, painter, option, index):
-        if index.column() == 3:  # Progress column
-            progress = index.data(Qt.ItemDataRole.UserRole)
-            if progress is not None:
-                progressBar = QProgressBar()
-                progressBar.setStyleSheet("""
-                    QProgressBar {
-                        background-color: #2f3642;
-                        color: white;
-                        border: 1px solid #4b5562;
-                        border-radius: 5px;
-                        text-align: center;
-                    }
-                    QProgressBar::chunk {
-                        background-color: #4CAF50;
-                    }
-                """)
-                progressBar.setGeometry(option.rect)
-                progressBar.setValue(progress)
-                progressBar.setTextVisible(True)
-                painter.save()
-                painter.translate(option.rect.topLeft())
-                progressBar.render(painter)
-                painter.restore()
-            return
-        super().paint(painter, option, index)
-
-    def createEditor(self, parent, option, index):
-        return None  # Disable editing
 
 class SendAppJava(QWidget):
     def __init__(self, ip_address, device_name, receiver_data):
@@ -495,7 +485,6 @@ class SendAppJava(QWidget):
         # Hide vertical headers to remove the extra column
         self.file_table.verticalHeader().setVisible(False)
                 
-        # Add transfer stats label
         self.transfer_stats_label = QLabel()
         self.transfer_stats_label.setStyleSheet("""
             QLabel {
@@ -861,6 +850,10 @@ class SendAppJava(QWidget):
                 self.add_file_to_table(file_path)
         if file_path in self.file_progress_bars:
             self.file_progress_bars[file_path].setData(Qt.ItemDataRole.UserRole, value)
+
+    def updateTransferStats(self, speed, eta, elapsed):
+        self.transfer_stats_label.setText(f"Speed: {speed:.2f} MB/s | ETA: {eta:.2f} s | Elapsed: {elapsed:.2f} s")
+        self.transfer_stats_label.setVisible(True)
 
     def sendSelectedFiles(self):
         selected_item = self.device_name
