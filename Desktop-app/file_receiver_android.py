@@ -694,10 +694,16 @@ class ReceiveAppPJava(QWidget):
                 break
 
     def handle_file_rename(self, old_name, new_name):
-        """Handle file rename events"""
+        """Track renamed files - now handles both encrypted and unencrypted files"""
+        self.file_name_map[old_name] = new_name
+        # Update the table with the new filename (without .crypt extension for encrypted files)
         for row in range(self.files_table.rowCount()):
-            if self.files_table.item(row, 0).text() == old_name:
-                self.files_table.item(row, 0).setText(new_name)
+            if self.files_table.item(row, 0).text() == os.path.basename(old_name):
+                display_name = os.path.basename(new_name)
+                if display_name.endswith('.crypt'):
+                    display_name = display_name[:-6]  # Remove .crypt extension for display
+                self.files_table.item(row, 0).setText(display_name)
+                self.files_table.item(row, 0).setToolTip(new_name)
                 break
 
     def update_files_table(self, metadata):
