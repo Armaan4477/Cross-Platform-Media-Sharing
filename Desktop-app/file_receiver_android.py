@@ -71,6 +71,12 @@ class ReceiveWorkerJava(QThread):
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
         self.total_files = 0
         self.files_received = 0
+        self.start_time = None
+        self.last_update_time = None
+        self.last_bytes_received = 0
+        self.total_bytes_received = 0
+        self.total_files = 0
+        self.files_received = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -146,6 +152,14 @@ class ReceiveWorkerJava(QThread):
         self.broadcasting = False
         logger.debug("File reception started.")
         is_folder_transfer = False
+        self.start_time = time.time()
+        self.last_update_time = time.time()
+        total_bytes = 0
+        received_total = 0
+        folder_received_bytes = 0
+        encrypted_transfer = False
+        file_name = None  # Initialize file_name
+        original_filename = None  # Initialize original_filename
 
         while True:
             try:
@@ -224,6 +238,7 @@ class ReceiveWorkerJava(QThread):
                         received_size = 0
                         remaining = file_size
                         while remaining > 0:
+                            current_time = time.time()
                             chunk_size = min(CHUNK_SIZE_ANDROID, remaining)
                             data = self.client_skt.recv(chunk_size)
                             if not data:
@@ -231,6 +246,19 @@ class ReceiveWorkerJava(QThread):
                             f.write(data)
                             received_size += len(data)
                             remaining -= len(data)
+                            received_total += len(data)
+                            self.total_bytes_received = received_total
+
+                            # Calculate transfer statistics every 0.5 seconds
+                            if current_time - self.last_update_time >= 0.5:
+                                elapsed = current_time - self.start_time
+                                speed = (received_total - self.last_bytes_received) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
+                                remaining_bytes = total_bytes - received_total
+                                eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
+                                
+                                self.transfer_stats_update.emit(speed, eta, elapsed)
+                                self.last_update_time = current_time
+                                self.last_bytes_received = received_total
 
                             # Calculate and emit progress
                             file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
