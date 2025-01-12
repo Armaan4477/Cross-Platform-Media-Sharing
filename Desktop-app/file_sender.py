@@ -861,7 +861,7 @@ class SendApp(QWidget):
         if total_size >= 1024 * 1024 * 1024:  # GB
             size_str = f"{total_size / (1024 * 1024 * 1024):.2f} GB"
         elif total_size >= 1024 * 1024:  # MB
-            size_str = f"{total_size / (1024 * 1024)::.2f} MB"
+            size_str = f"{total_size / (1024 * 1024):.2f} MB"
         elif total_size >= 1024:  # KB
             size_str = f"{total_size / 1024:.2f} KB"
         else:  # Bytes
