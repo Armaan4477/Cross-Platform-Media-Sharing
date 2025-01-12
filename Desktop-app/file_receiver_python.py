@@ -1076,7 +1076,7 @@ class ReceiveAppP(QWidget):
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    receive_app = ReceiveAppP()
+    receive_app = ReceiveAppP("127.0.0.1",  None)
     receive_app.show()
     app.exec()
     #com.an.Datadash
