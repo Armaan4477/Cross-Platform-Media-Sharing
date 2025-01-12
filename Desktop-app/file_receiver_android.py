@@ -52,10 +52,13 @@ class ReceiveWorkerJava(QThread):
     password = None
     update_files_table_signal = pyqtSignal(list)  # Add signal for updating files table
     file_renamed_signal = pyqtSignal(str, str)  # old_name, new_name
+    transfer_stats_update = pyqtSignal(float, float, float)
+    file_count_update = pyqtSignal(int, int, int)
 
     def __init__(self, client_ip):
         super().__init__()
         self.client_skt = None
+        self.server_skt = None
         self.server_skt = None
         self.encrypted_files = []
         self.broadcasting = True
@@ -66,6 +69,8 @@ class ReceiveWorkerJava(QThread):
         self.config_manager = ConfigManager()
         self.config_manager.start()
         logger.debug(f"Client IP address stored: {self.store_client_ip}")
+        self.total_files = 0
+        self.files_received = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -238,6 +243,11 @@ class ReceiveWorkerJava(QThread):
                     if encrypted_transfer:
                         self.encrypted_files.append(full_file_path)
 
+                    if file_name != 'metadata.json':
+                        self.files_received += 1
+                        files_pending = self.total_files - self.files_received
+                        self.file_count_update.emit(self.total_files, self.files_received, files_pending)
+
                 except Exception as e:
                     logger.error(f"Error saving file {file_name}: {str(e)}")
 
@@ -272,8 +282,20 @@ class ReceiveWorkerJava(QThread):
             else:
                 # Send full metadata for individual files
                 self.update_files_table_signal.emit(metadata)
+                
+            # Count total files from metadata
+            if metadata and metadata[-1].get('base_folder_name', ''):
+                # For folder transfers, count all files (excluding folders and .delete)
+                self.total_files = sum(1 for item in metadata[:-1] 
+                                     if not item['path'].endswith('/') and item['path'] != '.delete')
+            else:
+                # For individual files
+                self.total_files = len(metadata)
+                
+            self.file_count_update.emit(self.total_files, 0, self.total_files)
             
             return metadata
+            
         except UnicodeDecodeError as e:
             logger.error("Unicode decode error: %s", e)
             raise
@@ -408,6 +430,10 @@ class ReceiveAppPJava(QWidget):
         self.file_receiver.transfer_finished.connect(self.onTransferFinished)
         self.file_receiver.update_files_table_signal.connect(self.update_files_table)
         self.file_receiver.file_renamed_signal.connect(self.handle_file_rename)
+        # Connect the stats update signal
+        self.file_receiver.transfer_stats_update.connect(self.update_transfer_stats)
+        # Connect the file count update signal
+        self.file_receiver.file_count_update.connect(self.updateFileCounts)
         #com.an.Datadash
        
         self.typewriter_timer = QTimer(self)
@@ -778,6 +804,22 @@ class ReceiveAppPJava(QWidget):
         self.change_gif_to_success()  # Change GIF to success animation
         self.close_button.setVisible(True)
 
+    def update_transfer_stats(self, speed, eta, elapsed):
+        """Update the transfer statistics label"""
+        if not self.transfer_stats_label.isVisible():
+            self.transfer_stats_label.setVisible(True)
+            
+        eta_str = time.strftime("%H:%M:%S", time.gmtime(eta))
+        elapsed_str = time.strftime("%H:%M:%S", time.gmtime(elapsed))
+        stats_text = f"Speed: {speed:.2f} MB/s | ETA: {eta_str} | Elapsed: {elapsed_str}"
+        self.transfer_stats_label.setText(stats_text)
+
+    def updateFileCounts(self, total_files, files_received, files_pending):
+        """Update the file counts label with current transfer progress"""
+        self.file_counts_label.setText(
+            f"Total files: {total_files} | Completed: {files_received} | Pending: {files_pending}"
+        )
+
     def closeEvent(self, event):
         logger.info("Shutting down ReceiveAppPJava")
         self.cleanup()
@@ -809,6 +851,7 @@ class ReceiveAppPJava(QWidget):
 
         # Close main window if it exists
         if self.main_window:
+
             self.main_window.close()
 
     def __del__(self):
