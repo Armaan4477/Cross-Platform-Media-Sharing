@@ -1,27 +1,23 @@
 Aarya:
-File preview mode which only downloads and views the file without storing it (files smaller than 100mb)- python
+Website issues solving
+UI redesign-python and Android
 
 
 Armaan:
-Redo windows built app to avoid Defender blocking the whole app -python
 Send more files button and go to main menu button -python
-
-
-Nishal:
-Limit sharing speed for file to reduce network congrestion- python
-Can give priority to some file from new optional window if its needed urgently when many files are shared at once- python
+ports closing logic and Graceful handling of file transfer cancel- python
 
 
 Samay:
-implement individual progress bars and table -android
 Send more files button and go to main menu button -android
+Individual Progress Bars for each file in UI -android
+Estimate for speed,time remaining in UI -android
+Total files, completed files and remaining files in UI -android
 
-
-Sushant:
-Implement Notifications in macos/windows/linux for file transfer complete in sender and receiver side-python
 
 Yash:
-Manual Discovery using IP address mode -Python and android
+Manual Discovery using manual IP address mode -Python and android
+
 
 Mandaar:
 Add confirmation dialog which ask the receiver if they are sure to connect or not, give prompt to sender that the connection was cancelled-python
