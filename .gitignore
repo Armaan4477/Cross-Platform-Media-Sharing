@@ -22,3 +22,6 @@ Android-app/.DS_Store
 Desktop-app/.DS_Store
 /Android-app/CrossPlatform/app/debug
 /Desktop-app/Output
+/node_modules
+package.json
+package-lock.json
