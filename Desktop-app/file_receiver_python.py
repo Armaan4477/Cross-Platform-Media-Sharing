@@ -582,8 +582,10 @@ class ReceiveAppP(QWidget):
 
         # Files table
         self.files_table = QTableWidget()
-        self.files_table.setColumnCount(3)
+        self.files_table.setColumnCount(3)  # Keep only 3 columns: File Name, Size, Progress
         self.files_table.setHorizontalHeaderLabels(['File Name', 'Size', 'Progress'])
+        self.files_table.setShowGrid(False)  # Optional: hide grid lines
+        self.files_table.verticalHeader().setVisible(False)  # Hide the vertical header (row numbers)
         self.files_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
