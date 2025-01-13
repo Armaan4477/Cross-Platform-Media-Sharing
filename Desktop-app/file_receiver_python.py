@@ -6,7 +6,7 @@ import subprocess
 import platform
 from PyQt6 import QtCore
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject, QTimer
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication, QPushButton, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar,QSizePolicy, QApplication, QPushButton, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate
 from PyQt6.QtGui import QScreen, QMovie, QFont, QKeyEvent, QKeySequence
 from constant import ConfigManager
 from loges import logger
@@ -17,7 +17,7 @@ from portsss import RECEIVER_DATA_DESKTOP, CHUNK_SIZE_DESKTOP
 
 class ProgressBarDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
-        if index.column() == 2:  # Progress column
+        if index.column() == 3:
             progress = index.data(Qt.ItemDataRole.UserRole)
             if progress is not None:
                 progressBar = QProgressBar()
@@ -42,6 +42,9 @@ class ProgressBarDelegate(QStyledItemDelegate):
                 painter.restore()
             return
         super().paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        return None  # Disable editing
 
 class ReceiveWorkerPython(QThread):
     progress_update = pyqtSignal(int)  # Overall progress
@@ -582,28 +585,43 @@ class ReceiveAppP(QWidget):
 
         # Files table
         self.files_table = QTableWidget()
-        self.files_table.setColumnCount(3)  # Keep only 3 columns: File Name, Size, Progress
-        self.files_table.setHorizontalHeaderLabels(['File Name', 'Size', 'Progress'])
-        self.files_table.setShowGrid(False)  # Optional: hide grid lines
-        self.files_table.verticalHeader().setVisible(False)  # Hide the vertical header (row numbers)
+        self.files_table.setMinimumHeight(200)  # Add minimum height
+        self.files_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
+        self.files_table.setColumnCount(4)
+        self.files_table.setHorizontalHeaderLabels(['Sr No.', 'File Name', 'Size', 'Progress'])
         self.files_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
                 color: white;
                 border: 1px solid #4b5562;
+                border-radius: 10px;
                 gridline-color: #4b5562;
+                padding: 5px;
             }
             QHeaderView::section {
                 background-color: #1f242d;
                 color: white;
-                padding: 5px;
+                padding: 8px;
                 border: 1px solid #4b5562;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #4b5562;
+            }
+            QTableWidget::item:selected {
+                background-color: #3d4452;
             }
         """)
-        self.files_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.files_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.files_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.files_table.setColumnWidth(2, 200)
+        
+        # Configure columns
+        self.files_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(0, 60)  # Serial Number column
+        self.files_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # Filename column
+        self.files_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(3, 100)  # Size column
+        self.files_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(4, 200)  # Progress column
         self.files_table.setItemDelegate(ProgressBarDelegate())
         layout.addWidget(self.files_table)
 
@@ -779,7 +797,7 @@ class ReceiveAppP(QWidget):
                     # Folder name
                     name_item = QTableWidgetItem(folder_name)
                     name_item.setToolTip("Folder transfer")
-                    self.files_table.setItem(0, 0, name_item)
+                    self.files_table.setItem(0, 1, name_item)
                     
                     # Total size calculation from the original metadata in file_receiver
                     total_size = sum(file_info.get('size', 0) for file_info in self.file_receiver.metadata[:-1]
@@ -792,12 +810,12 @@ class ReceiveAppP(QWidget):
                         size_str = f"{total_size / 1024:.2f} KB"
                     else:  # Bytes
                         size_str = f"{total_size} B"
-                    self.files_table.setItem(0, 1, QTableWidgetItem(size_str))
+                    self.files_table.setItem(0, 2, QTableWidgetItem(size_str))
                     
                     # Progress (initially 0)
                     progress_item = QTableWidgetItem()
                     progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-                    self.files_table.setItem(0, 2, progress_item)
+                    self.files_table.setItem(0, 3, progress_item)
                     
                     logger.debug(f"Added folder to table: {folder_name}")
             else:
@@ -818,7 +836,7 @@ class ReceiveAppP(QWidget):
                         # File name
                         name_item = QTableWidgetItem(os.path.basename(file_path))
                         name_item.setToolTip(file_path)
-                        self.files_table.setItem(row, 0, name_item)
+                        self.files_table.setItem(row, 1, name_item)
                         
                         # Size
                         size = file_info.get('size', 0)
@@ -828,12 +846,12 @@ class ReceiveAppP(QWidget):
                             size_str = f"{size / 1024:.2f} KB"
                         else:  # Bytes
                             size_str = f"{size} B"
-                        self.files_table.setItem(row, 1, QTableWidgetItem(size_str))
+                        self.files_table.setItem(row, 2, QTableWidgetItem(size_str))
                         
                         # Progress (initially 0)
                         progress_item = QTableWidgetItem()
                         progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-                        self.files_table.setItem(row, 2, progress_item)
+                        self.files_table.setItem(row, 3, progress_item)
                         
                         # Log successful file entry
                         logger.debug(f"Added file to table: {file_path}")
@@ -851,12 +869,12 @@ class ReceiveAppP(QWidget):
         self.file_name_map[old_name] = new_name
         # Update the table with the new filename (without .crypt extension for encrypted files)
         for row in range(self.files_table.rowCount()):
-            if self.files_table.item(row, 0).text() == os.path.basename(old_name):
+            if self.files_table.item(row, 1).text() == os.path.basename(old_name):
                 display_name = os.path.basename(new_name)
                 if display_name.endswith('.crypt'):
                     display_name = display_name[:-6]  # Remove .crypt extension for display
-                self.files_table.item(row, 0).setText(display_name)
-                self.files_table.item(row, 0).setToolTip(new_name)
+                self.files_table.item(row, 1).setText(display_name)
+                self.files_table.item(row, 1).setToolTip(new_name)
                 break
 
     def update_file_progress(self, file_name, progress):
@@ -865,21 +883,21 @@ class ReceiveAppP(QWidget):
             if file_name == "folder_progress":  # Special case for folder progress
                 progress_item = QTableWidgetItem()
                 progress_item.setData(Qt.ItemDataRole.UserRole, progress)
-                self.files_table.setItem(0, 2, progress_item)
+                self.files_table.setItem(0, 3, progress_item)
         else:
             # Check if the file was renamed
             actual_name = self.file_name_map.get(file_name, file_name)
             
             # Look for the file in the table - compare without .crypt extension
             for row in range(self.files_table.rowCount()):
-                table_filename = self.files_table.item(row, 0).text()
+                table_filename = self.files_table.item(row, 1).text()
                 compare_name = os.path.basename(actual_name)
                 if compare_name.endswith('.crypt'):
                     compare_name = compare_name[:-6]
                 if table_filename == os.path.basename(compare_name):
                     progress_item = QTableWidgetItem()
                     progress_item.setData(Qt.ItemDataRole.UserRole, progress)
-                    self.files_table.setItem(row, 2, progress_item)
+                    self.files_table.setItem(row, 3, progress_item)
                     break
 
     def update_transfer_stats(self, speed, eta, elapsed):
