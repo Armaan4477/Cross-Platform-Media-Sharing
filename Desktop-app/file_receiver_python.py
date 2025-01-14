@@ -588,6 +588,8 @@ class ReceiveAppP(QWidget):
         self.files_table.setMinimumHeight(200)  # Add minimum height
         self.files_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
         self.files_table.setColumnCount(4)
+        self.files_table.setShowGrid(True)
+        self.files_table.verticalHeader().setVisible(False)
         self.files_table.setHorizontalHeaderLabels(['Sr No.', 'File Name', 'Size', 'Progress'])
         self.files_table.setStyleSheet("""
             QTableWidget {
@@ -616,12 +618,19 @@ class ReceiveAppP(QWidget):
         
         # Configure columns
         self.files_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.files_table.setColumnWidth(0, 60)  # Serial Number column
-        self.files_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # Filename column
+        self.files_table.setColumnWidth(0, 60)
+        
+        # File Name column - expanding width
+        self.files_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        
+        # Size column - fixed width
+        self.files_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(2, 100)
+        
+        # Progress column - fixed width
         self.files_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        self.files_table.setColumnWidth(3, 100)  # Size column
-        self.files_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
-        self.files_table.setColumnWidth(4, 200)  # Progress column
+        self.files_table.setColumnWidth(3, 200)
+        
         self.files_table.setItemDelegate(ProgressBarDelegate())
         layout.addWidget(self.files_table)
 
@@ -794,6 +803,11 @@ class ReceiveAppP(QWidget):
                     # Explicitly insert a new row first
                     self.files_table.insertRow(0)
                     
+                    # Add serial number with center alignment
+                    sr_item = QTableWidgetItem('1')
+                    sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    self.files_table.setItem(0, 0, sr_item)
+                    
                     # Folder name
                     name_item = QTableWidgetItem(folder_name)
                     name_item.setToolTip("Folder transfer")
@@ -820,7 +834,7 @@ class ReceiveAppP(QWidget):
                     logger.debug(f"Added folder to table: {folder_name}")
             else:
                 # Original file-by-file display logic
-                for file_info in metadata:
+                for index, file_info in enumerate(metadata, start=1):
                     if file_info.get('path') == '.delete' or 'base_folder_name' in file_info:
                         continue
                     
@@ -833,6 +847,11 @@ class ReceiveAppP(QWidget):
                     self.files_table.insertRow(row)
                     
                     try:
+                        # Add serial number with center alignment
+                        sr_item = QTableWidgetItem(str(index))
+                        sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                        self.files_table.setItem(row, 0, sr_item)
+                        
                         # File name
                         name_item = QTableWidgetItem(os.path.basename(file_path))
                         name_item.setToolTip(file_path)

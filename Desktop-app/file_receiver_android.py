@@ -5,7 +5,7 @@ import json
 from loges import logger
 from PyQt6 import QtCore
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QMetaObject, QTimer
-from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication, QPushButton, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate
+from PyQt6.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QProgressBar, QApplication, QPushButton, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QStyledItemDelegate, QSizePolicy
 from PyQt6.QtGui import QScreen, QMovie, QFont, QKeyEvent, QKeySequence
 from constant import ConfigManager
 from crypt_handler import decrypt_file, Decryptor
@@ -17,7 +17,7 @@ from portsss import RECEIVER_DATA_ANDROID, CHUNK_SIZE_ANDROID
 
 class ProgressBarDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
-        if index.column() == 2:  # Progress column
+        if index.column() == 3:
             progress = index.data(Qt.ItemDataRole.UserRole)
             if progress is not None:
                 progressBar = QProgressBar()
@@ -42,6 +42,9 @@ class ProgressBarDelegate(QStyledItemDelegate):
                 painter.restore()
             return
         super().paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        return None  # Disable editing
 
 class ReceiveWorkerJava(QThread):
     progress_update = pyqtSignal(int)  # Overall progress
@@ -525,28 +528,52 @@ class ReceiveAppPJava(QWidget):
 
         # Files table
         self.files_table = QTableWidget()
-        self.files_table.setColumnCount(3)  # Keep only 3 columns: File Name, Size, Progress
-        self.files_table.setHorizontalHeaderLabels(['File Name', 'Size', 'Progress'])
-        self.files_table.setShowGrid(False)  # Optional: hide grid lines
-        self.files_table.verticalHeader().setVisible(False)  # Hide the vertical header (row numbers)
+        self.files_table.setMinimumHeight(200)  # Add minimum height
+        self.files_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
+        self.files_table.setColumnCount(4)
+        self.files_table.setShowGrid(True)
+        self.files_table.verticalHeader().setVisible(False)
+        self.files_table.setHorizontalHeaderLabels(['Sr No.', 'File Name', 'Size', 'Progress'])
         self.files_table.setStyleSheet("""
             QTableWidget {
                 background-color: #2f3642;
                 color: white;
                 border: 1px solid #4b5562;
+                border-radius: 10px;
                 gridline-color: #4b5562;
+                padding: 5px;
             }
             QHeaderView::section {
                 background-color: #1f242d;
                 color: white;
-                padding: 5px;
+                padding: 8px;
                 border: 1px solid #4b5562;
+                font-weight: bold;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #4b5562;
+            }
+            QTableWidget::item:selected {
+                background-color: #3d4452;
             }
         """)
-        self.files_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.files_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        
+        # Configure columns
+        self.files_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(0, 60)
+        
+        # File Name column - expanding width
+        self.files_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        
+        # Size column - fixed width
         self.files_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.files_table.setColumnWidth(2, 200)
+        self.files_table.setColumnWidth(2, 100)
+        
+        # Progress column - fixed width
+        self.files_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        self.files_table.setColumnWidth(3, 200)
+        
         self.files_table.setItemDelegate(ProgressBarDelegate())
         layout.addWidget(self.files_table)
 
@@ -689,10 +716,10 @@ class ReceiveAppPJava(QWidget):
     def update_file_progress(self, filename, progress):
         """Update progress for a specific file in the table"""
         for row in range(self.files_table.rowCount()):
-            if self.files_table.item(row, 0).text() == filename:
+            if self.files_table.item(row, 1).text() == filename:
                 progress_item = QTableWidgetItem()
                 progress_item.setData(Qt.ItemDataRole.UserRole, progress)
-                self.files_table.setItem(row, 2, progress_item)
+                self.files_table.setItem(row, 3, progress_item)
                 break
 
     def handle_file_rename(self, old_name, new_name):
@@ -700,17 +727,19 @@ class ReceiveAppPJava(QWidget):
         self.file_name_map[old_name] = new_name
         # Update the table with the new filename (without .crypt extension for encrypted files)
         for row in range(self.files_table.rowCount()):
-            if self.files_table.item(row, 0).text() == os.path.basename(old_name):
+            if self.files_table.item(row, 1).text() == os.path.basename(old_name):
                 display_name = os.path.basename(new_name)
                 if display_name.endswith('.crypt'):
                     display_name = display_name[:-6]  # Remove .crypt extension for display
-                self.files_table.item(row, 0).setText(display_name)
-                self.files_table.item(row, 0).setToolTip(new_name)
+                self.files_table.item(row, 1).setText(display_name)
+                self.files_table.item(row, 1).setToolTip(new_name)
                 break
 
     def update_files_table(self, metadata):
         """Update table with files from metadata"""
         self.files_table.setRowCount(0)
+        sr_no = 1  # Initialize serial number counter
+        
         for file_info in metadata:
             if file_info.get('path') == '.delete':
                 continue
@@ -718,24 +747,30 @@ class ReceiveAppPJava(QWidget):
             row = self.files_table.rowCount()
             self.files_table.insertRow(row)
             
+            sr_item = QTableWidgetItem(str(sr_no))
+            sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.files_table.setItem(row, 0, sr_item)
+            
             # File name
             name_item = QTableWidgetItem(os.path.basename(file_info['path']))
-            self.files_table.setItem(row, 0, name_item)
+            self.files_table.setItem(row, 1, name_item)
             
             # Size
-            size = file_info.get('size', 0)
+            size = file_info.get('size', 2)
             if size >= 1024 * 1024:  # MB
                 size_str = f"{size / (1024 * 1024):.2f} MB"
             elif size >= 1024:  # KB 
                 size_str = f"{size / 1024:.2f} KB"
             else:  # Bytes
                 size_str = f"{size} B"
-            self.files_table.setItem(row, 1, QTableWidgetItem(size_str))
+            self.files_table.setItem(row, 2, QTableWidgetItem(size_str))
             
             # Progress (initially 0)
             progress_item = QTableWidgetItem()
             progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-            self.files_table.setItem(row, 2, progress_item)
+            self.files_table.setItem(row, 3, progress_item)
+            
+            sr_no += 1  # Increment serial number
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
