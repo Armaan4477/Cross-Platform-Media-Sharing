@@ -295,13 +295,14 @@ class FileSenderJava(QThread):
 
                     if current_time - self.last_update_time >= 0.5:
                         elapsed = current_time - self.start_time
-                        speed = (self.sent_size - self.last_bytes_sent) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
-                        remaining_bytes = self.total_size - self.sent_size
-                        eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
-                        
+                        if elapsed > 0:
+                            speed = (self.sent_size / (1024 * 1024)) / elapsed  # MB/s
+                            eta = (file_size - sent_size) / (self.sent_size / elapsed) if self.sent_size > 0 else 0
+                        else:
+                            speed = 0
+                            eta = 0
                         self.transfer_stats_update.emit(speed, eta, elapsed)
                         self.last_update_time = current_time
-                        self.last_bytes_sent = self.sent_size
 
                     overall_progress = self.sent_size * 100 // self.total_size
                     self.overall_progress_update.emit(overall_progress)

@@ -255,13 +255,14 @@ class ReceiveWorkerJava(QThread):
                             # Calculate transfer statistics every 0.5 seconds
                             if current_time - self.last_update_time >= 0.5:
                                 elapsed = current_time - self.start_time
-                                speed = (received_total - self.last_bytes_received) / (current_time - self.last_update_time) / (1024 * 1024)  # MB/s
-                                remaining_bytes = total_bytes - received_total
-                                eta = remaining_bytes / (speed * 1024 * 1024) if speed > 0 else 0
-                                
+                                if elapsed > 0:
+                                    speed = (received_size / (1024 * 1024)) / elapsed  # MB/s
+                                    eta = (file_size - received_size) / (received_size / elapsed) if received_size > 0 else 0
+                                else:
+                                    speed = 0
+                                    eta = 0
                                 self.transfer_stats_update.emit(speed, eta, elapsed)
                                 self.last_update_time = current_time
-                                self.last_bytes_received = received_total
 
                             # Calculate and emit progress
                             file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
