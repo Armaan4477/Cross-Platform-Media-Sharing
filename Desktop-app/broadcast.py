@@ -108,7 +108,7 @@ class BroadcastWorker(QThread):
                 s.bind(('', LISTEN_PORT))
 
                 start_time = time.time()
-                timeout_duration = 8.0
+                timeout_duration = 3.0
                 broadcast_address = BROADCAST_ADDRESS
                 message = "DISCOVER".encode('utf-8')
 
@@ -452,11 +452,13 @@ class Broadcast(QWidget):
             self.broadcast_worker.connect_to_device(device['ip'], device['name'])
 
     def show_send_app(self, device_ip, device_name, receiver_data):
+        self.clean()
         self.hide()
         self.send_app = SendApp(device_ip, device_name, receiver_data)
         self.send_app.show()
 
     def show_send_app_java(self, device_ip, device_name, receiver_data):
+        self.clean()
         self.hide()
         self.send_app_java = SendAppJava(device_ip, device_name, receiver_data)
         self.send_app_java.show()
@@ -550,16 +552,19 @@ class Broadcast(QWidget):
         self.current_config = config
 
     def cleanup(self):
-        # Stop broadcast worker thread
         if self.broadcast_worker:
             self.broadcast_worker.stop()
             self.broadcast_worker.quit()
             self.broadcast_worker.wait()
 
-        # Close all child windows
         for window in [self.send_app, self.send_app_java, self.send_app_swift, self.main_window]:
             if window:
                 window.close()
+
+    def clean(self):
+        if self.broadcast_worker:
+            self.broadcast_worker.stop()
+            self.broadcast_worker.quit()
 
     def closeEvent(self, event):
         logger.info("Shutting down Broadcast window")
