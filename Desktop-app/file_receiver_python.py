@@ -583,10 +583,10 @@ class ReceiveAppP(QWidget):
         top_layout.addStretch()
         layout.addLayout(top_layout)
 
-        # Files table
+        # Files table - with fixed height
         self.files_table = QTableWidget()
-        self.files_table.setMinimumHeight(200)  # Add minimum height
-        self.files_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
+        self.files_table.setFixedHeight(200)  # Set fixed height to prevent overflow
+        self.files_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.files_table.setColumnCount(4)
         self.files_table.setShowGrid(True)
         self.files_table.verticalHeader().setVisible(False)
@@ -634,18 +634,39 @@ class ReceiveAppP(QWidget):
         self.files_table.setItemDelegate(ProgressBarDelegate())
         layout.addWidget(self.files_table)
 
-        # Add file counts label
+        # Stats section with consistent spacing
+        stats_layout = QVBoxLayout()
+        stats_layout.setSpacing(8)  # Consistent spacing between elements
+
+        # File counts label
         self.file_counts_label = QLabel("Total files: 0 | Completed: 0 | Pending: 0")
         self.file_counts_label.setStyleSheet("""
             QLabel {
                 color: white;
                 font-size: 14px;
                 background-color: transparent;
+                padding: 3px 0;
             }
         """)
-        layout.addWidget(self.file_counts_label)
+        stats_layout.addWidget(self.file_counts_label)
 
-        # Overall progress bar at bottom
+        # Transfer stats label
+        self.transfer_stats_label = QLabel()
+        self.transfer_stats_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 14px;
+                background: transparent;
+                padding: 3px 0;
+            }
+        """)
+        self.transfer_stats_label.setVisible(False)
+        stats_layout.addWidget(self.transfer_stats_label)
+
+        # Add the stats layout to main layout
+        layout.addLayout(stats_layout)
+
+        # Overall progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("""
             QProgressBar {
@@ -654,25 +675,14 @@ class ReceiveAppP(QWidget):
                 border: 1px solid #4b5562;
                 border-radius: 5px;
                 text-align: center;
+                height: 20px;
+                margin: 5px 0;
             }
             QProgressBar::chunk {
                 background-color: #4CAF50;
             }
         """)
         layout.addWidget(self.progress_bar)
-
-        # Add transfer stats label
-        self.transfer_stats_label = QLabel()
-        self.transfer_stats_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 12px;
-                background: transparent;
-                padding: 5px;
-            }
-        """)
-        self.transfer_stats_label.setVisible(False)
-        layout.addWidget(self.transfer_stats_label)
 
         # Buttons
         buttons_layout = QHBoxLayout()
