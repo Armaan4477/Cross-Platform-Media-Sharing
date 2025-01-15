@@ -96,7 +96,6 @@ public class SendFileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
-        //forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -108,6 +107,7 @@ public class SendFileActivity extends AppCompatActivity {
                         .setPositiveButton("Yes", (dialog, which) -> {
                             dialog.dismiss();
                             closeAllSockets();
+                            forceReleasePort();
                             Toast.makeText(SendFileActivity.this,  "Device Disconnected", Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("No", (dialog, which) -> dialog.dismiss())

@@ -49,13 +49,13 @@ public class WaitingToReceiveActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
-       // forceReleaseUDPPort();
-       // forceReleasePort();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 closeAllSockets();
+                forceReleasePort();
+                forceReleaseUDPPort();
             }
         });
 
