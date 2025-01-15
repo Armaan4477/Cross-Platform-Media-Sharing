@@ -52,7 +52,6 @@ class VersionCheck(QThread):
         v1_parts = [int(part) for part in v1.split('.')]
         v2_parts = [int(part) for part in v2.split('.')]
         
-        # Pad the shorter version with zeros
         while len(v1_parts) < 4:
             v1_parts.append(0)
         while len(v2_parts) < 4:
@@ -101,7 +100,6 @@ class NetworkCheck(QThread):
 
     def check_network_type_windows(self):
         try:
-            # Simpler PowerShell command that works on both Windows 10 and 11
             cmd = '''
             $connections = @()
             Get-NetConnectionProfile | ForEach-Object {
@@ -129,11 +127,9 @@ class NetworkCheck(QThread):
             if result.returncode == 0 and result.stdout.strip():
                 try:
                     network_data = json.loads(result.stdout)
-                    # Handle both single and multiple network adapters
                     if not isinstance(network_data, list):
                         network_data = [network_data]
                     
-                    # Check all active network adapters
                     for network in network_data:
                         logger.info(f"Network interface: {network.get('Name')} - Category: {network.get('NetworkCategory')}")
                         if network.get('NetworkCategory', '').lower() == 'public':
@@ -170,7 +166,6 @@ class MainApp(QWidget):
         self.preferences_app = None
 
     def cleanup(self):
-        # Stop all running threads
         if self.network_thread and self.network_thread.isRunning():
             self.network_thread.quit()
             self.network_thread.wait()
@@ -179,7 +174,6 @@ class MainApp(QWidget):
             self.version_thread.quit()
             self.version_thread.wait()
 
-        # Close all child windows
         if self.broadcast_app:
             self.broadcast_app.close()
         if self.receive_app:
@@ -187,7 +181,6 @@ class MainApp(QWidget):
         if self.preferences_app:
             self.preferences_app.close()
 
-        # Cleanup config manager
         if hasattr(self, 'config_manager'):
             self.config_manager.quit()
             self.config_manager.wait()
@@ -265,45 +258,38 @@ class MainApp(QWidget):
         main_layout.addSpacing(20)
 
         gif_label = QLabel()
-        gif_label.setStyleSheet("background-color: transparent;")  # Add this line
+        gif_label.setStyleSheet("background-color: transparent;")
         movie = QMovie(os.path.join(os.path.dirname(__file__), "assets", "wifi.gif"))
         gif_label.setMovie(movie)
-        movie.setScaledSize(QSize(500, 450))  # Decrease height from 500 to 400
+        movie.setScaledSize(QSize(500, 450))
         movie.start()
         main_layout.addWidget(gif_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
         icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
 
-
-        # Buttons Layout
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
+        button_layout.setSpacing(8)
         button_layout.setContentsMargins(30, 0, 30, 0)
 
-        # Send File Button
         self.send_button = QPushButton('Send File')
         self.send_button.setIcon(QIcon(icon_path_send))
-        self.send_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
+        self.send_button.setIconSize(QSize(24, 24))
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
         button_layout.addWidget(self.send_button)
 
-        # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.receive_button.setIcon(QIcon(icon_path_receive))
-        self.receive_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
+        self.receive_button.setIconSize(QSize(24, 24))
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
         button_layout.addWidget(self.receive_button)
 
-        # Add the first button layout to the main layout
         main_layout.addLayout(button_layout)
-
-        # Add some vertical space above the Credits button layout
-        main_layout.addSpacing(20)  # Moves buttons up and adds spacing between buttons and Credits
+        main_layout.addSpacing(20)
 
         self.setLayout(main_layout)
         logger.info("Started Main App")
@@ -361,7 +347,7 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 853, 480  # Changed from 700 to 853 for 16:9 ratio
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
@@ -380,11 +366,9 @@ class MainApp(QWidget):
             """)
             send_dialog.setIcon(QMessageBox.Icon.Warning)
 
-            # Add buttons
             proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
             cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-            # Apply consistent styling with a gradient background and transparent text area
             send_dialog.setStyleSheet("""
                 QMessageBox {
                     background: qlineargradient(
@@ -427,7 +411,6 @@ class MainApp(QWidget):
                 }
             """)
 
-            # Execute dialog and handle response
             send_dialog.exec()
             if send_dialog.clickedButton() == proceed_button:
                 logger.info("Started Send File App")
@@ -449,11 +432,9 @@ class MainApp(QWidget):
             """)
             receive_dialog.setIcon(QMessageBox.Icon.Warning)
 
-            # Add buttons
             proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
             cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-            # Apply consistent styling with a gradient background and transparent text area
             receive_dialog.setStyleSheet("""
                 QMessageBox {
                     background: qlineargradient(
@@ -496,7 +477,6 @@ class MainApp(QWidget):
                 }
             """)
 
-            # Execute dialog and handle response
             receive_dialog.exec()
             if receive_dialog.clickedButton() == proceed_button:
                 logger.info("Started Receive File App")
@@ -524,7 +504,7 @@ class MainApp(QWidget):
         if self.config_manager.get_config()["check_update"]:
             logger.info("Checking for updates")
             self.version_thread = VersionCheck()
-            self.version_thread.config_manager = self.config_manager  # Pass config manager to version check
+            self.version_thread.config_manager = self.config_manager
             self.version_thread.update_available.connect(self.showmsgbox)
             self.version_thread.start()
         else:

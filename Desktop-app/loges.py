@@ -17,13 +17,11 @@ def get_logger_file_path():
     else:
         return None
     
-    # Create the directory if it doesn't exist
     os.makedirs(logger_dir, exist_ok=True)
     return logger_dir
 
 
 class LoggingThread(QThread):
-    # Signal to emit logs if needed in GUI (optional)
     log_signal = pyqtSignal(str)
 
     def __init__(self, log_queue, log_file_path):
@@ -33,18 +31,15 @@ class LoggingThread(QThread):
         self.running = True
 
     def run(self):
-        # Configure the listener logger
         listener_logger = logging.getLogger('FileSharing:Listener')
         listener_logger.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
 
-        # File handler
         file_handler = logging.FileHandler(self.log_file_path, mode='a')
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formatter)
 
-        # Console handler
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(formatter)
@@ -64,7 +59,6 @@ class LoggingThread(QThread):
         self.quit()
         self.wait()
 
-# Set up logging queue and thread
 log_queue = Queue()
 log_dir = get_logger_file_path()
 if log_dir is None:
@@ -77,16 +71,10 @@ if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > (500 * 102
 logging_thread = LoggingThread(log_queue, log_file_path)
 logging_thread.start()
 
-# Configure the main logger to use QueueHandler
 logger = logging.getLogger('FileSharing: ')
 logger.setLevel(logging.DEBUG)
 queue_handler = QueueHandler(log_queue)
 logger.addHandler(queue_handler)
 
-# Optional: Clean up logging_thread when the application exits
 def stop_logging_thread():
     logging_thread.stop()
-
-# Register the cleanup function if needed
-
-
