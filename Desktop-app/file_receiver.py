@@ -329,12 +329,6 @@ class ReceiveApp(QWidget):
 
     def closeEvent(self, event):
         logger.info("Shutting down ReceiveApp")
-        self.cleanup()
-        QApplication.quit()
-        event.accept()
-
-    def closeEvent(self, event):
-        logger.info("Shutting down ReceiveApp")
         try:
             if self.file_receiver:
                 logger.debug("Terminating file receiver")
@@ -346,6 +340,9 @@ class ReceiveApp(QWidget):
         logger.debug("Stopping broadcast thread")
         self.file_receiver.broadcasting = False
         logger.info("ReceiveApp shutdown complete")
+        self.cleanup()
+        self.stop()
+        QApplication.quit()
         event.accept()
 
     def stop(self):
