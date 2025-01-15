@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QPointF, QTimer, QSize
 from PyQt6.QtGui import QScreen, QColor, QLinearGradient, QPainter, QPen, QFont, QIcon, QKeySequence, QKeyEvent
 from loges import logger
-from constant import ConfigManager  # Updated import
+from constant import ConfigManager
 from portsss import BROADCAST_PORT, LISTEN_PORT, RECEIVER_JSON
 from file_sender import SendApp
 from file_sender_java import SendAppJava
@@ -27,9 +27,8 @@ class CircularDeviceButton(QWidget):
         self.device_name = device_name
         self.device_ip = device_ip
 
-        # Create a QPushButton for the device (initials or first letter)
         self.button = QPushButton(device_name[0], self)
-        self.button.setFixedSize(50, 50)  # Button size
+        self.button.setFixedSize(50, 50)
         self.button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(
@@ -60,7 +59,6 @@ class CircularDeviceButton(QWidget):
             }
         """)
 
-        # Create a QLabel for the full device name below the button
         self.device_label = QLabel(device_name, self)
         self.device_label.setStyleSheet("""
             QLabel {
@@ -71,14 +69,12 @@ class CircularDeviceButton(QWidget):
         """)
         self.device_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Set up the layout: button above and label below
         layout = QVBoxLayout(self)
         layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.device_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Reduce the spacing and margins between the button and label
-        layout.setSpacing(2)  # Set small spacing between button and label
-        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins around the layout
+        layout.setSpacing(2)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         #com.an.Datadash
 
@@ -199,7 +195,6 @@ class BroadcastWorker(QThread):
                 self.client_socket.close()
 
     def closeEvent(self, event):
-        # Ensure socket is forcefully closed
         if self.worker.client_socket:
             try:
                 self.worker.client_socket.shutdown(socket.SHUT_RDWR)
@@ -207,7 +202,7 @@ class BroadcastWorker(QThread):
                 print("Socket closed on window switch or close.")
             except Exception as e:
                 logger.error(f"Error closing socket: {str(e)}")
-        event.accept()  # Accept the window close event
+        event.accept()
 
     def stop(self):
         self.running = False
@@ -230,7 +225,7 @@ class Broadcast(QWidget):
         self.config_manager.log_message.connect(logger.info)
         self.config_manager.start()
         self.setWindowTitle('Device Discovery')
-        self.setFixedSize(853, 480)  # Updated to 1280x720 (16:9 ratio)
+        self.setFixedSize(853, 480)
         self.center_window()
 
         self.devices = []
@@ -243,7 +238,7 @@ class Broadcast(QWidget):
         self.animation_offset = 0
         self.animation_timer = QTimer(self)
         self.animation_timer.timeout.connect(self.update_animation)
-        self.animation_timer.start(50)  # Update every 50ms
+        self.animation_timer.start(50)
         self.initUI()
         self.discover_devices()
         self.send_app = None
@@ -257,7 +252,6 @@ class Broadcast(QWidget):
         main_layout.setSpacing(0)
         #com.an.Datadash
 
-        # Header
         header = QFrame()
         header.setFixedHeight(70)
         header.setStyleSheet("background-color: #333; padding: 0px;")
@@ -270,23 +264,19 @@ class Broadcast(QWidget):
 
         main_layout.addWidget(header)
 
-        # Main content area
         content = QWidget()
         content_layout = QVBoxLayout(content)
         
-        # Circular device display
         self.device_area = QWidget()
-        self.device_area.setFixedSize(600, 600)  # Increased size for larger window
+        self.device_area.setFixedSize(600, 600)
         content_layout.addWidget(self.device_area, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Refresh button
         self.refresh_button = QPushButton('Refresh')
         self.style_button(self.refresh_button)
         self.refresh_button.clicked.connect(self.discover_devices)
         content_layout.addWidget(self.refresh_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
         main_layout.addWidget(content)
-        #com.an.Datadash
         self.setLayout(main_layout)
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -300,7 +290,7 @@ class Broadcast(QWidget):
         self.close()
         
     def style_button(self, button):
-        button.setFixedSize(180, 60)  # Increased size for better visibility
+        button.setFixedSize(180, 60)
         button.setFont(QFont("Arial", 18))
         button.setStyleSheet("""
             QPushButton {
@@ -341,7 +331,7 @@ class Broadcast(QWidget):
 
     def update_animation(self):
         self.animation_offset += 1
-        if self.animation_offset > 60:  # Adjusted for larger animation
+        if self.animation_offset > 60:
             self.animation_offset = 0
         self.update()
 
@@ -360,34 +350,30 @@ class Broadcast(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Draw background gradient
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0, QColor('#b0b0b0'))
         gradient.setColorAt(1, QColor('#505050'))
         painter.fillRect(self.rect(), gradient)
 
-        # Draw animated circular rings with reduced size for smaller window
-        painter.setPen(QPen(Qt.GlobalColor.white, 3))  # Line width remains the same
+        painter.setPen(QPen(Qt.GlobalColor.white, 3))
         center = QPointF(self.width() / 2, self.height() / 2)
         self.center = center
         for i in range(4):
-            radius = 97 - i * 26  # Reduced size for the circles
+            radius = 97 - i * 26 
             painter.drawEllipse(center, radius + self.animation_offset, radius + self.animation_offset)
 
     def update_devices(self):
-        # Remove previous device buttons
         for child in self.device_area.children():
             if isinstance(child, CircularDeviceButton):
                 child.deleteLater()
 
-        # Position the device buttons on the reduced circle size
-        radius = 105  # Smaller circle for the device buttons
-        center_x, center_y = 296, 160  # Adjusted center for the smaller window
+        radius = 105
+        center_x, center_y = 296, 160 
 
         for i, device in enumerate(self.devices):
             angle = i * (2 * math.pi / len(self.devices))
-            x = center_x + radius * math.cos(angle) - 32  # Adjusted for smaller window
-            y = center_y + radius * math.sin(angle) - 20  # Adjusted for smaller window
+            x = center_x + radius * math.cos(angle) - 32 
+            y = center_y + radius * math.sin(angle) - 20 
             button_with_label = CircularDeviceButton(device['name'], device['ip'], self.device_area)
             button_with_label.move(int(x), int(y))
             button_with_label.button.clicked.connect(lambda checked, d=device: self.connect_to_device(d))
@@ -400,11 +386,9 @@ class Broadcast(QWidget):
         confirm_dialog.setIcon(QMessageBox.Icon.Question)
         #com.an.Datadash
 
-        # Add buttons
         yes_button = confirm_dialog.addButton("Yes", QMessageBox.ButtonRole.YesRole)
         no_button = confirm_dialog.addButton("No", QMessageBox.ButtonRole.NoRole)
 
-        # Apply consistent styling
         confirm_dialog.setStyleSheet("""
             QMessageBox {
                 background: qlineargradient(
@@ -474,7 +458,6 @@ class Broadcast(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Critical)
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-                # Apply custom style with gradient background
                 msg_box.setStyleSheet("""
                     QMessageBox {
                         background: qlineargradient(
@@ -486,7 +469,7 @@ class Broadcast(QWidget):
                         font-size: 16px;
                     }
                     QLabel {
-                    background-color: transparent; /* Make the label background transparent */
+                    background-color: transparent;
                     }
                     QPushButton {
                         background: qlineargradient(
@@ -523,7 +506,6 @@ class Broadcast(QWidget):
         #com.an.Datadash
 
     def closeEvent(self, event):
-        # Ensure socket is forcefully closed
         try:
             if self.worker.client_socket:
                 try:
@@ -536,10 +518,9 @@ class Broadcast(QWidget):
             pass
         finally:
             self.broadcast_worker.stop()
-            event.accept()  # Accept the window close event
+            event.accept()
     
     def stop(self):
-        # Method to manually stop the socket
         if self.client_socket:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)

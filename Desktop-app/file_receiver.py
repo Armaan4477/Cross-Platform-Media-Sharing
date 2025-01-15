@@ -164,14 +164,13 @@ class ReceiveApp(QWidget):
         
         self.loading_label = QLabel(self)
         self.loading_label.setStyleSheet("QLabel { background-color: transparent; border: none; }")
-        self.movie = QMovie(gif_path)  # Use the relative path to load the GIF
+        self.movie = QMovie(gif_path)
         self.movie.setScaledSize(QtCore.QSize(40, 40)) 
         self.loading_label.setMovie(self.movie)
         self.movie.start()
         hbox.addWidget(self.loading_label)
 
-        # Label with typewriter effect
-        self.label = QLabel("", self)  # Empty string initially
+        self.label = QLabel("", self)
         self.label.setStyleSheet("""
             QLabel {
                 color: white;
@@ -186,14 +185,6 @@ class ReceiveApp(QWidget):
         layout.addLayout(hbox)
         self.setLayout(layout)
 
-
-        #layout = QVBoxLayout()
-
-        # self.label = QLabel("Waiting for Connection...", self)
-        # layout.addWidget(self.label)
-
-        self.setLayout(layout)
-
         self.file_receiver = FileReceiver()
         self.file_receiver.show_receive_app_p_signal.connect(self.show_receive_app_p)
         self.file_receiver.show_receive_app_p_signal_java.connect(self.show_receive_app_p_java)
@@ -203,7 +194,6 @@ class ReceiveApp(QWidget):
 
         self.broadcast_thread = threading.Thread(target=self.listenForBroadcast, daemon=True)
         self.broadcast_thread.start()
-# Call the method to start typewriter effect
         self.start_typewriter_effect("Waiting to connect to sender")
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -237,11 +227,10 @@ class ReceiveApp(QWidget):
         search_socket = None
         reply_socket = None
         try:
-            # Socket for searching broadcasts
             search_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             search_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             search_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            search_socket.bind(('0.0.0.0', BROADCAST_PORT))  # Listen on port 49185
+            search_socket.bind(('0.0.0.0', BROADCAST_PORT))
             logger.info(f"Searching for broadcasts on port {BROADCAST_PORT}")
 
             while True:
@@ -256,10 +245,9 @@ class ReceiveApp(QWidget):
                             response = f'RECEIVER:{device_name}'
                             logger.info(f"Sending response as {device_name} to {address[0]}")
                             
-                            # Create new socket for sending response
                             reply_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             reply_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                            reply_socket.sendto(response.encode(), (address[0], LISTEN_PORT))  # Send to port 49186
+                            reply_socket.sendto(response.encode(), (address[0], LISTEN_PORT))
                             reply_socket.close()
                             logger.debug(f"Response sent to {address[0]}:{LISTEN_PORT}")
                     except Exception as e:
@@ -276,27 +264,24 @@ class ReceiveApp(QWidget):
         self.movie.stop()
         self.loading_label.hide()
         self.label.setText("Connected successfully!")
-        self.label.setStyleSheet("color: #00FF00;")  # Green color for success
+        self.label.setStyleSheet("color: #00FF00;") 
         #com.an.Datadash
 
 
     def show_receive_app_p(self, sender_os):
         client_ip = self.file_receiver.client_ip
-        """Slot to show the ReceiveAppP window on the main thread."""
         self.hide()
         self.receive_app_p = ReceiveAppP(client_ip, sender_os)
         self.receive_app_p.show()
 
     def show_receive_app_p_java(self):
         client_ip = self.file_receiver.client_ip
-        """Slot to show the ReceiveAppP window on the main thread."""
         self.hide()
         self.receive_app_p_java = ReceiveAppPJava(client_ip)
         self.receive_app_p_java.show()
 
     def show_receive_app_p_swift(self):
         client_ip = self.file_receiver.client_ip
-        """Slot to show the ReceiveAppP window on the main thread."""
         self.hide()
         self.receive_app_p_swift = ReceiveAppPSwift(client_ip)
         self.receive_app_p_swift.show()
@@ -337,7 +322,6 @@ class ReceiveApp(QWidget):
             except:
                 pass
 
-        # Close child windows
         for window in [self.main_app, self.receive_app_p, 
                       self.receive_app_p_java, self.receive_app_p_swift]:
             if window:
@@ -352,7 +336,6 @@ class ReceiveApp(QWidget):
     def closeEvent(self, event):
         logger.info("Shutting down ReceiveApp")
         try:
-            """Override the close event to ensure everything is stopped properly."""
             if self.file_receiver:
                 logger.debug("Terminating file receiver")
                 self.file_receiver.terminate()
@@ -372,9 +355,7 @@ class ReceiveApp(QWidget):
         self.file_receiver.receiver_worker.terminate()
 
     def on_config_updated(self, config):
-        """Handle configuration updates."""
         logger.debug(f"Receiver config updated: {config}")
-        # Update any UI elements or settings based on the new config if needed
         pass
 
 if __name__ == '__main__':

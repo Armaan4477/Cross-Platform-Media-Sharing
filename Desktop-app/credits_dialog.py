@@ -8,17 +8,18 @@ class CreditsDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Project Credits")
-        self.setFixedSize(520, 425)
+        self.setFixedSize(600, 480)
         self.set_background()
         self.center_window()
 
         layout = QGridLayout()
         layout.setSpacing(10)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(30, 30, 30, 30)
 
         title_coder = QLabel("Core Team")
         title_coder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_coder.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        title_coder.setStyleSheet("color: white; font-size: 18px; text-shadow: 1px 1px #000;")
         layout.addWidget(title_coder, 0, 0, 1, 3)
 
         layout.addWidget(QLabel("Armaan Nakhuda", font=QFont("Arial", 18)), 2, 0)
@@ -60,6 +61,13 @@ class CreditsDialog(QDialog):
         close_button.clicked.connect(self.close)
         layout.addWidget(close_button, 13, 0, 1, 3)
 
+        for widget in [title_coder, close_button]:
+            effect = QGraphicsDropShadowEffect()
+            effect.setBlurRadius(10)
+            effect.setOffset(2, 2)
+            effect.setColor(QColor(0, 0, 0, 150))
+            widget.setGraphicsEffect(effect)
+
         self.setLayout(layout)
 
     def set_background(self):
@@ -67,8 +75,8 @@ class CreditsDialog(QDialog):
             QDialog {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #b0b0b0,  /* Start color */
-                    stop: 1 #505050   /* End color */
+                    stop: 0 #c0c0c0,
+                    stop: 1 #404040
                 );
             }
         """)

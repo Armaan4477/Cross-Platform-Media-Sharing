@@ -62,20 +62,16 @@ def decrypt_file(filepath: str, key: str):
     unpadder = padding.PKCS7(128).unpadder()
     decrypted_data = unpadder.update(padded_data) + unpadder.finalize()
 
-    # Get the directory of the encrypted file
     directory = os.path.dirname(filepath)
-    # Prepare the file name without the ".crypt" extension
     original_name, extension = os.path.splitext(os.path.basename(filepath.replace('.crypt', '')))
     file_name = f"{original_name}{extension}"
 
-    # Check if file already exists in the same directory
     i = 1
     while os.path.exists(os.path.join(directory, file_name)):
         file_name = f"{original_name} ({i}){extension}"
         i += 1
         #com.an.Datadash
 
-    # Use the updated file_name to save the decrypted file
     output_file_path = os.path.join(directory, file_name)
     with open(output_file_path, 'wb') as f:
         f.write(decrypted_data)
@@ -93,18 +89,17 @@ class Decryptor(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Decryptor')
-        self.setGeometry(100, 100, 400, 200)  # Reduced window size
+        self.setGeometry(100, 100, 400, 200)
         
         layout = QVBoxLayout()
-        layout.setSpacing(0)  # Reduced spacing between elements
-        layout.setContentsMargins(30, 20, 30, 20)  # Reduced margins
+        layout.setSpacing(0)
+        layout.setContentsMargins(30, 20, 30, 20)
         
         self.password_label = QLabel('Decryption Password:', self)
         self.style_label(self.password_label)
         layout.addWidget(self.password_label)
         #com.an.Datadash
 
-         # Add a spacer to remove the gap between the label and the input box
         spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         layout.addItem(spacer)
 
@@ -130,7 +125,6 @@ class Decryptor(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Critical)
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-                # Apply custom style with gradient background
                 msg_box.setStyleSheet("""
                     QMessageBox {
                         background: qlineargradient(
@@ -142,7 +136,7 @@ class Decryptor(QWidget):
                         font-size: 16px;
                     }
                     QLabel {
-                    background-color: transparent; /* Make the label background transparent */
+                    background-color: transparent;
                     }
                     QPushButton {
                         background: qlineargradient(
@@ -190,7 +184,6 @@ class Decryptor(QWidget):
                         msg_box.setIcon(QMessageBox.Icon.Critical)
                         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-                        # Apply custom style with gradient background
                         msg_box.setStyleSheet("""
                             QMessageBox {
                                 background: qlineargradient(
@@ -202,7 +195,7 @@ class Decryptor(QWidget):
                                 font-size: 16px;
                             }
                             QLabel {
-                            background-color: transparent; /* Make the label background transparent */
+                            background-color: transparent; 
                             }
                             QPushButton {
                                 background: qlineargradient(
@@ -245,7 +238,6 @@ class Decryptor(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Critical)
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-                # Apply custom style with gradient background
                 msg_box.setStyleSheet("""
                     QMessageBox {
                         background: qlineargradient(
@@ -257,7 +249,7 @@ class Decryptor(QWidget):
                         font-size: 16px;
                     }
                     QLabel {
-                    background-color: transparent; /* Make the label background transparent */
+                    background-color: transparent; 
                     }
                     QPushButton {
                         background: qlineargradient(
@@ -294,7 +286,6 @@ class Decryptor(QWidget):
                 msg_box.setIcon(QMessageBox.Icon.Information)
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
 
-                # Apply custom style with gradient background
                 msg_box.setStyleSheet("""
                     QMessageBox {
                         background: qlineargradient(
@@ -306,7 +297,7 @@ class Decryptor(QWidget):
                         font-size: 16px;
                     }
                     QLabel {
-                    background-color: transparent; /* Make the label background transparent */
+                    background-color: transparent;
                     }
                     QPushButton {
                         background: qlineargradient(
@@ -350,14 +341,14 @@ class Decryptor(QWidget):
         """)
 
     def style_button(self, button):
-        button.setFixedSize(150, 40)  # Adjust the size as needed
+        button.setFixedSize(150, 40)
         button.setFont(QFont("Arial", 15))
         button.setStyleSheet("""
             QPushButton {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(47, 54, 66, 255),   /* Dark Color */
-                    stop: 1 rgba(75, 85, 98, 255)    /* Light Color */
+                    stop: 0 rgba(47, 54, 66, 255),  
+                    stop: 1 rgba(75, 85, 98, 255)   
                 );
                 color: white;
                 border-radius: 18px;
@@ -369,31 +360,30 @@ class Decryptor(QWidget):
             QPushButton:hover {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(60, 68, 80, 255),   /* Lightened Dark Color */
-                    stop: 1 rgba(90, 100, 118, 255)  /* Lightened Light Color */
+                    stop: 0 rgba(60, 68, 80, 255),  
+                    stop: 1 rgba(90, 100, 118, 255) 
                 );
             }
             QPushButton:pressed {
                 background: qlineargradient(
                     x1: 0, y1: 0, x2: 1, y2: 0,
-                    stop: 0 rgba(35, 41, 51, 255),   /* Darker on press */
-                    stop: 1 rgba(65, 75, 88, 255)    /* Darker on press */
+                    stop: 0 rgba(35, 41, 51, 255), 
+                    stop: 1 rgba(65, 75, 88, 255)  
                 );
             }
         """)
 
-        # Adding a constant glow effect to the button
         glow_effect = QGraphicsDropShadowEffect()
-        glow_effect.setBlurRadius(15)  # Adjust the blur radius for a softer glow
-        glow_effect.setXOffset(0)       # Center the glow horizontally
-        glow_effect.setYOffset(0)       # Center the glow vertically
-        glow_effect.setColor(QColor(255, 255, 255, 100))  # Soft white glow with some transparency
+        glow_effect.setBlurRadius(15)  
+        glow_effect.setXOffset(0)   
+        glow_effect.setYOffset(0) 
+        glow_effect.setColor(QColor(255, 255, 255, 100)) 
         button.setGraphicsEffect(glow_effect)
 
     def style_label(self, label):
         label.setStyleSheet("""
             color: #FFFFFF;
-            background-color: transparent;  /* Set the background to transparent */
+            background-color: transparent;  
             font-size: 20px;
         """)
 
@@ -405,12 +395,12 @@ class Decryptor(QWidget):
                 border: 1px solid #444;
                 border-radius: 4px;
                 padding: 5px;
-                caret-color: #00FF00;  /* Green cursor color */
+                caret-color: #00FF00; 
             }
             QLineEdit:focus {
-                border: 2px solid #333333;  /* Dark grey border on focus */
-                caret-color: #00FF00;  /* Green cursor color on focus */
-                background-color: rgba(255, 255, 255, 0.1); /* Slightly opaque background on focus */
+                border: 2px solid #333333; 
+                caret-color: #00FF00; 
+                background-color: rgba(255, 255, 255, 0.1); 
             }
         """)
 
