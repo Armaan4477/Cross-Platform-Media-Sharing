@@ -94,7 +94,6 @@ class BroadcastWorker(QThread):
         self.running = True
 
     def run(self):
-        time.sleep(1)
         logger.info("Starting receiver discovery process")
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
@@ -105,34 +104,34 @@ class BroadcastWorker(QThread):
                 s.bind(('', LISTEN_PORT))
 
                 start_time = time.time()
-                timeout_duration = 3.0
+                timeout_duration = 1.0
                 broadcast_address = BROADCAST_ADDRESS
                 message = "DISCOVER".encode('utf-8')
 
                 logger.info(f"Sending DISCOVER message to {broadcast_address}:{BROADCAST_PORT}")
                 s.sendto(message, (broadcast_address, BROADCAST_PORT))
 
-               # while (time.time() - start_time) < timeout_duration and self.running:
-                try:
-                    data, addr = s.recvfrom(1024)
-                    message = data.decode()
-                    logger.info(f"Received response from {addr[0]}: {message}")
+                while (time.time() - start_time) < timeout_duration and self.running:
+                    try:
+                        data, addr = s.recvfrom(1024)
+                        message = data.decode()
+                        logger.info(f"Received response from {addr[0]}: {message}")
 
-                    if message.startswith('RECEIVER:'):
-                        device_name = message.split(':')[1]
-                        device_info = {
-                            'ip': addr[0],
-                            'name': device_name
-                        }
-                        logger.info(f"Found valid device: {device_info}")
-                        self.device_detected.emit(device_info)
+                        if message.startswith('RECEIVER:'):
+                            device_name = message.split(':')[1]
+                            device_info = {
+                                'ip': addr[0],
+                                'name': device_name
+                            }
+                            logger.info(f"Found valid device: {device_info}")
+                            self.device_detected.emit(device_info)
 
-                except socket.timeout:
-                    logger.debug("Socket timeout while waiting for response")
-                    #continue
-                except Exception as e:
-                    logger.error(f"Error processing response: {str(e)}")
-                   # continue
+                    except socket.timeout:
+                        logger.debug("Socket timeout while waiting for response")
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error processing response: {str(e)}")
+                        continue
 
         except Exception as e:
             logger.error(f"Critical broadcast error: {str(e)}")
@@ -216,8 +215,6 @@ class BroadcastWorker(QThread):
 
 
 class Broadcast(QWidget):
-    
-   
     def __init__(self):
         super().__init__()
         self.config_manager = ConfigManager()
@@ -240,6 +237,7 @@ class Broadcast(QWidget):
         self.animation_timer.timeout.connect(self.update_animation)
         self.animation_timer.start(50)
         self.initUI()
+        self.is_discovering = False
         self.discover_devices()
         self.send_app = None
         self.send_app_java = None
@@ -336,11 +334,25 @@ class Broadcast(QWidget):
         self.update()
 
     def discover_devices(self):
+        if self.is_discovering:
+            logger.info("Discovery already in progress")
+            return
+            
+        self.refresh_button.setEnabled(False)
+        self.is_discovering = True
         self.devices.clear()
         for child in self.device_area.children():
             if isinstance(child, CircularDeviceButton):
                 child.deleteLater()
+        
+        self.broadcast_worker.finished.connect(self._on_discovery_finished)
         self.broadcast_worker.start()
+
+    def _on_discovery_finished(self):
+        self.is_discovering = False
+        self.refresh_button.setEnabled(True)
+        self.broadcast_worker.finished.disconnect(self._on_discovery_finished)
+        logger.info("Discovery process completed")
 
     def add_device(self, device_info):
         self.devices.append(device_info)
