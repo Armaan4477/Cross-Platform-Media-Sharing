@@ -746,42 +746,50 @@ class ReceiveAppPJava(QWidget):
                 self.files_table.item(row, 1).setToolTip(new_name)
                 break
 
-    def update_files_table(self, metadata):
+    def update_files_table(self, files_info):
         """Update table with files from metadata"""
         self.files_table.setRowCount(0)
         sr_no = 1  # Initialize serial number counter
         
-        for file_info in metadata:
-            if file_info.get('path') == '.delete':
-                continue
+        for file_info in files_info:
+            try:
+                # Check if file_info is a dictionary and has the required keys
+                if isinstance(file_info, dict):
+                    file_path = file_info.get('path', '')
+                    if not file_path:
+                        continue  # Skip this entry if path is empty
+                    
+                    row = self.files_table.rowCount()
+                    self.files_table.insertRow(row)
+                    
+                    sr_item = QTableWidgetItem(str(sr_no))
+                    sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    self.files_table.setItem(row, 0, sr_item)
+                    
+                    # File name
+                    name_item = QTableWidgetItem(os.path.basename(file_path))
+                    self.files_table.setItem(row, 1, name_item)
+                    
+                    # Size
+                    size = file_info.get('size', 2)
+                    if size >= 1024 * 1024:  # MB
+                        size_str = f"{size / (1024 * 1024):.2f} MB"
+                    elif size >= 1024:  # KB 
+                        size_str = f"{size / 1024:.2f} KB"
+                    else:  # Bytes
+                        size_str = f"{size} B"
+                    self.files_table.setItem(row, 2, QTableWidgetItem(size_str))
+                    
+                    # Progress (initially 0)
+                    progress_item = QTableWidgetItem()
+                    progress_item.setData(Qt.ItemDataRole.UserRole, 0)
+                    self.files_table.setItem(row, 3, progress_item)
+                    
+                    sr_no += 1  # Increment serial number
                 
-            row = self.files_table.rowCount()
-            self.files_table.insertRow(row)
-            
-            sr_item = QTableWidgetItem(str(sr_no))
-            sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.files_table.setItem(row, 0, sr_item)
-            
-            # File name
-            name_item = QTableWidgetItem(os.path.basename(file_info['path']))
-            self.files_table.setItem(row, 1, name_item)
-            
-            # Size
-            size = file_info.get('size', 2)
-            if size >= 1024 * 1024:  # MB
-                size_str = f"{size / (1024 * 1024):.2f} MB"
-            elif size >= 1024:  # KB 
-                size_str = f"{size / 1024:.2f} KB"
-            else:  # Bytes
-                size_str = f"{size} B"
-            self.files_table.setItem(row, 2, QTableWidgetItem(size_str))
-            
-            # Progress (initially 0)
-            progress_item = QTableWidgetItem()
-            progress_item.setData(Qt.ItemDataRole.UserRole, 0)
-            self.files_table.setItem(row, 3, progress_item)
-            
-            sr_no += 1  # Increment serial number
+            except Exception as e:
+                print(f"Error processing file info: {e}")
+                continue
 
     def change_gif_to_success(self):
         self.receiving_movie.stop()
