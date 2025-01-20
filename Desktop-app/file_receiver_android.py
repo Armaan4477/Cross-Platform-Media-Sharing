@@ -764,7 +764,26 @@ class ReceiveAppPJava(QWidget):
                     break
 
             if is_folder_transfer and base_folder_name:
-                # Show only the base folder in the table
+                # Calculate total folder size from metadata
+                total_size = sum(
+                    info.get('size', 0) 
+                    for info in files_info 
+                    if isinstance(info, dict) and 
+                    'path' in info and 
+                    not info['path'].endswith('/')  # Exclude directories
+                )
+                
+                # Format size string
+                if total_size >= 1024 * 1024 * 1024:  # GB
+                    size_str = f"{total_size / (1024 * 1024 * 1024):.2f} GB"
+                elif total_size >= 1024 * 1024:  # MB
+                    size_str = f"{total_size / (1024 * 1024):.2f} MB"
+                elif total_size >= 1024:  # KB
+                    size_str = f"{total_size / 1024:.2f} KB"
+                else:  # Bytes
+                    size_str = f"{total_size} B"
+                
+                # Show the base folder in the table
                 self.files_table.insertRow(0)
                 
                 # Serial number
@@ -776,8 +795,8 @@ class ReceiveAppPJava(QWidget):
                 name_item = QTableWidgetItem(base_folder_name)
                 self.files_table.setItem(0, 1, name_item)
                 
-                # Size (folder size shown as '--')
-                size_item = QTableWidgetItem('--')
+                # Size (now showing actual folder size)
+                size_item = QTableWidgetItem(size_str)
                 self.files_table.setItem(0, 2, size_item)
                 
                 # Progress
