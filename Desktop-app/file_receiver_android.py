@@ -159,6 +159,7 @@ class ReceiveWorkerJava(QThread):
         is_folder_transfer = False
         self.start_time = time.time()
         self.last_update_time = time.time()
+        self.files_received = 0  # Reset counter at start
         total_bytes = 0
         received_total = 0
         folder_received_bytes = 0
@@ -282,9 +283,13 @@ class ReceiveWorkerJava(QThread):
                     if encrypted_transfer:
                         self.encrypted_files.append(full_file_path)
 
-                    if file_name != 'metadata.json':
+                    # Update file counter only for actual files (not metadata.json, not directories, not .DS_Store)
+                    if (file_name != 'metadata.json' and 
+                        not file_name.endswith('/') and 
+                        not file_name.endswith('.DS_Store')):
                         self.files_received += 1
-                        files_pending = self.total_files - self.files_received
+                        files_pending = max(0, self.total_files - self.files_received)  # Ensure pending never goes negative
+                        logger.debug(f"File received: {file_name}, Total: {self.total_files}, Received: {self.files_received}, Pending: {files_pending}")
                         self.file_count_update.emit(self.total_files, self.files_received, files_pending)
 
                 except Exception as e:
@@ -314,15 +319,31 @@ class ReceiveWorkerJava(QThread):
             metadata_json = received_data.decode('utf-8')
             metadata = json.loads(metadata_json)
             
-            self.total_files = len(metadata)
+            # Filter out:
+            # 1. Empty dictionary entries
+            # 2. Directories (paths ending with /)
+            # 3. .DS_Store files
+            # 4. Entries without valid path or size
+            self.total_files = sum(
+                1 for info in metadata 
+                if isinstance(info, dict) and 
+                'path' in info and 
+                'size' in info and
+                info.get('size', 0) > 0 and  # Only count entries with size > 0
+                not info['path'].endswith('/') and  # Exclude directories
+                not info['path'].endswith('.DS_Store')  # Exclude .DS_Store files
+            )
             
-            # Calculate total folder size for progress tracking
+            # Calculate total folder size similarly, excluding .DS_Store files
             self.total_folder_size = sum(
                 info.get('size', 0) 
                 for info in metadata 
                 if isinstance(info, dict) and 
                 'path' in info and 
-                not info['path'].endswith('/')
+                'size' in info and
+                info.get('size', 0) > 0 and
+                not info['path'].endswith('/') and
+                not info['path'].endswith('.DS_Store')
             )
             
             self.file_count_update.emit(self.total_files, 0, self.total_files)
