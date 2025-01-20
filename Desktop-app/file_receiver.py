@@ -202,9 +202,60 @@ class ReceiveApp(QWidget):
 
     def openMainWindow(self):
         from main import MainApp
-        self.main_app = MainApp()
-        self.main_app.show()
-        self.close()
+        logger.info("Initiating return to main window")
+        try:
+            self.cleanup_before_switch()
+            self.main_app = MainApp()
+            self.main_app.show()
+            self.close()
+        except Exception as e:
+            logger.error(f"Error while switching to main window: {str(e)}")
+
+    def cleanup_before_switch(self):
+        logger.info("Performing cleanup before switching to main window")
+        try:
+            # Stop the file receiver thread
+            if self.file_receiver:
+                logger.debug("Stopping file receiver")
+                self.file_receiver.broadcasting = False
+                
+                # Safely close server socket
+                if hasattr(self.file_receiver, 'server_socket') and self.file_receiver.server_socket:
+                    try:
+                        self.file_receiver.server_socket.close()
+                    except Exception as e:
+                        logger.error(f"Error closing server socket: {str(e)}")
+                
+                # Safely close client socket
+                if hasattr(self.file_receiver, 'client_socket') and self.file_receiver.client_socket:
+                    try:
+                        self.file_receiver.client_socket.close()
+                    except Exception as e:
+                        logger.error(f"Error closing client socket: {str(e)}")
+                
+                # Safely terminate receiver worker
+                if hasattr(self.file_receiver, 'receiver_worker') and self.file_receiver.receiver_worker:
+                    try:
+                        self.file_receiver.receiver_worker.terminate()
+                    except Exception as e:
+                        logger.error(f"Error terminating receiver worker: {str(e)}")
+                
+                self.file_receiver.terminate()
+                self.file_receiver.wait()
+
+            # Stop the broadcast thread
+            if self.broadcast_thread and self.broadcast_thread.is_alive():
+                logger.debug("Stopping broadcast thread")
+                self.broadcast_thread.join(timeout=1.0)
+
+            # Stop the typewriter effect timer if it's running
+            if hasattr(self, 'timer') and self.timer.isActive():
+                logger.debug("Stopping typewriter effect timer")
+                self.timer.stop()
+
+            logger.info("Cleanup completed successfully")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {str(e)}")
 
     def start_typewriter_effect(self, full_text, interval=50):
         """Starts the typewriter effect to show text character by character."""
@@ -346,10 +397,33 @@ class ReceiveApp(QWidget):
         event.accept()
 
     def stop(self):
-        self.file_receiver.broadcasting = False
-        self.file_receiver.server_socket.close()
-        self.file_receiver.client_socket.close()
-        self.file_receiver.receiver_worker.terminate()
+        try:
+            if self.file_receiver:
+                self.file_receiver.broadcasting = False
+                
+                # Safely close server socket
+                if hasattr(self.file_receiver, 'server_socket') and self.file_receiver.server_socket:
+                    try:
+                        self.file_receiver.server_socket.close()
+                    except Exception as e:
+                        logger.error(f"Error closing server socket: {str(e)}")
+                
+                # Safely close client socket
+                if hasattr(self.file_receiver, 'client_socket') and self.file_receiver.client_socket:
+                    try:
+                        self.file_receiver.client_socket.close()
+                    except Exception as e:
+                        logger.error(f"Error closing client socket: {str(e)}")
+                
+                # Safely terminate receiver worker
+                if hasattr(self.file_receiver, 'receiver_worker') and self.file_receiver.receiver_worker:
+                    try:
+                        self.file_receiver.receiver_worker.terminate()
+                    except Exception as e:
+                        logger.error(f"Error terminating receiver worker: {str(e)}")
+
+        except Exception as e:
+            logger.error(f"Error during stop: {str(e)}")
 
     def on_config_updated(self, config):
         logger.debug(f"Receiver config updated: {config}")
