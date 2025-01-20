@@ -80,6 +80,8 @@ class ReceiveWorkerJava(QThread):
         self.total_bytes_received = 0
         self.total_files = 0
         self.files_received = 0
+        self.total_folder_size = 0
+        self.total_received_bytes = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -250,6 +252,7 @@ class ReceiveWorkerJava(QThread):
                             remaining -= len(data)
                             received_total += len(data)
                             self.total_bytes_received = received_total
+                            self.total_received_bytes += len(data)
 
                             # Calculate transfer statistics every 0.5 seconds
                             if current_time - self.last_update_time >= 0.5:
@@ -263,13 +266,18 @@ class ReceiveWorkerJava(QThread):
                                 self.transfer_stats_update.emit(speed, eta, elapsed)
                                 self.last_update_time = current_time
 
-                            # Calculate and emit progress
-                            file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
-                            file_progress = min(file_progress, 100)
-                            self.file_progress_update.emit(os.path.basename(file_name), file_progress)
-                            
-                            # Overall progress can be implemented if needed
-                            self.progress_update.emit(file_progress)
+                            # For folder transfers, only update the overall folder progress
+                            if is_folder_transfer:
+                                folder_progress = int((self.total_received_bytes * 100) / self.total_folder_size)
+                                folder_progress = min(folder_progress, 100)
+                                self.progress_update.emit(folder_progress)
+                                self.file_progress_update.emit(self.base_folder_name, folder_progress)
+                            else:
+                                # For individual files, update file-specific progress
+                                file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
+                                file_progress = min(file_progress, 100)
+                                self.progress_update.emit(file_progress)
+                                self.file_progress_update.emit(os.path.basename(file_name), file_progress)
 
                     if encrypted_transfer:
                         self.encrypted_files.append(full_file_path)
@@ -307,9 +315,17 @@ class ReceiveWorkerJava(QThread):
             metadata = json.loads(metadata_json)
             
             self.total_files = len(metadata)
-                
-            self.file_count_update.emit(self.total_files, 0, self.total_files)
             
+            # Calculate total folder size for progress tracking
+            self.total_folder_size = sum(
+                info.get('size', 0) 
+                for info in metadata 
+                if isinstance(info, dict) and 
+                'path' in info and 
+                not info['path'].endswith('/')
+            )
+            
+            self.file_count_update.emit(self.total_files, 0, self.total_files)
             return metadata
             
         except UnicodeDecodeError as e:
