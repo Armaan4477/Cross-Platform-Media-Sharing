@@ -209,15 +209,14 @@ class ReceiveWorkerJava(QThread):
                     if file_name == 'metadata.json':
                         logger.debug("Receiving metadata file.")
                         self.metadata = self.receive_metadata(file_size)
-                        
-                        # Check if this is a folder transfer
-                        is_folder_transfer = any(file_info.get('path', '').endswith('/') 
-                                            for file_info in self.metadata)
-                        
+                        is_folder_transfer = any(file_info.get('path', '').endswith('/')
+                                                 for file_info in self.metadata)
                         if is_folder_transfer:
                             self.destination_folder = self.create_folder_structure(self.metadata)
                         else:
-                            self.destination_folder = self.config_manager.get_config()["save_to_directory"]
+                            default_dir = self.config_manager.get_config()["save_to_directory"]
+                            self.destination_folder = default_dir
+                        self.update_files_table_signal.emit(self.metadata)
                         continue
 
                     # Determine file path based on transfer type
