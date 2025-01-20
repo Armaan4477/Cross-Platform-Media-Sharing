@@ -307,22 +307,7 @@ class ReceiveWorkerJava(QThread):
             metadata_json = received_data.decode('utf-8')
             metadata = json.loads(metadata_json)
             
-            # Only emit the folder information if it's a folder transfer
-            if metadata and metadata[-1].get('base_folder_name', ''):
-                # Send only the folder metadata entry
-                self.update_files_table_signal.emit([metadata[-1]])
-            else:
-                # Send full metadata for individual files
-                self.update_files_table_signal.emit(metadata)
-                
-            # Count total files from metadata
-            if metadata and metadata[-1].get('base_folder_name', ''):
-                # For folder transfers, count all files (excluding folders and .delete)
-                self.total_files = sum(1 for item in metadata[:-1] 
-                                     if not item['path'].endswith('/') and item['path'] != '.delete')
-            else:
-                # For individual files
-                self.total_files = len(metadata)
+            self.total_files = len(metadata)
                 
             self.file_count_update.emit(self.total_files, 0, self.total_files)
             
