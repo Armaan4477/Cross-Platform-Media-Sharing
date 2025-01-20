@@ -726,6 +726,14 @@ class ReceiveAppPJava(QWidget):
 
     def update_file_progress(self, filename, progress):
         """Update progress for a specific file in the table"""
+        # For folder transfers, update the base folder progress
+        if self.files_table.rowCount() == 1:
+            progress_item = QTableWidgetItem()
+            progress_item.setData(Qt.ItemDataRole.UserRole, progress)
+            self.files_table.setItem(0, 3, progress_item)
+            return
+
+        # For individual files
         for row in range(self.files_table.rowCount()):
             if self.files_table.item(row, 1).text() == filename:
                 progress_item = QTableWidgetItem()
@@ -791,19 +799,20 @@ class ReceiveAppPJava(QWidget):
                 sr_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.files_table.setItem(0, 0, sr_item)
                 
-                # Folder name
-                name_item = QTableWidgetItem(base_folder_name)
+                # Folder name with "📁" icon
+                name_item = QTableWidgetItem("📁 " + base_folder_name)
                 self.files_table.setItem(0, 1, name_item)
                 
                 # Size (now showing actual folder size)
                 size_item = QTableWidgetItem(size_str)
+                size_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.files_table.setItem(0, 2, size_item)
                 
                 # Progress
                 progress_item = QTableWidgetItem()
                 progress_item.setData(Qt.ItemDataRole.UserRole, 0)
                 self.files_table.setItem(0, 3, progress_item)
-                
+
             else:
                 # Show individual files
                 for index, file_info in enumerate(files_info, 1):
