@@ -1,7 +1,6 @@
 Pending priority work:
-1) Send more files button and go to main menu button in python and Android after first transfer is complete.(ports handling needs to be improved to correctly be reused and closed)
-2) Device discovery using bluetooth- Python/Android/IOS
-3) IpadOS/IOS app
+1) Device discovery using bluetooth- Python/Android/IOS
+2) IpadOS/IOS app
 
 Overall FUTURE IDEAS:
 1) Qr-Code Based device connection
@@ -10,26 +9,24 @@ Overall FUTURE IDEAS:
 4) IpadOS/IOS app
 5) Can give priority to some file from new optional window if its needed urgently when many files are shared at once- Python/Android/IOS
 6) Optional Encryption- IOS (after app is built and running)
-7) Add confirmation dialog which ask the user if they are sure to receive the file or not, give prompt to sender that file sharing was cancelled- Python/Android/IOS
-8) When file is sent give button to ask if they want to send one more file- Python/Android/IOS
-9) Add button to go back to main send receive Window- Python/Android/IOS
-10) Drag and drop support in send section of the app- Python/Android/IOS
-11) Limit sharing speed for file to reduce network congrestion- Python/Android/IOS
-12) Background run and transfer mode- Python/Android/IOS
-13) Notifications for the app, implement after background run mode- Python/Android/IOS
-14) Send notes along with files- Python/Android/IOS
-15) Pause and resume for file transfer feature- Python/Android/IOS
-16) Auto Pause incase of network loss, resume when connection is reestablished- Python/Android/IOS
-17) Fixed Password for send/receive logic to confirm identity and work with unattended- Python/Android/IOS
-18) Introduce basic theming or customization options (dark mode/light mode).
-19) Ability to pause/resume/reorder queued transfers
-20) File integrity verification after transfer
-21) File Transfer history
-22) File preview before sending/after receiving
-23) Hot-Key Support (customizable by the user)
-24) Multiple Device Simultaneous Sending
-25) Optional Compression system
-26) Adaptive Chunks based on network health
+7) Drag and drop support in send section of the app- Python/Android/IOS
+8) Limit sharing speed for file to reduce network congrestion- Python/Android/IOS
+9) Background run and transfer mode- Python/Android/IOS
+10) Notifications for the app, implement after background run mode- Python/Android/IOS
+11) Send notes along with files- Python/Android/IOS
+12) Pause and resume for file transfer feature- Python/Android/IOS
+13) Auto Pause incase of network loss, resume when connection is reestablished- Python/Android/IOS
+14) Fixed Password for send/receive logic to confirm identity and work with unattended- Python/Android/IOS
+15) Introduce basic theming or customization options (dark mode/light mode).
+16) Ability to pause/resume/reorder queued transfers
+17) File integrity verification after transfer
+18) File Transfer history
+19) File preview before sending/after receiving
+20) Hot-Key Support (customizable by the user)
+21) Multiple Device Simultaneous Sending
+22) Optional Compression system
+23) Adaptive Chunks based on network health
+24) File preview mode which only downloads and views the file without storing it (files smaller than 100mb)- python
 
 
 Crazy Future idea: 
