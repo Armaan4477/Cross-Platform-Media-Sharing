@@ -133,20 +133,14 @@ class FileSenderJava(QThread):
                 if os.path.isdir(file_path):
                     if not self.metadata_created:
                         metadata_file_path = self.create_metadata(folder_path=file_path)
-                        self.send_file(metadata_file_path, encrypted_transfer=False, count=False)
+                        self.send_file(metadata_file_path, encrypted_transfer=False)
                         self.metadata_created = True
-                    # Count total files before sending folder
-                    folder_total = sum([len(files) for _, _, files in os.walk(file_path)])
-                    self.total_files = folder_total
-                    self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
                     self.send_folder(file_path)
                 else:
                     if not self.metadata_created:
                         metadata_file_path = self.create_metadata(file_paths=self.file_paths)
-                        self.send_file(metadata_file_path, encrypted_transfer=False, count=False)
+                        self.send_file(metadata_file_path, encrypted_transfer=False)
                         self.metadata_created = True
-                    self.total_files = len(self.file_paths)
-                    self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
                     self.send_file(file_path, encrypted_transfer=self.encryption_flag)
             
             # Send halt signal after all transfers complete
@@ -226,14 +220,6 @@ class FileSenderJava(QThread):
     def send_folder(self, folder_path):
         logger.debug("Sending folder: %s", folder_path)
 
-        # Calculate total folder size and prepare files
-        folder_total_size = 0
-        folder_sent_size = 0
-        
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                folder_total_size += os.path.getsize(os.path.join(root, file))
-
         for root, dirs, files in os.walk(folder_path):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -241,16 +227,10 @@ class FileSenderJava(QThread):
                 
                 if self.encryption_flag:
                     relative_path += ".crypt"
-
-                file_size = os.path.getsize(file_path)
-                self.send_file(file_path, relative_file_path=relative_path, 
-                             encrypted_transfer=self.encryption_flag)
                 
-                folder_sent_size += file_size
-                folder_progress = folder_sent_size * 100 // folder_total_size
-                self.file_progress_update.emit(folder_path, folder_progress)
+                self.send_file(file_path, relative_file_path=relative_path, encrypted_transfer=self.encryption_flag)
 
-    def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False, count=True):
+    def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
 
         # Handle file encryption if needed
@@ -276,42 +256,17 @@ class FileSenderJava(QThread):
             # Send file size
             self.client_skt.send(struct.pack('<Q', file_size))
 
-            if not self.start_time:
-                self.start_time = time.time()
-            self.last_update_time = time.time()
-
             # Send file data with progress updates
             sent_size = 0
             with open(file_path, 'rb') as f:
                 while sent_size < file_size:
-                    current_time = time.time()
                     chunk = f.read(CHUNK_SIZE_ANDROID)
                     if not chunk:
                         break
                     self.client_skt.sendall(chunk)
                     sent_size += len(chunk)
-                    self.file_progress_update.emit(file_path, sent_size * 100 // file_size)
-                    self.sent_size += len(chunk)
-
-                    if current_time - self.last_update_time >= 0.5:
-                        elapsed = current_time - self.start_time
-                        if elapsed > 0:
-                            speed = (self.sent_size / (1024 * 1024)) / elapsed  # MB/s
-                            eta = (file_size - sent_size) / (self.sent_size / elapsed) if self.sent_size > 0 else 0
-                        else:
-                            speed = 0
-                            eta = 0
-                        self.transfer_stats_update.emit(speed, eta, elapsed)
-                        self.last_update_time = current_time
-
-                    overall_progress = self.sent_size * 100 // self.total_size
-                    self.overall_progress_update.emit(overall_progress)
-
-            if count:
-                self.files_sent += 1
-                files_pending = self.total_files - self.files_sent
-                self.file_count_update.emit(self.total_files, self.files_sent, files_pending)
-                logger.debug(f"File count update: total={self.total_files}, sent={self.files_sent}, pending={files_pending}")
+                    progress = int(sent_size * 100 / file_size)
+                    self.progress_update.emit(progress)
 
             # Clean up encrypted file if it was created
             if encrypted_transfer:
