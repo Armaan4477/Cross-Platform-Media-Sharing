@@ -81,6 +81,7 @@ class FileSenderJava(QThread):
         total = 0
         for path in self.file_paths:
             if os.path.isdir(path):
+                # Count all files in directory
                 for root, dirs, files in os.walk(path):
                     total += len(files)
             else:
@@ -121,6 +122,8 @@ class FileSenderJava(QThread):
     def run(self):
         metadata_file_path = None
         self.metadata_created = False
+        self.files_sent = 0  # Reset counter at start
+        
         if not self.initialize_connection():
             return
         
@@ -299,8 +302,11 @@ class FileSenderJava(QThread):
             # Ensure 100% progress is shown for the individual file
             self.file_progress_update.emit(file_path, 100)
             
-            self.files_sent += 1
-            self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
+            # Update file count only for actual files, not metadata
+            if not file_path.endswith('metadata.json'):
+                self.files_sent += 1
+                pending = self.total_files - self.files_sent
+                self.file_count_update.emit(self.total_files, self.files_sent, pending)
 
             # Clean up encrypted file if it was created
             if encrypted_transfer and os.path.exists(file_path + ".crypt"):
