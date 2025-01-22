@@ -289,6 +289,11 @@ class FileSender(QThread):
 
                 os.remove(metadata_file_path)
 
+            # Ensure 100% progress is emitted for folder
+            self.file_progress_update.emit(folder_path, 100)
+            if self.files_sent == self.total_files:
+                self.overall_progress_update.emit(100)
+
         except Exception as e:
             logger.error(f"Error in send_folder: {str(e)}")
             raise
@@ -345,10 +350,19 @@ class FileSender(QThread):
                 overall_progress = self.sent_size * 100 // self.total_size
                 self.overall_progress_update.emit(overall_progress)
 
+        # Ensure 100% progress is emitted for both file and overall progress
+        self.file_progress_update.emit(file_path, 100)
+        overall_progress = self.sent_size * 100 // self.total_size
+        self.overall_progress_update.emit(overall_progress)
+
         if count:
             self.files_sent += 1
             files_pending = self.total_files - self.files_sent
             self.file_count_update.emit(self.total_files, self.files_sent, files_pending)
+
+        # Final progress update after file completion
+        if self.files_sent == self.total_files:
+            self.overall_progress_update.emit(100)
 
         if encrypted_transfer:
             os.remove(file_path)

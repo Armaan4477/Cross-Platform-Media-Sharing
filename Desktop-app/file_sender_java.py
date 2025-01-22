@@ -248,6 +248,11 @@ class FileSenderJava(QThread):
                 folder_progress = int((sent_size_in_folder / total_folder_size) * 100)
                 self.file_progress_update.emit(folder_path, folder_progress)
 
+        # Ensure 100% progress is emitted for folder
+        self.file_progress_update.emit(folder_path, 100)
+        if self.files_sent == self.total_files:
+            self.overall_progress_update.emit(100)
+
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
 
@@ -307,6 +312,10 @@ class FileSenderJava(QThread):
                 self.files_sent += 1
                 pending = self.total_files - self.files_sent
                 self.file_count_update.emit(self.total_files, self.files_sent, pending)
+                
+                # Force overall progress to 100% when all files are sent
+                if self.files_sent == self.total_files:
+                    self.overall_progress_update.emit(100)
 
             # Clean up encrypted file if it was created
             if encrypted_transfer and os.path.exists(file_path + ".crypt"):
