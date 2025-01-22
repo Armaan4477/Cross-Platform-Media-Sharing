@@ -219,16 +219,31 @@ class FileSenderJava(QThread):
             
     def send_folder(self, folder_path):
         logger.debug("Sending folder: %s", folder_path)
-
+        file_list = []
+        
+        # First, collect all files to be sent
         for root, dirs, files in os.walk(folder_path):
             for file in files:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, folder_path)
-                
-                if self.encryption_flag:
-                    relative_path += ".crypt"
-                
-                self.send_file(file_path, relative_file_path=relative_path, encrypted_transfer=self.encryption_flag)
+                file_list.append((file_path, relative_path))
+
+        # Calculate total size of all files in folder
+        total_folder_size = sum(os.path.getsize(file_path) for file_path, _ in file_list)
+        sent_size_in_folder = 0
+
+        for file_path, relative_path in file_list:
+            if self.encryption_flag:
+                relative_path += ".crypt"
+            
+            # Send the individual file
+            file_sent = self.send_file(file_path, relative_file_path=relative_path, encrypted_transfer=self.encryption_flag)
+            
+            if file_sent:
+                # Update the folder's overall progress
+                sent_size_in_folder += os.path.getsize(file_path)
+                folder_progress = int((sent_size_in_folder / total_folder_size) * 100)
+                self.file_progress_update.emit(folder_path, folder_progress)
 
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
@@ -281,15 +296,15 @@ class FileSenderJava(QThread):
                     # Update transfer statistics
                     self.update_transfer_stats()
 
-            # Ensure 100% progress is shown
+            # Ensure 100% progress is shown for the individual file
             self.file_progress_update.emit(file_path, 100)
             
-            self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
             self.files_sent += 1
+            self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
 
             # Clean up encrypted file if it was created
-            if encrypted_transfer:
-                os.remove(file_path)
+            if encrypted_transfer and os.path.exists(file_path + ".crypt"):
+                os.remove(file_path + ".crypt")
 
             return True
 
