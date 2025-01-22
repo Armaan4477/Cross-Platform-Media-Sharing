@@ -258,6 +258,7 @@ class FileSenderJava(QThread):
 
             # Send file data with progress updates
             sent_size = 0
+            last_progress_update = 0
             with open(file_path, 'rb') as f:
                 while sent_size < file_size:
                     chunk = f.read(CHUNK_SIZE_ANDROID)
@@ -265,8 +266,25 @@ class FileSenderJava(QThread):
                         break
                     self.client_skt.sendall(chunk)
                     sent_size += len(chunk)
+                    
+                    # Update individual file progress
                     progress = int(sent_size * 100 / file_size)
-                    self.progress_update.emit(progress)
+                    if progress != last_progress_update:  # Only emit if progress changed
+                        self.file_progress_update.emit(file_path, progress)
+                        last_progress_update = progress
+                    
+                    # Update overall progress
+                    self.sent_size += len(chunk)
+                    overall_progress = int(self.sent_size * 100 / self.total_size)
+                    self.overall_progress_update.emit(overall_progress)
+                    
+                    # Update transfer statistics
+                    self.update_transfer_stats()
+
+            # Ensure 100% progress is shown
+            self.file_progress_update.emit(file_path, 100)
+            self.files_sent += 1
+            self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
 
             # Clean up encrypted file if it was created
             if encrypted_transfer:
@@ -277,6 +295,32 @@ class FileSenderJava(QThread):
         except Exception as e:
             logger.error("Error sending file: %s", str(e))
             return False
+
+    def update_transfer_stats(self):
+        if self.start_time is None:
+            self.start_time = time.time()
+            self.last_update_time = self.start_time
+            self.last_bytes_sent = 0
+            return
+
+        current_time = time.time()
+        elapsed = current_time - self.start_time
+        time_since_last_update = current_time - self.last_update_time
+        
+        if time_since_last_update >= 1.0:  # Update every second
+            bytes_since_last_update = self.sent_size - self.last_bytes_sent
+            speed = bytes_since_last_update / time_since_last_update / (1024 * 1024)  # MB/s
+            
+            remaining_bytes = self.total_size - self.sent_size
+            if speed > 0:
+                eta = remaining_bytes / (speed * 1024 * 1024)
+            else:
+                eta = 0
+                
+            self.transfer_stats_update.emit(speed, eta, elapsed)
+            
+            self.last_update_time = current_time
+            self.last_bytes_sent = self.sent_size
 
 class Receiver(QListWidgetItem):
     def __init__(self, name, ip_address):
