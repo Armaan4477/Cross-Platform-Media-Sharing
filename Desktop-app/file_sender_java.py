@@ -283,8 +283,9 @@ class FileSenderJava(QThread):
 
             # Ensure 100% progress is shown
             self.file_progress_update.emit(file_path, 100)
-            self.files_sent += 1
+            
             self.file_count_update.emit(self.total_files, self.files_sent, self.total_files - self.files_sent)
+            self.files_sent += 1
 
             # Clean up encrypted file if it was created
             if encrypted_transfer:
