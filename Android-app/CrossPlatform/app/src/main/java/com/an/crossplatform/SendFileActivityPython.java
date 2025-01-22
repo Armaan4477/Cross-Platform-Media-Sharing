@@ -105,11 +105,6 @@ public class SendFileActivityPython extends AppCompatActivity {
                             closeAllSockets();
                             forceReleasePort();
                             Toast.makeText(SendFileActivityPython.this,  "Device Disconnected", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(SendFileActivityPython.this, DiscoverDevicesActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(intent);
-                            new Handler(Looper.getMainLooper()).postDelayed(() -> finish(), 500);
-                            finish();
                         })
                         .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
                         .show();
@@ -860,6 +855,9 @@ public class SendFileActivityPython extends AppCompatActivity {
                     }
                 }
             }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }

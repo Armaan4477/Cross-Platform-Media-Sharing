@@ -8,8 +8,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -43,7 +41,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 
 public class ReceiveFileActivityPython extends AppCompatActivity {
 
@@ -66,7 +63,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private TextView txt_path;
     private boolean isEncryptedTransfer;
     private ArrayList<String> encryptedFiles = new ArrayList<String>();
-    private ExecutorService executorService;
+    private ExecutorService executorService = Executors.newFixedThreadPool(2); // Using 2 threads: one for connection, one for file reception
     private static final int PORT = 57341;
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 1000;
@@ -77,8 +74,6 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
-        executorService = Executors.newFixedThreadPool(2);
-
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -91,11 +86,6 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                             closeAllSockets();
                             forceReleasePort();
                             Toast.makeText(ReceiveFileActivityPython.this, "Device Disconnected", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(ReceiveFileActivityPython.this, WaitingToReceiveActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(intent);
-                            new Handler(Looper.getMainLooper()).postDelayed(() -> finish(), 500);
-                            finish();
                         })
                         .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
                         .show();
@@ -138,37 +128,23 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         @Override
         public void run() {
             boolean connectionSuccessful = initializeConnection();
-            if (!Thread.currentThread().isInterrupted()) {
-                runOnUiThread(() -> {
-                    if (connectionSuccessful) {
-                        FileLogger.log("ReceiveFileActivityPython", "Connection established with the sender.");
-                        if(osType.equals("Windows")) {
-                            txt_waiting.setText("Receiving files from a Windows device");
-                        } else if (osType.equals("Linux")) {
-                            txt_waiting.setText("Receiving files from a Linux device");
-                        } else if (osType.equals("Darwin")) {
-                            txt_waiting.setText("Receiving files from a macOS device");
-                        } else {
-                            txt_waiting.setText("Receiving files from Desktop app");
-                        }
-                        try {
-                            if (!executorService.isShutdown()) {
-                                executorService.submit(new ReceiveFilesTask());
-                            } else {
-                                executorService = Executors.newFixedThreadPool(2);
-                                executorService.submit(new ReceiveFilesTask());
-                            }
-                        } catch (RejectedExecutionException e) {
-                            FileLogger.log("ReceiveFileActivityPython", "Failed to submit ReceiveFilesTask", e);
-                            Toast.makeText(ReceiveFileActivityPython.this,
-                                    "Connection error. Please try again.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+            runOnUiThread(() -> {
+                if (connectionSuccessful) {
+                    FileLogger.log("ReceiveFileActivityPython", "Connection established with the sender.");
+                    if(osType.equals("Windows")) {
+                        txt_waiting.setText("Receiving files from a Windows device");
+                    } else if (osType.equals("Linux")) {
+                        txt_waiting.setText("Receiving files from a Linux device");
+                    } else if (osType.equals("Darwin")) {
+                        txt_waiting.setText("Receiving files from a macOS device");
                     } else {
-                        FileLogger.log("ReceiveFileActivityPython", "Failed to establish connection.");
+                        txt_waiting.setText("Receiving files from Desktop app");
                     }
-                });
-            }
+                    executorService.submit(new ReceiveFilesTask()); // Submit ReceiveFilesTask to executorService
+                } else {
+                    FileLogger.log("ReceiveFileActivityPython", "Failed to establish connection.");
+                }
+            });
         }
     }
 
@@ -539,6 +515,9 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     }
                 }
             }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
@@ -564,7 +543,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 FileLogger.log("ReceiveFileActivityPython", "ExecutorService shutdown");
             }
 
-            executorService = Executors.newFixedThreadPool(2);
+            finish(); // Close the activity
         } catch (IOException e) {
             FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
         }
@@ -572,10 +551,7 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (executorService != null) {
-            executorService.shutdownNow(); // Force shutdown
-        }
-        closeAllSockets();
         super.onDestroy();
+        closeAllSockets();
     }
 }
