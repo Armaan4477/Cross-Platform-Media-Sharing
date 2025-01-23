@@ -145,7 +145,7 @@ jobs:
       - name: Build for Linux x64
         run: |
           cd Desktop-app
-          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --name=DataDash main.py
+          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --add-data "broadcast.py:." --add-data "constant.py:." --add-data "credits_dialog.py:." --add-data "crypt_handler.py:." --add-data "file_receiver_android.py:." --add-data "file_receiver_python.py:." --add-data "file_receiver_swift.py:." --add-data "file_receiver.py:." --add-data "file_sender_java.py:." --add-data "file_sender_swift.py:." --add-data "file_sender.py:." --add-data "loges.py:." --add-data "portsss.py:." --add-data "preferences.py:." --name=DataDash main.py
           mv dist/DataDash "../DataDash(linux x64)"
 
       - name: Upload Linux x64 artifact
@@ -172,6 +172,13 @@ jobs:
             --platform linux/arm64 python:3.13 bash -c "
               pip install pyinstaller && pip install -r requirements.txt &&
               pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
+                --add-data 'broadcast.py:.' --add-data 'constant.py:.' \
+                --add-data 'credits_dialog.py:.' --add-data 'crypt_handler.py:.' \
+                --add-data 'file_receiver_android.py:.' --add-data 'file_receiver_python.py:.' \
+                --add-data 'file_receiver_swift.py:.' --add-data 'file_receiver.py:.' \
+                --add-data 'file_sender_java.py:.' --add-data 'file_sender_swift.py:.' \
+                --add-data 'file_sender.py:.' --add-data 'loges.py:.' \
+                --add-data 'portsss.py:.' --add-data 'preferences.py:.' \
                 --icon=./logo.png --name=DataDash main.py &&
               mv dist/DataDash '/workspace/Desktop-app/DataDash(linux arm)'"
 
