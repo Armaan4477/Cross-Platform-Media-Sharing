@@ -330,40 +330,20 @@ jobs:
         run: |
           python -m venv --clear venv
           source venv/bin/activate
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade packaging
 
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:/opt/hostedtoolcache/Python/3.13/arm64/lib/python3.13/site-packages"
           pip install --no-cache-dir -r Desktop-app/requirements.txt
 
       - name: Build for Linux arm 1
-        env:
-          PYTHONPATH: /opt/hostedtoolcache/Python/3.13/arm64/lib/python3.13/site-packages
-          LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu:/opt/hostedtoolcache/Python/3.13/arm64/lib
         run: |
           source venv/bin/activate
           cd Desktop-app
           pyinstaller --onefile \
             --clean \
-            --hidden-import=PyQt6 \
-            --hidden-import=PyQt6.QtCore \
-            --hidden-import=PyQt6.QtGui \
-            --hidden-import=PyQt6.QtWidgets \
-            --hidden-import=ctypes \
-            --hidden-import=ctypes.util \
-            --collect-all PyQt6 \
             --add-data "./icons:icons" \
             --add-data "./assets:assets" \
-            --add-binary "/usr/lib/*/libQt6Core.so.6:." \
-            --add-binary "/usr/lib/*/libQt6Gui.so.6:." \
-            --add-binary "/usr/lib/*/libQt6Widgets.so.6:." \
-            --add-binary "/usr/lib/aarch64-linux-gnu/libEGL_mesa.so.0:." \
-            --add-binary "/usr/lib/aarch64-linux-gnu/libgbm.so.1:." \
-            --add-binary "/usr/lib/aarch64-linux-gnu/libwayland-client.so.0:." \
-            --add-binary "/usr/lib/aarch64-linux-gnu/libwayland-server.so.0:." \
             --name=DataDash main.py
           mv dist/DataDash "../DataDash(linux arm1)"
 
