@@ -322,42 +322,6 @@ jobs:
             libqt6core6 \
             libqt6gui6 \
             libqt6widgets6 \
-            libqt6dbus6 \
-            libqt6network6 \
-            libqt6opengl6 \
-            libqt6printsupport6 \
-            libqt6sql6 \
-            libqt6test6 \
-            libqt6xml6 \
-            libqt63d6 \
-            libqt63dcore6 \
-            libqt63drender6 \
-            libqt63dlogic6 \
-            libqt63dinput6 \
-            libqt63danimation6 \
-            libqt63dextras6 \
-            libqt6quick6 \
-            libqt6quickeffects6 \
-            libqt6quickwidgets6 \
-            libqt6qmlxmllistmodel6 \
-            libqt6qmllocalstorage6 \
-            libqt6webenginecore6 \
-            libqt6webenginequick6 \
-            libqt6webview6 \
-            libqt6webviewquick6 \
-            libtiff5 \
-            libwebp6 \
-            libavformat58 \
-            libavcodec58 \
-            libswscale5 \
-            libavutil56 \
-            libswresample3 \
-            libgstreamer-plugins-base1.0-0 \
-            libgstreamer1.0-0 \
-            libgstreamer-gl1.0-0 \
-            libmariadb3 \
-            speech-dispatcher \
-            libspeechd2 \
             libpulse0 \
             libpulse-mainloop-glib0 \
             pulseaudio
