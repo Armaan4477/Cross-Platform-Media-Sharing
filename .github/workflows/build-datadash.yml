@@ -336,13 +336,13 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:/opt/hostedtoolcache/Python/3.12.8/arm64/lib/python3.12/site-packages"
+          export PYTHONPATH="${PYTHONPATH}:/opt/hostedtoolcache/Python/3.13/arm64/lib/python3.13/site-packages"
           pip install --no-cache-dir -r Desktop-app/requirements.txt
 
       - name: Build for Linux arm 1
         env:
-          PYTHONPATH: /opt/hostedtoolcache/Python/3.12.8/arm64/lib/python3.12/site-packages
-          LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu:/opt/hostedtoolcache/Python/3.12.8/arm64/lib
+          PYTHONPATH: /opt/hostedtoolcache/Python/3.13/arm64/lib/python3.13/site-packages
+          LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu:/opt/hostedtoolcache/Python/3.13/arm64/lib
         run: |
           source venv/bin/activate
           cd Desktop-app
