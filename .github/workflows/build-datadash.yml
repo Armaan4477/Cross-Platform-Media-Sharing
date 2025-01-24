@@ -326,19 +326,24 @@ jobs:
             libpulse-mainloop-glib0 \
             pulseaudio
 
+      - name: Setup Python venv
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip setuptools wheel
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          . venv/bin/activate
           pip install -r Desktop-app/requirements.txt
-
-      - name: Install pyinstaller
-        run: pip install pyinstaller
+          pip install pyinstaller
 
       - name: Build for Linux arm 1
         run: |
+          . venv/bin/activate
           cd Desktop-app
           export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
-          pyinstaller --onefile \
+          python -m PyInstaller --onefile \
             --clean \
             --hidden-import=PyQt6 \
             --hidden-import=PyQt6.QtCore \
