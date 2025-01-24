@@ -311,7 +311,10 @@ jobs:
             qt6-base-dev \
             libqt6core6 \
             libqt6gui6 \
-            libqt6widgets6
+            libqt6widgets6 \
+            libpulse0 \
+            libpulse-mainloop-glib0 \
+            pulseaudio
 
       - name: Install dependencies
         run: |
