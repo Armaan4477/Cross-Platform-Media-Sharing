@@ -338,7 +338,6 @@ jobs:
           source venv/bin/activate
           export PYTHONPATH="${PYTHONPATH}:/opt/hostedtoolcache/Python/3.12.8/arm64/lib/python3.12/site-packages"
           pip install --no-cache-dir -r Desktop-app/requirements.txt
-          pip install --no-cache-dir pyinstaller
 
       - name: Build for Linux arm 1
         env:
