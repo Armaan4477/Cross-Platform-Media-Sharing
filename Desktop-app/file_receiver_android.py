@@ -82,6 +82,8 @@ class ReceiveWorkerJava(QThread):
         self.files_received = 0
         self.total_folder_size = 0
         self.total_received_bytes = 0
+        self.bytes_since_last_update = 0
+        self.last_speed_update_time = None
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -159,6 +161,8 @@ class ReceiveWorkerJava(QThread):
         is_folder_transfer = False
         self.start_time = time.time()
         self.last_update_time = time.time()
+        self.last_speed_update_time = time.time()
+        self.bytes_since_last_update = 0
         self.files_received = 0  # Reset counter at start
         total_bytes = 0
         received_total = 0
@@ -254,18 +258,26 @@ class ReceiveWorkerJava(QThread):
                             received_total += len(data)
                             self.total_bytes_received = received_total
                             self.total_received_bytes += len(data)
+                            self.bytes_since_last_update += len(data)
 
                             # Calculate transfer statistics every 0.5 seconds
-                            if current_time - self.last_update_time >= 0.5:
-                                elapsed = current_time - self.start_time
-                                if elapsed > 0:
-                                    speed = (received_size / (1024 * 1024)) / elapsed  # MB/s
-                                    eta = (file_size - received_size) / (received_size / elapsed) if received_size > 0 else 0
-                                else:
-                                    speed = 0
-                                    eta = 0
-                                self.transfer_stats_update.emit(speed, eta, elapsed)
-                                self.last_update_time = current_time
+                            if current_time - self.last_speed_update_time >= 0.5:
+                                elapsed_since_last = current_time - self.last_speed_update_time
+                                if elapsed_since_last > 0:
+                                    current_speed = (self.bytes_since_last_update / (1024 * 1024)) / elapsed_since_last
+                                    
+                                    # Calculate overall progress and ETA
+                                    overall_progress = self.total_received_bytes / self.total_folder_size
+                                    if current_speed > 0:
+                                        eta = (self.total_folder_size - self.total_received_bytes) / (current_speed * 1024 * 1024)
+                                    else:
+                                        eta = 0
+                                    
+                                    elapsed = current_time - self.start_time
+                                    self.transfer_stats_update.emit(current_speed, eta, elapsed)
+                                
+                                self.last_speed_update_time = current_time
+                                self.bytes_since_last_update = 0
 
                             # For folder transfers, only update the overall folder progress
                             if is_folder_transfer:

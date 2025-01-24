@@ -81,6 +81,10 @@ class ReceiveWorkerPython(QThread):
         self.total_bytes_received = 0
         self.total_files = 0
         self.files_received = 0
+        self.bytes_since_last_update = 0
+        self.last_speed_update_time = None
+        self.total_received_bytes = 0
+        self.total_folder_size = 0
 
     def initialize_connection(self):
         """Initialize server socket with proper reuse settings"""
@@ -162,6 +166,8 @@ class ReceiveWorkerPython(QThread):
         encrypted_transfer = False
         file_name = None  # Initialize file_name
         original_filename = None  # Initialize original_filename
+        self.last_speed_update_time = time.time()
+        self.bytes_since_last_update = 0
 
         while True:
             try:
@@ -285,18 +291,28 @@ class ReceiveWorkerPython(QThread):
                             received_size += len(data)
                             received_total += len(data)
                             self.total_bytes_received = received_total
+                            self.total_received_bytes += len(data)
+                            self.bytes_since_last_update += len(data)
                             
                             # Calculate transfer statistics every 0.5 seconds
-                            if current_time - self.last_update_time >= 0.5:
-                                elapsed = current_time - self.start_time
-                                if elapsed > 0:
-                                    speed = (received_size / (1024 * 1024)) / elapsed  # MB/s
-                                    eta = (file_size - received_size) / (received_size / elapsed) if received_size > 0 else 0
-                                else:
-                                    speed = 0
-                                    eta = 0
-                                self.transfer_stats_update.emit(speed, eta, elapsed)
-                                self.last_update_time = current_time
+                            if current_time - self.last_speed_update_time >= 0.5:
+                                elapsed_since_last = current_time - self.last_speed_update_time
+                                if elapsed_since_last > 0:
+                                    current_speed = (self.bytes_since_last_update / (1024 * 1024)) / elapsed_since_last
+                                    
+                                    # Calculate overall progress and ETA
+                                    if self.total_folder_size > 0:
+                                        overall_progress = self.total_received_bytes / self.total_folder_size
+                                        if current_speed > 0:
+                                            eta = (self.total_folder_size - self.total_received_bytes) / (current_speed * 1024 * 1024)
+                                        else:
+                                            eta = 0
+                                        
+                                        elapsed = current_time - self.start_time
+                                        self.transfer_stats_update.emit(current_speed, eta, elapsed)
+                                
+                                self.last_speed_update_time = current_time
+                                self.bytes_since_last_update = 0
                             
                             if self.folder_transfer:
                                 folder_received_bytes += len(data)
@@ -372,6 +388,18 @@ class ReceiveWorkerPython(QThread):
                 self.total_files = len(metadata)
                 
             self.file_count_update.emit(self.total_files, 0, self.total_files)
+            
+            # Calculate total folder size from metadata
+            self.total_folder_size = sum(
+                info.get('size', 0) 
+                for info in metadata 
+                if isinstance(info, dict) and 
+                'path' in info and 
+                'size' in info and
+                info.get('size', 0) > 0 and
+                not info['path'].endswith('/') and
+                not info['path'].endswith('.DS_Store')
+            )
             
             return metadata
         except UnicodeDecodeError as e:
