@@ -2,3 +2,4 @@ wheel
 PyQt6==6.7.1
 cryptography
 requests
+pyinstaller==6.11.0
