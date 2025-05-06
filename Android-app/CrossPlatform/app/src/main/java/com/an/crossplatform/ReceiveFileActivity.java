@@ -8,6 +8,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -62,7 +64,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private TextView txt_path;
     private boolean isEncryptedTransfer;
     private ArrayList<String> encryptedFiles = new ArrayList<String>();
-    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private ExecutorService executorService;
     private static final int FILE_TRANSFER_PORT = 63152;
     private static final int BUFFER_SIZE = 4096;
 
@@ -70,6 +72,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_waiting_to_receive);
+        executorService = Executors.newFixedThreadPool(2);
+
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -82,6 +86,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             closeAllSockets();
                             forceReleasePort();
                             Toast.makeText(ReceiveFileActivity.this, "Device Disconnected", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(ReceiveFileActivity.this, WaitingToReceiveActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(intent);
+                            new Handler(Looper.getMainLooper()).postDelayed(() -> finish(), 500);
+                            finish();
                         })
                         .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
                         .show();
@@ -205,6 +214,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             Intent intent = new Intent(ReceiveFileActivity.this, Decryptor.class);
                             intent.putStringArrayListExtra("files", encryptedFiles);
                             startActivity(intent);
+                            finish();
                         }
                         runOnUiThread(() -> {
                             txt_waiting.setText("File transfer completed");
@@ -481,9 +491,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
@@ -509,7 +516,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
                 FileLogger.log("ReceiveFileActivity", "ExecutorService shutdown");
             }
 
-            finish(); // Close the activity
+            executorService = Executors.newFixedThreadPool(2);
         } catch (IOException e) {
             FileLogger.log("ReceiveFileActivity", "Error closing sockets", e);
         }
@@ -517,7 +524,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdownNow(); // Force shutdown
+        }
         closeAllSockets();
+        super.onDestroy();
     }
 }

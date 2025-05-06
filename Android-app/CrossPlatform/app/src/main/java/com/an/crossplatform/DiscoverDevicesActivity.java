@@ -3,6 +3,8 @@ package com.an.crossplatform;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -69,6 +71,8 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 closeAllSockets();
                 forceReleasePort();
                 forceReleaseUDPPort();
+                new Handler(Looper.getMainLooper()).postDelayed(() -> finish(), 500);
+                finish();
             }
         });
 
@@ -295,11 +299,15 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     intent.putExtra("receivedJson", receivedJson.toString());
                     intent.putExtra("selectedDeviceIP", selectedDeviceIP);
                     startActivity(intent);
+                    closeAllSockets();
+                    finish();
                 } else if (receivedJson.getString("device_type").equals("java")) {
                     Intent intent = new Intent(DiscoverDevicesActivity.this, SendFileActivity.class);
                     intent.putExtra("receivedJson", receivedJson.toString());
                     intent.putExtra("selectedDeviceIP", selectedDeviceIP);
                     startActivity(intent);
+                    closeAllSockets();
+                    finish();
                 }
 
             } catch (Exception e) {
@@ -332,9 +340,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
@@ -354,9 +359,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port2, e);
         }
@@ -376,9 +378,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port3, e);
         }
@@ -403,9 +402,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port1, e);
         }
@@ -426,9 +422,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            // Wait briefly for port to be fully released
-            Thread.sleep(500);
         } catch (Exception e) {
             FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port2, e);
         }
