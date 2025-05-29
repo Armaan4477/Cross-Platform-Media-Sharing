@@ -12,7 +12,7 @@ class ConfigManager(QThread):
     def __init__(self):
         super().__init__()
         self.config_file_name = ".config.json"
-        self.current_version = "4.4.0"
+        self.current_version = "4.4.1"
         self.config_file = self.get_config_file_path()
 
     def get_config_file_path(self):

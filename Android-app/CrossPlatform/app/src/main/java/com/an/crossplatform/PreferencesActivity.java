@@ -299,8 +299,8 @@ public class PreferencesActivity extends AppCompatActivity {
         if (showDownloadsButton) {
             String buttonText = channel.equals("beta") ? "Open Beta Page" : "Open Downloads Page";
             String url = channel.equals("beta") ?
-                    "https://datadashshare.vercel.app/beta" :
-                    "https://datadashshare.vercel.app/download";
+                    "https://datadash.is-a.dev/beta" :
+                    "https://datadash.is-a.dev/download";
 
             builder.setNegativeButton(buttonText, (dialog, which) -> {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));

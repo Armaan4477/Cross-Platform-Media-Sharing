@@ -1203,10 +1203,10 @@ class PreferencesApp(QWidget):
     def download_page(self):
         channel = self.config_manager.get_config()["update_channel"]
         if channel == "beta":
-            QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/beta"))
+            QDesktopServices.openUrl(QUrl("https://datadash.is-a.dev/beta"))
             logger.info("Opened beta page")
         elif channel == "stable":
-            QDesktopServices.openUrl(QUrl("https://datadashshare.vercel.app/download"))
+            QDesktopServices.openUrl(QUrl("https://datadash.is-a.dev/download"))
             logger.info("Opened stable page")
 
     def cleanup(self):
