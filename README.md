@@ -21,19 +21,19 @@ Whether you're using **Windows**, **Mac**, **Linux**, or **Android**, DataDash p
 
 - 💻 **Desktop**: Developed using **Python** and its libraries.
 - 📱 **Android**: Built with **Java** and **XML**.
-- 🌐 **Website**: Created using **ReactJS**, focusing on dynamic UI and seamless user experience.
+- 🌐 **Website**: Created using **NextJS** and **TailwindCSS**, focusing on dynamic UI and seamless user experience.
 
 ---
 
 ## 🛠️Installation
 
 #### For Desktop (Windows/Mac/Linux):
-1. Visit the [DataDash website](https://datadashshare.vercel.app/download).
+1. Visit the [DataDash website](https://datadash.is-a.dev/download).
 2. Download the appropriate installer for your operating system.
 3. Run the installer and follow the on-screen instructions.
 
 #### For Android:
-1. Download the APK file from the [DataDash website](https://datadashshare.vercel.app/download).
+1. Download the APK file from the [DataDash website](https://datadash.is-a.dev/download).
 2. Install the APK on your Android device.
 
 ---
@@ -267,7 +267,7 @@ We welcome contributions! Feel free to fork the repository, create a branch, and
 
 ## 🤝 Connect
 
-Have questions or suggestions? Reach out to us via [our website](https://datadashshare.vercel.app/feedback) or create an issue here on GitHub.
+Have questions or suggestions? Reach out to us via [our website](https://datadash.is-a.dev/feedback) or create an issue here on GitHub.
 
 ---
 
