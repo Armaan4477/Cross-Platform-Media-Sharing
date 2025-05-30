@@ -1,22 +1,23 @@
 Macos:
 .app:
-pyinstaller --onefile --windowed \
---icon=icon.icns \
---paths=/Users/armaan/Developer/Cross-Platform-Media-Sharing/.venv/lib/python3.13/site-packages \
---name="DataDash" \
---add-data "icons/*:icons" \
---add-data "assets/*:assets" \
---add-data "broadcast.py:." \
---add-data "constant.py:." \
---add-data "credits_dialog.py:." \
---add-data "crypt_handler.py:." \
---add-data "file_receiver.py:." \
---add-data "file_receiver_android.py:." \
---add-data "file_receiver_python.py:." \
---add-data "file_sender.py:." \
---add-data "file_sender_java.py:." \
---add-data "preferences.py:." \
-main.py
+pyinstaller --windowed \
+          --icon=icon.icns \
+          --name="DataDash" \
+          --add-data "icons/*:icons" \
+          --add-data "assets/*:assets" \
+          --add-data "broadcast.py:." \
+          --add-data "constant.py:." \
+          --add-data "portsss.py:." \
+          --add-data "loges.py:." \
+          --add-data "credits_dialog.py:." \
+          --add-data "crypt_handler.py:." \
+          --add-data "file_receiver.py:." \
+          --add-data "file_receiver_android.py:." \
+          --add-data "file_receiver_python.py:." \
+          --add-data "file_sender.py:." \
+          --add-data "file_sender_java.py:." \
+          --add-data "preferences.py:." \
+          main.py
 
 dmg:
 create-dmg \
@@ -34,10 +35,10 @@ create-dmg \
 
 Windows:
 without terminal
-pyinstaller --onefile --windowed --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
 
 with terminal
-pyinstaller --onefile --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+pyinstaller --onefile --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
 
 Linux
 pyinstaller --onefile --add-data "./icons:icons" --add-data "./assets:assets" --icon=./logo.png --name=DataDash main.py

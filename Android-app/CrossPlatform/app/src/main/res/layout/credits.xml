@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="20dp"
+    android:fitsSystemWindows="true"
     android:background="@drawable/dialog_background">
 
-    <!-- Coder/Debugger Content Container -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#333"
+        android:fitsSystemWindows="true">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Credits"
+            android:textColor="@color/white"
+            android:textSize="24dp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+    </androidx.appcompat.widget.Toolbar>
+
     <LinearLayout
         android:id="@+id/content_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
+        android:layout_below="@id/toolbar"
+        android:padding="20dp"
         android:orientation="vertical">
 
     <!-- Title: Coder/Debugger -->
@@ -240,6 +258,7 @@
         android:background="@drawable/state_list_drawable"
         android:textColor="@android:color/white"
         android:layout_alignParentBottom="true"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="20dp"
+        android:layout_margin="10dp" />
 
 </RelativeLayout>

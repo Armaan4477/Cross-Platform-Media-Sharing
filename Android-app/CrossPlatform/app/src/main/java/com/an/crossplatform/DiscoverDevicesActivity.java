@@ -1,5 +1,6 @@
 package com.an.crossplatform;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -55,6 +56,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private Socket tcpSocket;
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
+    private String broadcastIp = "255.255.255.255";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +67,8 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 closeAllSockets();
+                forceReleasePort();
+                forceReleaseUDPPort();
             }
         });
 
@@ -75,7 +79,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         listDevices.setAdapter(adapter);
 
         // Call getBroadcastIp when the activity starts
-        String broadcastIp = getBroadcastIp(this);
+//        String broadcastIp = getBroadcastIp(this);
         FileLogger.log("DiscoverDevices", "BroadcastIP: " + broadcastIp);
 
         btnDiscover.setOnClickListener(v -> {
@@ -117,20 +121,18 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     }
 
     private void discoverDevices() {
-        isDiscovering.set(true); // Set the flag to true
+        isDiscovering.set(true);
         new Thread(() -> {
             try {
-                forceReleaseUDPPort(DISCOVER_PORT);
                 discoverSocket = new DatagramSocket();
                 discoverSocket.setBroadcast(true);
 
-                String broadcastIp = getBroadcastIp(this);
                 byte[] sendData = "DISCOVER".getBytes();
-                InetAddress broadcastAddress = InetAddress.getByName(broadcastIp);
+                InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcastAddress, DISCOVER_PORT);
-                FileLogger.log("DiscoverDevices", "Sending DISCOVER message to broadcast address " + broadcastAddress.getHostAddress() + " on port " + DISCOVER_PORT);
+                FileLogger.log("DiscoverDevices", "Sending DISCOVER message to broadcast address 255.255.255.255 on port 49185");
 
-                for (int i = 0; i < 120 && isDiscovering.get(); i++) { // 120 iterations for 2 minutes
+                for (int i = 0; i < 120 && isDiscovering.get(); i++) {
                     discoverSocket.send(sendPacket);
                     FileLogger.log("DiscoverDevices", "Sent DISCOVER message iteration: " + (i + 1));
                     Thread.sleep(1000);
@@ -140,29 +142,11 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                 e.printStackTrace();
             } finally {
                 if (discoverSocket != null && !discoverSocket.isClosed()) {
-                    discoverSocket.close(); // Ensure socket is closed when done
+                    discoverSocket.close();
                 }
             }
         }).start();
     }
-
-    public static String getBroadcastIp(Context context) {
-        // Get the WifiManager service
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        // Get the local IP address
-        int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
-
-        // Convert to a human-readable string format
-        String localIp = Formatter.formatIpAddress(ipAddress);
-
-        // Replace the last part with "255"
-        String[] ipParts = localIp.split("\\.");
-        ipParts[3] = "255";
-        String broadcastIp = String.join(".", ipParts);
-
-        return broadcastIp;
-    }
-
 
     private void closeAllSockets() {
         try {
@@ -202,8 +186,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
     private void startReceiverThread() {
         new Thread(() -> {
             try {
-                forceReleaseUDPPort(RESPONSE_PORT);
-                responseSocket = new DatagramSocket(RESPONSE_PORT); // Bind to port 12346
+                responseSocket = new DatagramSocket(RESPONSE_PORT);
                 FileLogger.log("DiscoverDevices", "Listening for RECEIVER messages on port " + RESPONSE_PORT);
 
                 byte[] recvBuf = new byte[15000];
@@ -259,7 +242,6 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         new Thread(() -> {
             Socket socket = null;
             try {
-                forceReleasePort(RECEIVER_PORT_JSON);
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(selectedDeviceIP, RECEIVER_PORT_JSON), 10000);
                 FileLogger.log("DiscoverDevices", "Connected to " + selectedDeviceIP + " on port " + RECEIVER_PORT_JSON);
@@ -330,10 +312,13 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void forceReleasePort(int port) {
+    private void forceReleasePort() {
+        int port1 =RECEIVER_PORT_JSON;
+        int port2=57341;
+        int port3=63152;
         try {
             // Find and kill process using the port
-            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -343,7 +328,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
             }
@@ -351,14 +336,60 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             // Wait briefly for port to be fully released
             Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
+        }
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port2);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port2);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port2, e);
+        }
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port3);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port3);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port3, e);
         }
     }
 
-    private void forceReleaseUDPPort(int port) {
+    private void forceReleaseUDPPort() {
+        int port1=49185;
+        int port2=49186;
         try {
             // Find and kill process using the UDP port
-            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -368,7 +399,7 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port);
+                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port1);
                     }
                 }
             }
@@ -376,7 +407,30 @@ public class DiscoverDevicesActivity extends AppCompatActivity {
             // Wait briefly for port to be fully released
             Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port, e);
+            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port1, e);
+        }
+
+        try {
+            // Find and kill process using the UDP port
+            Process process = Runtime.getRuntime().exec("lsof -i udp:" + port2);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (!line.startsWith("COMMAND")) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("DiscoverDevices", "Killed process " + pid + " using UDP port " + port2);
+                    }
+                }
+            }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("DiscoverDevices", "Error releasing UDP port: " + port2, e);
         }
     }
 

@@ -2,4 +2,3 @@ wheel
 PyQt6==6.7.1
 cryptography
 requests
-netifaces2

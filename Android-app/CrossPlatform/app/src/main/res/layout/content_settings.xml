@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Device Name Section -->
+    <TextView
+        android:id="@+id/device_name_label"
+        style="@style/SettingsLabelStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Device Name" />
+
+    <EditText
+        android:id="@+id/device_name_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Enter Device Name"
+        android:textColor="@android:color/white"
+        android:textColorHint="#D4D4D4" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/device_name_reset_button"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/state_list_drawable"
+        android:text="Reset"
+        android:textColor="@android:color/white" />
+
+    <!-- Save Path Section -->
+    <TextView
+        android:id="@+id/save_to_path_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Save to Path"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
+
+    <EditText
+        android:id="@+id/save_to_path_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Select Directory"
+        android:textColor="@android:color/white"
+        android:textColorHint="#D4D4D4" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/save_to_path_picker_button"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:background="@drawable/state_list_drawable"
+            android:text="Pick Directory"
+            android:textColor="@android:color/white" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/save_to_path_reset_button"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/state_list_drawable"
+            android:text="Reset"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Encryption Section -->
+    <TextView
+        android:id="@+id/encryption_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Encryption"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
+
+    <Switch
+        android:id="@+id/encryption_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <!-- Show Warnings Section -->
+    <TextView
+        android:id="@+id/show_warnings_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Show Warnings"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
+
+    <Switch
+        android:id="@+id/show_warnings_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <!-- Auto Check Updates Section -->
+    <TextView
+        android:id="@+id/auto_check_updates_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Auto Check Updates"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
+
+    <Switch
+        android:id="@+id/auto_check_updates_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <!-- Version Info -->
+    <TextView
+        android:id="@+id/app_version_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="App Version: 1.0.0"
+        android:textColor="@android:color/white"
+        android:textSize="18sp" />
+
+    <!-- Update Button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/check_for_update_button"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/state_list_drawable"
+        android:text="Check for Update"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/update_channel_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Update Channel"
+        android:textColor="@android:color/white"
+        android:textSize="20sp" />
+
+    <Spinner
+        android:id="@+id/update_channel_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+
+
+</LinearLayout>
