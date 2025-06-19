@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -213,7 +214,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             animationView.setVisibility(LottieAnimationView.INVISIBLE);
                             txt_path.setText("Files saved to: " + destinationFolder);
                             txt_path.setVisibility(TextView.VISIBLE);
-                            donebtn.setVisibility(Button.VISIBLE);
+//                            donebtn.setVisibility(Button.VISIBLE);
+                            TransferCompleteActivity transferCompleteActivity = new TransferCompleteActivity(ReceiveFileActivity.this);
+                            transferCompleteActivity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                            transferCompleteActivity.show();
                         });
                         break;
                     }
