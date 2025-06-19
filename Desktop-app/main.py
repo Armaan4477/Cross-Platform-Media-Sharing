@@ -159,7 +159,7 @@ class MainApp(QWidget):
         self.config_manager.start()
         self.skip_version_check = skip_version_check
         self.network_thread = NetworkCheck()
-        self.network_thread.start() #comment out after testing is over, lot of overhead on windows
+       # self.network_thread.start() #comment out after testing is over, lot of overhead on windows
         self.version_thread = None
         self.broadcast_app = None
         self.receive_app = None

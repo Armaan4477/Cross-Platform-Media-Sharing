@@ -580,7 +580,7 @@ class SendApp(QWidget):
         # Main layout
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(10)
+        main_layout.setSpacing(6)
 
         # Top section with title
         top_layout = QHBoxLayout()
@@ -622,9 +622,11 @@ class SendApp(QWidget):
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
 
-        # Files table - Fixed height and stretch
         self.file_table = QTableWidget()
-        self.file_table.setMinimumHeight(200)  # Add minimum height
+        if self.encryption_enabled:
+            self.file_table.setFixedHeight(160)
+        else:
+            self.file_table.setMinimumHeight(240)
         self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
         self.file_table.setColumnCount(5)
         self.file_table.setHorizontalHeaderLabels(['Sr No.', 'Remove', 'File Name', 'Size', 'Progress'])
@@ -690,7 +692,7 @@ class SendApp(QWidget):
         # Password input (if encryption is enabled)
         if self.encryption_enabled:
             password_layout = QHBoxLayout()
-            password_layout.setSpacing(10)
+            #password_layout.setSpacing(6)
             
             self.password_label = QLabel('🔒 Encryption Password:')
             self.password_label.setStyleSheet("""
