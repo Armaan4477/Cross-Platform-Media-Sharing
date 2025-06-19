@@ -301,6 +301,8 @@ class FileSender(QThread):
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False, count=True):
         logger.debug("Sending file: %s", file_path)
 
+        original_file_path = file_path
+        
         if encrypted_transfer:
             logger.debug("Encrypted transfer with password: %s", self.password)
             file_path = encrypt_file(file_path, self.password)
@@ -346,12 +348,12 @@ class FileSender(QThread):
                     self.transfer_stats_update.emit(speed, eta, elapsed)
                     self.last_update_time = current_time
 
-                self.file_progress_update.emit(file_path, sent_size * 100 // file_size)
+                self.file_progress_update.emit(original_file_path, sent_size * 100 // file_size)
                 overall_progress = self.sent_size * 100 // self.total_size
                 self.overall_progress_update.emit(overall_progress)
 
         # Ensure 100% progress is emitted for both file and overall progress
-        self.file_progress_update.emit(file_path, 100)
+        self.file_progress_update.emit(original_file_path, 100)
         overall_progress = self.sent_size * 100 // self.total_size
         self.overall_progress_update.emit(overall_progress)
 
@@ -626,7 +628,7 @@ class SendApp(QWidget):
         if self.encryption_enabled:
             self.file_table.setFixedHeight(160)
         else:
-            self.file_table.setMinimumHeight(240)
+            self.file_table.setMinimumHeight(210)
         self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
         self.file_table.setColumnCount(5)
         self.file_table.setHorizontalHeaderLabels(['Sr No.', 'Remove', 'File Name', 'Size', 'Progress'])

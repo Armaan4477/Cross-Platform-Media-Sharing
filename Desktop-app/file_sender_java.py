@@ -256,6 +256,8 @@ class FileSenderJava(QThread):
     def send_file(self, file_path, relative_file_path=None, encrypted_transfer=False):
         logger.debug("Sending file: %s", file_path)
 
+        original_file_path = file_path
+
         # Handle file encryption if needed
         if encrypted_transfer:
             logger.debug("Encrypted transfer with password: %s", self.password)
@@ -293,7 +295,7 @@ class FileSenderJava(QThread):
                     # Update individual file progress
                     progress = int(sent_size * 100 / file_size)
                     if progress != last_progress_update:  # Only emit if progress changed
-                        self.file_progress_update.emit(file_path, progress)
+                        self.file_progress_update.emit(original_file_path, progress)
                         last_progress_update = progress
                     
                     # Update overall progress
@@ -305,7 +307,7 @@ class FileSenderJava(QThread):
                     self.update_transfer_stats()
 
             # Ensure 100% progress is shown for the individual file
-            self.file_progress_update.emit(file_path, 100)
+            self.file_progress_update.emit(original_file_path, 100)
             
             # Update file count only for actual files, not metadata
             if not file_path.endswith('metadata.json'):
@@ -481,7 +483,7 @@ class SendAppJava(QWidget):
         if self.encryption_enabled:
             self.file_table.setFixedHeight(160)
         else:
-            self.file_table.setMinimumHeight(240)
+            self.file_table.setMinimumHeight(210)
         self.file_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Add size policy
         self.file_table.setColumnCount(5)
         self.file_table.setHorizontalHeaderLabels(['Sr No.', 'Remove', 'File Name', 'Size', 'Progress'])
