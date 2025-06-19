@@ -907,6 +907,11 @@ class PreferencesApp(QWidget):
 
     def go_to_main_menu(self):
         self.hide()
+        
+        if hasattr(self, 'update_manager') and self.update_manager.isRunning():
+            self.update_manager.quit()
+            self.update_manager.wait()
+        
         from main import MainApp
         self.main_app = MainApp(skip_version_check=True)
         self.main_app.show()
@@ -1210,27 +1215,25 @@ class PreferencesApp(QWidget):
             logger.info("Opened stable page")
 
     def cleanup(self):
-        # Stop threads
-        if self.update_manager:
-            self.update_manager.quit()
-            self.update_manager.wait()
+        if hasattr(self, 'update_manager') and self.update_manager:
+            if self.update_manager.isRunning():
+                self.update_manager.quit()
+                self.update_manager.wait()
         
-        if self.config_manager:
-            self.config_manager.quit()
-            self.config_manager.wait()
+        if hasattr(self, 'config_manager') and self.config_manager:
+            if self.config_manager.isRunning():
+                self.config_manager.quit()
+                self.config_manager.wait()
 
-        # Close child windows
-        if self.main_app:
+        if hasattr(self, 'main_app') and self.main_app:
             self.main_app.close()
 
-        # Close any open dialogs
         if hasattr(self, 'progress_dialog'):
             self.progress_dialog.close()
 
     def closeEvent(self, event):
         logger.info("Shutting down Preferences window")
         self.cleanup()
-        QApplication.quit()
         event.accept()
 
 
