@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -603,9 +604,12 @@ public class SendFileActivity extends AppCompatActivity {
                         sendButton.setEnabled(false);
                         //Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
                         // Launch TransferCompleteActivity
-                        Intent intent = new Intent(SendFileActivity.this, TransferCompleteActivity.class);
-                        startActivity(intent);
-                        finish(); // Close current activity
+//                        Intent intent = new Intent(SendFileActivity.this, TransferCompleteActivity.class);
+//                        startActivity(intent);
+//                        finish(); // Close current activity
+                        TransferCompleteActivity transferCompleteActivity = new TransferCompleteActivity(SendFileActivity.this);
+                        transferCompleteActivity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                        transferCompleteActivity.show();
                     }
                 });
             } catch (IOException e) {
