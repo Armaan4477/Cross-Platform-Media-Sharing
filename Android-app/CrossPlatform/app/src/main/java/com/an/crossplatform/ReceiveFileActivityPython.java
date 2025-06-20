@@ -1,6 +1,7 @@
 package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -8,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -36,6 +38,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,11 +62,14 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private Button openFolder;
     private Button donebtn;
     private TextView txt_path;
+    private boolean isEncryptedTransfer;
+    private ArrayList<String> encryptedFiles = new ArrayList<String>();
     private ExecutorService executorService = Executors.newFixedThreadPool(2); // Using 2 threads: one for connection, one for file reception
     private static final int PORT = 57341;
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 1000;
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds
+    private static final int BUFFER_SIZE = 4096;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,8 +79,17 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Toast.makeText(ReceiveFileActivityPython.this, "Back navigation is disabled, Please Restart the App", Toast.LENGTH_SHORT).show();
-                // Do nothing to disable back navigation
+                new AlertDialog.Builder(ReceiveFileActivityPython.this)
+                        .setTitle("Exit")
+                        .setMessage("Are you sure you want to cancel the transfer?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            dialog.dismiss();
+                            closeAllSockets();
+                            forceReleasePort();
+                            Toast.makeText(ReceiveFileActivityPython.this, "Device Disconnected", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         });
 
@@ -83,8 +98,8 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         animationView = findViewById(R.id.transfer_animation);
         waitingAnimation = findViewById(R.id.waiting_animation);
         openFolder = findViewById(R.id.openFolder);
-        donebtn = findViewById(R.id.donebtn);
-        donebtn.setOnClickListener(v -> ondonebtnclk());
+//        donebtn = findViewById(R.id.donebtn);
+//        donebtn.setOnClickListener(v -> ondonebtnclk());
         txt_path = findViewById(R.id.path);
 
         senderJson = getIntent().getStringExtra("receivedJson");
@@ -113,7 +128,6 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
     private class ConnectionTask implements Runnable {
         @Override
         public void run() {
-            forceReleasePort(PORT);
             boolean connectionSuccessful = initializeConnection();
             runOnUiThread(() -> {
                 if (connectionSuccessful) {
@@ -244,12 +258,26 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                 while (true) {
                     // Read encryption flag
                     byte[] encryptionFlagBytes = new byte[8];
-                    clientSocket.getInputStream().read(encryptionFlagBytes);
+                    int bytesRead = clientSocket.getInputStream().read(encryptionFlagBytes);
+                    if (bytesRead <= 0) {
+                        FileLogger.log("ReceiveFileActivityPython", "Connection closed by sender");
+                        break;
+                    }
+                    
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
+                    FileLogger.log("ReceiveFileActivityPython", "Received encryption flag: " + encryptionFlag);
 
-                    if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
-                        FileLogger.log("ReceiveFileActivityPython", "Received all files.");
-                        // After file reception is complete, update the UI accordingly
+                    if (encryptionFlag.equals("encyp: h")) {
+                        FileLogger.log("ReceiveFileActivityPython", "Received halt signal");
+                        
+                        if (isEncryptedTransfer) {
+                            // Handle encrypted files
+                            Intent intent = new Intent(ReceiveFileActivityPython.this, Decryptor.class);
+                            intent.putStringArrayListExtra("files", encryptedFiles);
+                            startActivity(intent);
+                        }
+
+                        // Update UI for completion
                         runOnUiThread(() -> {
                             txt_waiting.setText("File transfer completed");
                             progressBar.setProgress(0);
@@ -257,36 +285,32 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                             animationView.setVisibility(LottieAnimationView.INVISIBLE);
                             txt_path.setText("Files saved to: " + destinationFolder);
                             txt_path.setVisibility(TextView.VISIBLE);
-                            donebtn.setVisibility(Button.VISIBLE);
+//                            donebtn.setVisibility(Button.VISIBLE);
+                            TransferCompleteActivity transferCompleteActivity = new TransferCompleteActivity(ReceiveFileActivityPython.this);
+                            transferCompleteActivity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                            transferCompleteActivity.show();
                         });
-                        forceReleasePort(PORT);
                         break;
                     }
+
+                    isEncryptedTransfer = encryptionFlag.equals("encyp: t");
 
                     // Read file name size
                     byte[] fileNameSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileNameSizeBytes);
                     long fileNameSize = ByteBuffer.wrap(fileNameSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 
-                    if (fileNameSize == 0) {
-                        break;
-                    }
-
                     // Read file name
                     byte[] fileNameBytes = new byte[(int) fileNameSize];
                     clientSocket.getInputStream().read(fileNameBytes);
-                    String fileName = new String(fileNameBytes, StandardCharsets.UTF_8).replace('\\', '/');
+                    String fileName = new String(fileNameBytes, StandardCharsets.UTF_8);
 
                     // Read file size
                     byte[] fileSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileSizeBytes);
                     long fileSize = ByteBuffer.wrap(fileSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 
-                    if (fileSize < 0) {
-                        continue;
-                    }
-
-                    // Handle metadata
+                    // Process metadata.json
                     if (fileName.equals("metadata.json")) {
                         metadataArray = receiveMetadata(fileSize);
                         if (metadataArray != null) {
@@ -295,63 +319,35 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                         continue;
                     }
 
-                    // Ensure destination file path is valid
-                    String filePath = (metadataArray != null) ? getFilePathFromMetadata(metadataArray, fileName) : fileName;
-                    File receivedFile = new File(destinationFolder, filePath);
-
-                    // Check if received path is a directory
-                    if (receivedFile.isDirectory()) {
-                        FileLogger.log("ReceiveFileActivityPython", "Received path is a directory, removing filename from path.");
-                        receivedFile = new File(destinationFolder, filePath + File.separator + fileName);
-                    }
-
+                    // Create file path based on relative path
+                    File receivedFile = new File(destinationFolder, fileName);
                     File parentDir = receivedFile.getParentFile();
-                    if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
-                        FileLogger.log("ReceiveFileActivityPython", "Failed to create directory: " + parentDir.getPath());
-                        continue;
+                    if (parentDir != null && !parentDir.exists()) {
+                        parentDir.mkdirs();
                     }
 
-                    try {
-                        String originalName = receivedFile.getName();
-                        String nameWithoutExt;
-                        String extension = "";
+                    // Handle file naming conflicts
+                    receivedFile = handleFileConflict(receivedFile);
 
-                        int dotIndex = originalName.lastIndexOf('.');
-                        if (dotIndex == -1) {
-                            // No extension found
-                            nameWithoutExt = originalName;
-                        } else {
-                            // Split name and extension
-                            nameWithoutExt = originalName.substring(0, dotIndex);
-                            extension = originalName.substring(dotIndex);
-                        }
-
-                        int i = 1;
-                        while (receivedFile.exists()) {
-                            String newFileName = nameWithoutExt + " (" + i + ")" + extension;
-                            receivedFile = new File(destinationFolder, newFileName);
-                            i++;
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-
+                    // Receive file data
                     try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                        byte[] buffer = new byte[4096];
+                        byte[] buffer = new byte[BUFFER_SIZE];
                         long receivedSize = 0;
 
                         while (receivedSize < fileSize) {
-                            int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
-                            if (bytesRead == -1) {
-                                break;
-                            }
-                            fos.write(buffer, 0, bytesRead);
-                            receivedSize += bytesRead;
+                            int read = clientSocket.getInputStream().read(buffer, 0, 
+                                (int) Math.min(buffer.length, fileSize - receivedSize));
+                            if (read == -1) break;
+                            fos.write(buffer, 0, read);
+                            receivedSize += read;
 
                             int progress = (int) ((receivedSize * 100) / fileSize);
-                            FileLogger.log("ReceiveFileActivityPython", "Received size: " + receivedSize + ", Progress: " + progress);
                             runOnUiThread(() -> progressBar.setProgress(progress));
                         }
+                    }
+
+                    if (isEncryptedTransfer) {
+                        encryptedFiles.add(receivedFile.getPath());
                     }
                 }
             } catch (IOException e) {
@@ -427,77 +423,75 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         return null;
     }
 
-    private String createFolderStructure(JSONArray metadataArray, String saveToDirectory) {
-        if (metadataArray.length() == 0) {
-            FileLogger.log("ReceiveFileActivityPython", "No metadata provided for folder structure.");
-            return saveToDirectory; // Return saveToDirectory if no metadata
-        }
-
-        String topLevelFolder = ""; // Variable to hold the top-level folder name
-
+    private String createFolderStructure(JSONArray metadataArray, String basePath) {
         try {
-            // Extract the base folder name from the last entry if available
-            JSONObject lastMetadata = metadataArray.getJSONObject(metadataArray.length() - 1);
-            topLevelFolder = lastMetadata.optString("base_folder_name", "");
-
-            if (topLevelFolder.isEmpty()) {
-                FileLogger.log("ReceiveFileActivityPython", "Base folder name not found in metadata, aborting folder creation.");
-                return saveToDirectory; // Abort if no base folder name is found
+            // Normalize base path
+            basePath = basePath.replace('\\', '/');
+            
+            String baseFolderName = null;
+            for (int i = 0; i < metadataArray.length(); i++) {
+                JSONObject entry = metadataArray.getJSONObject(i);
+                if (entry.has("base_folder_name")) {
+                    baseFolderName = entry.getString("base_folder_name");
+                    break;
+                }
             }
+
+            if (baseFolderName == null) {
+                return basePath;
+            }
+
+            // Create base folder with conflict handling
+            File baseFolder = new File(basePath, baseFolderName);
+            baseFolder = handleFileConflict(baseFolder);
+            baseFolder.mkdirs();
+
+            // Create all directories from metadata
+            for (int i = 0; i < metadataArray.length(); i++) {
+                JSONObject entry = metadataArray.getJSONObject(i);
+                String path = entry.getString("path").replace('\\', '/');
+                
+                if (path.equals(".delete")) continue;
+                
+                if (path.endsWith("/")) {
+                    // It's a directory
+                    File dir = new File(baseFolder, path);
+                    dir.mkdirs();
+                }
+            }
+
+            return baseFolder.getAbsolutePath().replace('\\', '/');
         } catch (JSONException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error processing metadata JSON to extract base folder name", e);
-            return saveToDirectory; // Fallback if there's an error
+            FileLogger.log("ReceiveFileActivityPython", "Error processing metadata", e);
+            return basePath;
+        }
+    }
+
+    private File handleFileConflict(File file) {
+        // Normalize the file path
+        file = new File(file.getAbsolutePath().replace('\\', '/'));
+        
+        if (!file.exists()) return file;
+
+        String name = file.getName();
+        String parent = file.getParent();
+        String nameNoExt = name;
+        String extension = "";
+
+        int dotIndex = name.lastIndexOf('.');
+        if (dotIndex > 0) {
+            nameNoExt = name.substring(0, dotIndex);
+            extension = name.substring(dotIndex);
         }
 
-        // Construct the top-level folder path
-        String topLevelFolderPath = new File(saveToDirectory, topLevelFolder).getPath();
-        FileLogger.log("ReceiveFileActivityPython", "Top-level folder path: " + topLevelFolderPath);
+        int counter = 1;
+        File newFile;
+        do {
+            newFile = new File(parent, nameNoExt + " (" + counter + ")" + extension);
+            counter++;
+        } while (newFile.exists());
 
-        // Check if the folder already exists and rename if necessary
-        File topLevelDir = new File(topLevelFolderPath);
-        if (topLevelDir.exists()) {
-            // Increment the folder name if it already exists
-            int i = 1;
-            String newFolderName;
-            do {
-                newFolderName = topLevelFolder + " (" + i + ")";
-                topLevelDir = new File(saveToDirectory, newFolderName);
-                i++;
-            } while (topLevelDir.exists());
-            topLevelFolderPath = topLevelDir.getPath(); // Update to the new folder path
-            FileLogger.log("ReceiveFileActivityPython", "Renamed existing folder to: " + topLevelFolderPath);
-        } else {
-            // Create the top-level folder
-            if (!topLevelDir.mkdirs()) {
-                FileLogger.log("ReceiveFileActivityPython", "Failed to create top-level folder: " + topLevelFolderPath);
-                return saveToDirectory; // Fallback if folder creation fails
-            }
-            FileLogger.log("ReceiveFileActivityPython", "Created top-level folder: " + topLevelFolderPath);
-        }
-
-        // Process each file info in the metadata array
-        for (int i = 0; i < metadataArray.length(); i++) {
-            try {
-                JSONObject fileInfo = metadataArray.getJSONObject(i);
-                String filePath = fileInfo.optString("path", "");
-                if (filePath.equals(".delete")) {
-                    continue; // Skip paths marked for deletion
-                }
-
-                // Handle case where the path is provided in metadata
-                File fullFilePath = new File(topLevelFolderPath, filePath); // Prepend top-level folder
-                File parentDir = fullFilePath.getParentFile();
-                if (parentDir != null && !parentDir.exists()) {
-                    parentDir.mkdirs(); // Create the folder structure if it doesn't exist
-                    FileLogger.log("ReceiveFileActivityPython", "Created folder: " + parentDir.getPath());
-                }
-            } catch (JSONException e) {
-                FileLogger.log("ReceiveFileActivityPython", "Error processing file info in metadata", e);
-                // Continue to the next file if there's an error with the current one
-            }
-        }
-
-        return topLevelFolderPath; // Return the path of the created folder structure
+        return newFile;
     }
 
     private void ondonebtnclk(){
@@ -507,10 +501,11 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
         System.exit(0); // Ensure complete shutdown
     }
 
-    private void forceReleasePort(int port) {
+    private void forceReleasePort() {
+        int port1 =PORT;
         try {
             // Find and kill process using the port
-            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -520,48 +515,47 @@ public class ReceiveFileActivityPython extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
+        }
+    }
+
+    private void closeAllSockets() {
+        try {
+            // Close client socket
+            if (clientSocket != null && !clientSocket.isClosed()) {
+                clientSocket.close();
+                FileLogger.log("ReceiveFileActivityPython", "Client Socket closed");
+            }
+            
+            // Close server socket
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+                FileLogger.log("ReceiveFileActivityPython", "Server Socket closed");
+            }
+
+            // Shutdown executor service
+            if (executorService != null && !executorService.isShutdown()) {
+                executorService.shutdown();
+                FileLogger.log("ReceiveFileActivityPython", "ExecutorService shutdown");
+            }
+
+            finish(); // Close the activity
+        } catch (IOException e) {
+            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Close sockets on activity destruction
-        try {
-            if (clientSocket != null && !clientSocket.isClosed()) {
-                clientSocket.close();
-            }
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-        } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        // Close sockets on activity destruction
-        try {
-            if (clientSocket != null && !clientSocket.isClosed()) {
-                clientSocket.close();
-            }
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-        } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
-        }
-        finish();
+        closeAllSockets();
     }
 }

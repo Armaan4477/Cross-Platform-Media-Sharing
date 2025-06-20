@@ -5,9 +5,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -36,6 +41,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import androidx.appcompat.app.AlertDialog;
 
+import android.app.DownloadManager;
+import android.content.Context;
+
+
 
 public class PreferencesActivity extends AppCompatActivity {
 
@@ -44,8 +53,13 @@ public class PreferencesActivity extends AppCompatActivity {
     private Map<String, Object> originalPreferences = new HashMap<>();
 
     private static final String CONFIG_FOLDER_NAME = "config";
-    private static final String CONFIG_FILE_NAME = "config.json";  // Config file stored in internal storage
+    private static final String CONFIG_FILE_NAME = "config.json";
     private ImageButton imageButton;
+    private Switch encryptionSwitch;
+    private Switch warningsSwitch;
+    private Switch autoCheckSwitch;
+    private Spinner updateChannelSpinner;
+    private boolean isInitialLoad = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +69,7 @@ public class PreferencesActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                goToMainMenu();
+                toastdis();
             }
         });
 
@@ -69,34 +83,86 @@ public class PreferencesActivity extends AppCompatActivity {
         Button submitButton = findViewById(R.id.submit_button);
         Button mainMenuButton = findViewById(R.id.main_menu_button);
         Button btnCredits = findViewById(R.id.btn_credits);
+        encryptionSwitch = findViewById(R.id.encryption_switch);
+        warningsSwitch = findViewById(R.id.show_warnings_switch);
+        autoCheckSwitch = findViewById(R.id.auto_check_updates_switch);
+
+        updateChannelSpinner = findViewById(R.id.update_channel_spinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.update_channels, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        updateChannelSpinner.setAdapter(adapter);
+
+        // Set initial value from config
+        String savedChannel = getSavedUpdateChannel();
+        updateChannelSpinner.setSelection(savedChannel.equals("beta") ? 1 : 0);
+
+        updateChannelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedChannel = position == 0 ? "stable" : "beta";
+                updateChannelInConfig(selectedChannel);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         // Set the app version
         TextView appVersionLabel = findViewById(R.id.app_version_label);
         appVersionLabel.setText("App Version: " + getVersionName());
 
-        // Load saved preferences from internal storage
         loadPreferences();
 
         resetDeviceNameButton.setOnClickListener(v -> resetDeviceName());
         saveToDirectoryPickerButton.setOnClickListener(v -> pickDirectory());
         resetSavePathButton.setOnClickListener(v -> resetSavePath());
         submitButton.setOnClickListener(v -> submitPreferences());
-        mainMenuButton.setOnClickListener(v -> goToMainMenu());
+        mainMenuButton.setOnClickListener(v -> toastdis());
         imageButton.setOnClickListener(v -> openHelpMenu());
         btnCredits.setOnClickListener(v -> {
             Intent intent = new Intent(PreferencesActivity.this, CreditsActivity.class);
             startActivity(intent);
         });
 
-        // Fetch version name and set it to the TextView
         String versionName = getVersionName();
 
-        // Handle "Check for Update" button click
         Button checkForUpdateButton = findViewById(R.id.check_for_update_button);
         checkForUpdateButton.setOnClickListener(v -> checkForUpdates());
     }
 
-    // Method to get version name dynamically
+    private String getSavedUpdateChannel() {
+        try {
+            String jsonString = readJsonFromFile();
+            if (jsonString != null) {
+                JSONObject config = new JSONObject(jsonString);
+                return config.optString("update_channel", "stable");
+            }
+        } catch (Exception e) {
+            FileLogger.log("PreferencesActivity", "Error reading update channel", e);
+        }
+        return "stable";
+    }
+
+    private void updateChannelInConfig(String channel) {
+        try {
+            String jsonString = readJsonFromFile();
+            JSONObject config = jsonString != null ?
+                    new JSONObject(jsonString) : new JSONObject();
+
+            config.put("update_channel", channel);
+            saveJsonToFile(config.toString());
+
+            if (!isInitialLoad) {
+                Toast.makeText(this, "Update channel changed to " + channel,
+                        Toast.LENGTH_SHORT).show();
+            }
+            isInitialLoad = false;
+        } catch (Exception e) {
+            FileLogger.log("PreferencesActivity", "Error updating channel", e);
+        }
+    }
+
     private String getVersionName() {
         try {
             // Fetch version name from the app's PackageInfo
@@ -112,113 +178,181 @@ public class PreferencesActivity extends AppCompatActivity {
             FileLogger.log("AppVersion", "Version Name not found", e);
             return "Unknown";
         }
-
     }
 
     private void checkForUpdates() {
-        // Create a new thread for the network operation
+        String channel = loadchannel();
+        FileLogger.log("CheckForUpdates", "Checking for updates on Update channel: " + channel);
+
         new Thread(() -> {
             String apiVersion = null;
-            try {
-                // Define the API URL
-                URL url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
+            HttpURLConnection connection = null;
 
-                // Open a connection
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            try {
+                URL url;
+                if (channel.equals("beta")) {
+                    url = new URL("https://datadashshare.vercel.app/api/platformNumberbeta?platform=android");
+                } else {
+                    url = new URL("https://datadashshare.vercel.app/api/platformNumber?platform=android");
+                }
+
+                connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
 
-                // Check the response code
                 int responseCode = connection.getResponseCode();
-                if (responseCode == 200) { // Success
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
+                if (responseCode == 200) {
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(connection.getInputStream()))) {
+                        StringBuilder response = new StringBuilder();
+                        String line;
 
-                    // Read the response
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
+                        while ((line = reader.readLine()) != null) {
+                            response.append(line);
+                        }
+
+                        JSONObject jsonObject = new JSONObject(response.toString());
+                        apiVersion = jsonObject.getString("value");
                     }
-                    reader.close();
-
-                    // Parse the JSON response to extract the version value
-                    JSONObject jsonObject = new JSONObject(response.toString());
-                    apiVersion = jsonObject.getString("value");
                 } else {
                     FileLogger.log("CheckForUpdates", "Failed to fetch version, Response Code: " + responseCode);
                 }
             } catch (Exception e) {
                 FileLogger.log("CheckForUpdates", "Error fetching updates", e);
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
 
-            // Process the result on the main thread
             String finalApiVersion = apiVersion;
             new Handler(Looper.getMainLooper()).post(() -> processVersionCheckResult(finalApiVersion));
         }).start();
     }
 
-    // Method to process the version check result on the main thread
     private void processVersionCheckResult(String apiVersion) {
         if (apiVersion != null) {
             try {
-                // Get the app's version
                 String appVersion = getVersionName();
+                String channel = loadchannel();
 
-                // Split both versions into parts
-                String[] apiParts = apiVersion.split("\\.");
-                String[] appParts = appVersion.split("\\.");
+                int[] apiNums = convertVersionToNumbers(apiVersion);
+                int[] appNums = convertVersionToNumbers(appVersion);
 
-                // Compare the versions part by part
-                for (int i = 0; i < Math.min(apiParts.length, appParts.length); i++) {
-                    int apiPart = Integer.parseInt(apiParts[i]);
-                    int appPart = Integer.parseInt(appParts[i]);
+                int comparison = compareVersions(appNums, apiNums);
 
-                    if (apiPart > appPart) {
-                        showMessageDialog("App is older", "Your app version is outdated. Please update to the latest version.", true);
-                        return;
-                    } else if (apiPart < appPart) {
-                        showMessageDialog("Please downgrade", "Your app version is newer than the publicly available version. Downgrade to ensure compatibility.", true);
-                        return;
-                    }
+                if (comparison < 0) {
+                    showMessageDialog("Update Available",
+                            "Your app version " + appVersion + " is outdated. Latest version is " + apiVersion,
+                            true,
+                            channel);
+                } else if (comparison > 0) {
+                    showMessageDialog("Development Version",
+                            "Your app version " + appVersion + " is newer than the released version " + apiVersion,
+                            true,
+                            channel);
+                } else {
+                    showMessageDialog("Up to Date",
+                            "Your app is running the latest version " + appVersion,
+                            false,
+                            channel);
                 }
 
-                // If all parts are equal
-                showMessageDialog("Version is up to date", "Your app is up to date.", false);
             } catch (Exception e) {
-                FileLogger.log("CheckForUpdates", "Error parsing version", e);
-                showMessageDialog("Error", "Error checking for updates.", false);
+                FileLogger.log("CheckForUpdates", "Error comparing versions", e);
+                showMessageDialog("Error", "Error checking for updates.", false, "stable");
             }
         } else {
-            showMessageDialog("Error", "Failed to check for updates.", false);
+            showMessageDialog("Error", "Failed to check for updates.", false, "stable");
         }
     }
 
-    // Helper method to show a message
-    private void showMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    private int[] convertVersionToNumbers(String version) {
+        String[] parts = version.split("\\.");
+        int[] numbers = new int[3];
+
+        for (int i = 0; i < parts.length && i < 3; i++) {
+            try {
+                numbers[i] = Integer.parseInt(parts[i]);
+            } catch (NumberFormatException e) {
+                numbers[i] = 0;
+            }
+        }
+
+        return numbers;
     }
 
-    private void showMessageDialog(String title, String message, boolean showDownloadsButton) {
-        // Build the dialog
+    private int compareVersions(int[] version1, int[] version2) {
+        for (int i = 0; i < 3; i++) {
+            if (version1[i] != version2[i]) {
+                return Integer.compare(version1[i], version2[i]);
+            }
+        }
+        return 0;
+    }
+
+    private void showMessageDialog(String title, String message, boolean showDownloadsButton, String channel) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("Close", (dialog, which) -> {
-                    dialog.dismiss(); // Dismiss the dialog when "Close" is clicked
-                });
+                .setPositiveButton("Close", (dialog, which) -> dialog.dismiss());
 
         if (showDownloadsButton) {
-            builder.setNegativeButton("Open Downloads Page", (dialog, which) -> {
-                // Open the downloads page in a browser
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://datadashshare.vercel.app/download"));
+            String buttonText = channel.equals("beta") ? "Open Beta Page" : "Open Downloads Page";
+            String url = channel.equals("beta") ?
+                    "https://datadash.is-a.dev/beta" :
+                    "https://datadash.is-a.dev/download";
+
+            builder.setNegativeButton(buttonText, (dialog, which) -> {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(browserIntent);
+            });
+
+            String apiVersion = message.substring(message.lastIndexOf(" ") + 1);
+            builder.setNeutralButton("Download Latest Version", (dialog, which) -> {
+                downloadLatestVersion(apiVersion, channel);
             });
         }
 
-        // Show the dialog
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
+    private void downloadLatestVersion(String version, String channel) {
+        try {
+            String downloadUrl;
+            String fileNameSuffix;
+
+            if (channel.equals("beta")) {
+                downloadUrl = "https://github.com/Project-Bois/data-dash-test-files/raw/refs/heads/main/DataDash(android).apk";
+                fileNameSuffix = "_beta";
+            } else {
+                downloadUrl = "https://github.com/Project-Bois/DataDash-files/raw/refs/heads/main/DataDash(android).apk";
+                fileNameSuffix = "";
+            }
+
+            String fileName = "DataDash_v" + version + fileNameSuffix + ".apk";
+
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
+            request.setTitle("DataDash Update v" + version + (channel.equals("beta") ? " Beta" : ""));
+            request.setDescription("Downloading version " + version);
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+
+            request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "DataDash/" + fileName
+            );
+
+            DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager != null) {
+                long downloadId = downloadManager.enqueue(request);
+                Toast.makeText(this, "Downloading DataDash v" + version + (channel.equals("beta") ? " Beta" : ""), Toast.LENGTH_LONG).show();
+                FileLogger.log("PreferencesActivity", "Started download of version " + version + " (" + channel + ")");
+            }
+        } catch (Exception e) {
+            FileLogger.log("PreferencesActivity", "Error starting download", e);
+            Toast.makeText(this, "Error starting download: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void loadPreferences() {
         String jsonString = readJsonFromFile();
@@ -228,52 +362,68 @@ public class PreferencesActivity extends AppCompatActivity {
                 JSONObject configJson = new JSONObject(jsonString);
                 String deviceName = configJson.getString("device_name");
                 String saveToDirectory = configJson.getString("saveToDirectory");
+                boolean encryption = configJson.getBoolean("encryption");
+                boolean show_warn = configJson.getBoolean("show_warn");
+                boolean auto_check = configJson.getBoolean("auto_check");
 
                 // Store original preferences in a map
                 originalPreferences.put("device_name", deviceName);
                 originalPreferences.put("saveToDirectory", saveToDirectory);
+                originalPreferences.put("encryption", encryption);
+                originalPreferences.put("show_warn", show_warn);
+                originalPreferences.put("auto_check", auto_check);
 
                 // Set the input fields with the retrieved values
                 deviceNameInput.setText(deviceName);
                 saveToDirectoryInput.setText(saveToDirectory);
+                encryptionSwitch.setChecked(encryption);
+                warningsSwitch.setChecked(show_warn);
+                autoCheckSwitch.setChecked(auto_check);
+
             } catch (Exception e) {
                 FileLogger.log("PreferencesActivity", "Error loading preferences", e);
-                setDefaults();  // Fallback to default values if any error occurs
+                setDefaults();
             }
         } else {
-            setDefaults();  // Use default values if the file doesn't exist
+            setDefaults();
         }
     }
 
+    private String loadchannel() {
+        String jsonString = readJsonFromFile();
+        try {
+            if (jsonString != null) {
+                JSONObject configJson = new JSONObject(jsonString);
+                return configJson.optString("update_channel", "stable");
+            }
+        } catch (Exception e) {
+            FileLogger.log("PreferencesActivity", "Error loading update channel", e);
+        }
+        return "stable";
+    }
+
     private void setDefaults() {
-        // Set the saveToDirectory to the Android/media folder within external storage
         File mediaDir = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Media/");
 
-        // Create the media directory if it doesn't exist
         if (!mediaDir.exists()) {
-            boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
+            boolean dirCreated = mediaDir.mkdirs();
             if (!dirCreated) {
                 FileLogger.log("PreferencesActivity", "Failed to create media directory");
                 return;
             }
         }
 
-        // Get the full path to the media folder
         String saveToDirectory = mediaDir.getAbsolutePath();
 
-        // Set defaults for device name and saveToDirectory
         originalPreferences.put("device_name", "Android Device");
         originalPreferences.put("saveToDirectory", saveToDirectory);
 
-        // Update UI fields with defaults
         deviceNameInput.setText("Android Device");
         saveToDirectoryInput.setText(saveToDirectory);
     }
 
-    // Method to read JSON from internal storage
     private String readJsonFromFile() {
-        // Get the external file path for the config directory
-        File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config"); // External storage path
+        File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");
         File file = new File(folder, CONFIG_FILE_NAME);
 
         if (file.exists()) {
@@ -295,32 +445,28 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void resetDeviceName() {
-        deviceNameInput.setText(android.os.Build.MODEL);  // Reset device name to the device's model name
+        deviceNameInput.setText(android.os.Build.MODEL);
     }
 
     private void resetSavePath() {
         File mediaDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "DataDash");
 
-        // Create the media directory if it doesn't exist
         if (!mediaDir.exists()) {
-            boolean dirCreated = mediaDir.mkdirs();  // Create the directory if it doesn't exist
+            boolean dirCreated = mediaDir.mkdirs();
             if (!dirCreated) {
                 FileLogger.log("MainActivity", "Failed to create media directory");
                 return;
             }
         }
-        // Get the full path to the media folder
         String saveToDirectory = mediaDir.getAbsolutePath();
 
-        // Remove the "/storage/emulated/0" prefix if it exists
         if (saveToDirectory.startsWith("/storage/emulated/0")) {
-            saveToDirectory = saveToDirectory.replace("/storage/emulated/0", ""); // Remove the prefix
+            saveToDirectory = saveToDirectory.replace("/storage/emulated/0", "");
         }
-        saveToDirectoryInput.setText(saveToDirectory);  // Reset save path to default
+        saveToDirectoryInput.setText(saveToDirectory);
     }
 
     private void pickDirectory() {
-        // Launch a directory picker
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         directoryPickerLauncher.launch(intent);
     }
@@ -344,7 +490,6 @@ public class PreferencesActivity extends AppCompatActivity {
                                 }
                             }
 
-                            // Give a warning if the selected directory is within the "Download" folder and may cause issues
                             if (pickedDir.contains("Download")) {
                                 Toast.makeText(this, "Warning: Selected directory is within the Download folder", Toast.LENGTH_SHORT).show();
                             }
@@ -355,18 +500,17 @@ public class PreferencesActivity extends AppCompatActivity {
     private void submitPreferences() {
         String deviceName = deviceNameInput.getText().toString();
         String saveToDirectoryURI = saveToDirectoryInput.getText().toString();
+        boolean encryption = encryptionSwitch.isChecked();
+        boolean showWarnings = warningsSwitch.isChecked();
+        boolean autoCheck = autoCheckSwitch.isChecked();
 
-        // Ensure the directory path ends with a slash
         if (!saveToDirectoryURI.startsWith("/")) {
-            saveToDirectoryURI += "/";
+            saveToDirectoryURI = "/" + saveToDirectoryURI;
         }
-
-        // Ensure the directory path ends with a slash
         if (!saveToDirectoryURI.endsWith("/")) {
             saveToDirectoryURI += "/";
         }
 
-        // Convert into a path like /storage/emulated/0/Download
         String saveToDirectory = saveToDirectoryURI.substring(saveToDirectoryURI.indexOf(":", 0) + 1);
         FileLogger.log("PreferencesActivity", "Save to path: " + saveToDirectory);
 
@@ -375,32 +519,77 @@ public class PreferencesActivity extends AppCompatActivity {
             return;
         }
 
-        // Create a new JSON object with the updated preferences
-        JSONObject configJson = new JSONObject();
-        try {
-            configJson.put("device_name", deviceName);
-            configJson.put("saveToDirectory", saveToDirectory);
-            configJson.put("max_file_size", 1000000);  // 1 MB
-            configJson.put("encryption", false);
-
-            // Save preferences to internal storage
-            saveJsonToFile(configJson.toString());
-
-            // Notify the user that preferences were updated
+        if (hasPreferencesChanged(deviceName, saveToDirectory, encryption, showWarnings, autoCheck)) {
+            updateSpecificPreferences(deviceName, saveToDirectory, encryption, showWarnings, autoCheck);
             Toast.makeText(this, "Settings updated", Toast.LENGTH_SHORT).show();
-            FileLogger.log("PreferencesActivity", "Preferences updated: " + configJson.toString());
-        } catch (Exception e) {
-            FileLogger.log("PreferencesActivity", "Error creating JSON", e);
+        } else {
+            Toast.makeText(this, "No changes detected", Toast.LENGTH_SHORT).show();
         }
 
-        // Go back to the main screen after submitting preferences
         goToMainMenu();
     }
 
-    // Method to save the modified JSON to internal storage
+    private boolean hasPreferencesChanged(String newDeviceName, String newSaveToDirectory,
+                                          boolean newEncryption, boolean newShowWarnings, boolean newAutoCheck) {
+        String originalDeviceName = (String) originalPreferences.get("device_name");
+        String originalSaveToDirectory = (String) originalPreferences.get("saveToDirectory");
+        boolean originalEncryption = (boolean) originalPreferences.getOrDefault("encryption", false);
+        boolean originalShowWarnings = (boolean) originalPreferences.getOrDefault("show_warn", true);
+        boolean originalAutoCheck = (boolean) originalPreferences.getOrDefault("auto_check", true);
+
+        return !newDeviceName.equals(originalDeviceName) ||
+                !newSaveToDirectory.equals(originalSaveToDirectory) ||
+                newEncryption != originalEncryption ||
+                newShowWarnings != originalShowWarnings ||
+                newAutoCheck != originalAutoCheck;
+    }
+
+    private void updateSpecificPreferences(String deviceName, String saveToDirectory,
+                                           boolean encryption, boolean showWarnings, boolean autoCheck) {
+        try {
+            String jsonString = readJsonFromFile();
+            JSONObject existingConfig = jsonString != null ?
+                    new JSONObject(jsonString) : new JSONObject();
+
+            boolean updated = false;
+
+            if (!deviceName.equals(originalPreferences.get("device_name"))) {
+                existingConfig.put("device_name", deviceName);
+                updated = true;
+            }
+            if (!saveToDirectory.equals(originalPreferences.get("saveToDirectory"))) {
+                existingConfig.put("saveToDirectory", saveToDirectory);
+                updated = true;
+            }
+            if (encryption != (boolean) originalPreferences.getOrDefault("encryption", false)) {
+                existingConfig.put("encryption", encryption);
+                updated = true;
+            }
+            if (showWarnings != (boolean) originalPreferences.getOrDefault("show_warn", true)) {
+                existingConfig.put("show_warn", showWarnings);
+                updated = true;
+            }
+            if (autoCheck != (boolean) originalPreferences.getOrDefault("auto_check", true)) {
+                existingConfig.put("auto_check", autoCheck);
+                updated = true;
+            }
+
+            if (updated) {
+                saveJsonToFile(existingConfig.toString());
+                originalPreferences.put("device_name", deviceName);
+                originalPreferences.put("saveToDirectory", saveToDirectory);
+                originalPreferences.put("encryption", encryption);
+                originalPreferences.put("show_warn", showWarnings);
+                originalPreferences.put("auto_check", autoCheck);
+            }
+        } catch (Exception e) {
+            FileLogger.log("PreferencesActivity", "Error updating specific preferences", e);
+        }
+    }
+
     private void saveJsonToFile(String jsonString) {
         try {
-            File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");  // External storage path
+            File folder = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config");
             if (!folder.exists()) {
                 boolean folderCreated = folder.mkdirs();
                 FileLogger.log("PreferencesActivity", "Config folder created: " + folder.getAbsolutePath());
@@ -422,12 +611,19 @@ public class PreferencesActivity extends AppCompatActivity {
     }
 
     private void goToMainMenu() {
-        Toast.makeText(this, "Settings Changes Discarded", Toast.LENGTH_SHORT).show();
         Intent mainIntent = new Intent(PreferencesActivity.this, MainActivity.class);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(mainIntent);
         finish();
     }
 
+    private void toastdis() {
+        Toast.makeText(this, "Settings Changes Discarded", Toast.LENGTH_SHORT).show();
+        Intent mainIntent = new Intent(PreferencesActivity.this, MainActivity.class);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(mainIntent);
+        finish();
+    }
     private void openHelpMenu() {
         // Open the help dialog
         HelpDialog helpDialog = new HelpDialog(this);

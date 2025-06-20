@@ -1,6 +1,7 @@
 package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.icu.text.LocaleDisplayNames;
 import android.net.Uri;
@@ -9,7 +10,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
+import android.view.View;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -57,6 +61,7 @@ import java.util.Arrays;
 import android.widget.ProgressBar;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.an.crossplatform.AESUtils.EncryptionUtils;
 
 public class SendFileActivity extends AppCompatActivity {
 
@@ -84,6 +89,9 @@ public class SendFileActivity extends AppCompatActivity {
     Button selectFolderButton;
     Button sendButton;
     private static final int FILE_TRANSFER_PORT = 63152;
+    private static final int BUFFER_SIZE = 4096;
+    boolean isEncryptionEnabled;
+    private EditText passwordField;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,8 +101,18 @@ public class SendFileActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Toast.makeText(SendFileActivity.this,  "Back navigation is disabled, Please Restart the App", Toast.LENGTH_SHORT).show();
-                // Do nothing to disable back navigation
+
+                new AlertDialog.Builder(SendFileActivity.this)
+                        .setTitle("Exit")
+                        .setMessage("Are you sure you want to cancel the transfer?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            dialog.dismiss();
+                            closeAllSockets();
+                            forceReleasePort();
+                            Toast.makeText(SendFileActivity.this,  "Device Disconnected", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         });
 
@@ -103,6 +121,13 @@ public class SendFileActivity extends AppCompatActivity {
         selected_device_ip = getIntent().getStringExtra("selectedDeviceIP");
         progressBar_send = findViewById(R.id.progressBar_send);
         animationView = findViewById(R.id.transfer_animation);
+
+        // set encryption from config
+        isEncryptionEnabled = loadEncryptionFromConfig();
+        passwordField = findViewById(R.id.editTextText4);
+        if (isEncryptionEnabled) {
+            passwordField.setVisibility(View.VISIBLE);
+        }
 
         // Retrieve the OS type from the string with try catch block
         try {
@@ -133,6 +158,27 @@ public class SendFileActivity extends AppCompatActivity {
         sendButton.setOnClickListener(v -> onSendClicked());
     }
 
+    private boolean loadEncryptionFromConfig() {
+        boolean encryption = false;
+        File configFile = new File(Environment.getExternalStorageDirectory(), "Android/media/" + getPackageName() + "/Config/config.json");
+
+        try {
+            FileLogger.log("ReceiveFileActivityPython", "Config file path: " + configFile.getAbsolutePath()); // Log the config path
+            FileInputStream fis = new FileInputStream(configFile);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+            StringBuilder jsonBuilder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                jsonBuilder.append(line);
+            }
+            fis.close();
+            JSONObject json = new JSONObject(jsonBuilder.toString());
+            encryption = json.optBoolean("encryption", false);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivityPython", "Error loading saveToDirectory from config", e);
+        }
+        return encryption;
+    }
     private final ActivityResultLauncher<Intent> filePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
@@ -216,6 +262,16 @@ public class SendFileActivity extends AppCompatActivity {
         if (filePaths.isEmpty()) {
             Toast.makeText(this, "No files or folder selected", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        if (isEncryptionEnabled) {
+            String password = passwordField.getText().toString();
+            if (password.isEmpty()) {
+                runOnUiThread( () -> {
+                    Toast.makeText(SendFileActivity.this, "Please enter a password", Toast.LENGTH_LONG).show();
+                });
+                return;
+            }
         }
 
         if (!metadataCreated) {
@@ -489,7 +545,6 @@ public class SendFileActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                forceReleasePort(FILE_TRANSFER_PORT);
                 socket = new Socket();
                 socket.setReuseAddress(true); // Add this to prevent port binding issues
                 FileLogger.log("SendFileActivity", "Attempting connection to " + ip + ":" + FILE_TRANSFER_PORT);
@@ -506,10 +561,10 @@ public class SendFileActivity extends AppCompatActivity {
                         sendFolder(filePath);
                     } else {
                         if (!metadataSent) {
-                            sendFile(metadataFilePath, null);
+                            sendFile(metadataFilePath, null, false);
                             metadataSent = true;
                         }
-                        sendFile(filePath, null);
+                        sendFile(filePath, null, isEncryptionEnabled);
                     }
                 }
             } catch (IOException e) {
@@ -549,9 +604,12 @@ public class SendFileActivity extends AppCompatActivity {
                         sendButton.setEnabled(false);
                         //Toast.makeText(SendFileActivity.this, "Sending Completed", Toast.LENGTH_SHORT).show();
                         // Launch TransferCompleteActivity
-                        Intent intent = new Intent(SendFileActivity.this, TransferCompleteActivity.class);
-                        startActivity(intent);
-                        finish(); // Close current activity
+//                        Intent intent = new Intent(SendFileActivity.this, TransferCompleteActivity.class);
+//                        startActivity(intent);
+//                        finish(); // Close current activity
+                        TransferCompleteActivity transferCompleteActivity = new TransferCompleteActivity(SendFileActivity.this);
+                        transferCompleteActivity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                        transferCompleteActivity.show();
                     }
                 });
             } catch (IOException e) {
@@ -560,12 +618,18 @@ public class SendFileActivity extends AppCompatActivity {
         }
 
         private void sendFile(String filePath, String relativePath) {
-            boolean encryptedTransfer = false;  // Set to true if you want to encrypt the file before sending
+            // Default constructor to send files without encryption
+            boolean encryptedTransfer=false;
+            sendFile(filePath, relativePath, encryptedTransfer);
+        }
 
+        private void sendFile(String filePath, String relativePath, boolean encryptedTransfer) {
             if (filePath == null) {
                 FileLogger.log("SendFileActivity", "File path is null");
                 return;
             }
+
+            final String password = passwordField.getText().toString();
 
             // Create a CountDownLatch for sequential file transfers
             CountDownLatch latch = new CountDownLatch(1);
@@ -574,6 +638,7 @@ public class SendFileActivity extends AppCompatActivity {
                 try {
                     InputStream inputStream;
                     String finalRelativePath;
+                    String originalFileName = "encryptedfile";
 
                     // Initialize finalRelativePath based on relativePath or fallback to filePath
                     if (relativePath == null || relativePath.isEmpty()) {
@@ -597,6 +662,7 @@ public class SendFileActivity extends AppCompatActivity {
                             // Retrieve the display name (actual file name)
                             int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
                             String contentUriFileName = cursor.getString(nameIndex);
+                            originalFileName = contentUriFileName;
                             cursor.close();
 
                             // Use contentUriFileName only if relativePath was null or empty
@@ -606,10 +672,12 @@ public class SendFileActivity extends AppCompatActivity {
                         } else if (relativePath == null || relativePath.isEmpty()) {
                             // Fallback to file name from URI path if cursor fails
                             finalRelativePath = new File(fileUri.getPath()).getName();
+                            originalFileName = finalRelativePath;
                         }
                     } else {
                         // If it's a file path, open it directly and extract the file name
                         File file = new File(fileUri.getPath());
+                        originalFileName = file.getName();
                         inputStream = new FileInputStream(file);
 
                         // Use the file name only if relativePath was null or empty
@@ -618,9 +686,8 @@ public class SendFileActivity extends AppCompatActivity {
                         }
                     }
 
-                    final InputStream finalInputStream = inputStream;
-                    final String finalPathToSend = finalRelativePath;
-                    final long fileSize = finalInputStream.available();
+                    InputStream finalInputStream = inputStream;
+                    String finalPathToSend = finalRelativePath;
 
                     runOnUiThread(() -> {
                         progressBar_send.setMax(100);
@@ -632,6 +699,7 @@ public class SendFileActivity extends AppCompatActivity {
 
                     try {
                         DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                        File encryptedFile = null;
 
                         // Determine the encryption flag
                         String encryptionFlag = encryptedTransfer ? "encyp: t" : "encyp: f";
@@ -639,6 +707,25 @@ public class SendFileActivity extends AppCompatActivity {
                         dos.flush();
                         FileLogger.log("SendFileActivity", "Sent encryption flag: " + encryptionFlag);
 
+
+                        if (encryptedTransfer) {
+                            try {
+                                // Encrypt the file and create a new encrypted file with the .crypt extension
+                                encryptedFile = new File(getCacheDir(),originalFileName + ".crypt");
+                                EncryptionUtils.encryptFile(password, (FileInputStream) inputStream, encryptedFile);
+
+                                // Update finalInputStream and finalPathToSend with encrypted file details
+                                finalInputStream = new FileInputStream(encryptedFile);
+
+                                // Add ".crypt" to relative path
+                                finalPathToSend += ".crypt";
+
+                                FileLogger.log("SendFileActivity", "Encrypted file to send: " + encryptedFile.getAbsolutePath());
+                            } catch (Exception e) {
+                                FileLogger.log("SendFileActivity", "Error encrypting file", e);
+                                return; // Stop further processing if encryption fails
+                            }
+                        }
                         // Send the relative path size and the path
                         byte[] relativePathBytes = finalPathToSend.getBytes(StandardCharsets.UTF_8);
                         long relativePathSize = relativePathBytes.length;
@@ -653,12 +740,13 @@ public class SendFileActivity extends AppCompatActivity {
 
                         // Send the file size
                         ByteBuffer sizeBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                        long fileSize = finalInputStream.available();
                         sizeBuffer.putLong(fileSize);
                         dos.write(sizeBuffer.array());
                         dos.flush();
 
                         // Send the file data
-                        byte[] buffer = new byte[4096];
+                        byte[] buffer = new byte[BUFFER_SIZE];
                         long sentSize = 0;
 
                         while (sentSize < fileSize) {
@@ -671,6 +759,11 @@ public class SendFileActivity extends AppCompatActivity {
                         }
                         dos.flush();
                         finalInputStream.close();
+
+                        // Check if the transfer was encrypted and delete the encrypted file
+                        if (encryptedTransfer) {
+                            encryptedFile.delete();
+                        }
                     } catch (IOException e) {
                         FileLogger.log("SendFileActivity", "Error sending file", e);
                     }
@@ -707,7 +800,7 @@ public class SendFileActivity extends AppCompatActivity {
 
                     // Send the metadata file first
                     if (metadataFilePath != null) {
-                        sendFile(metadataFilePath, "");
+                        sendFile(metadataFilePath, "", false);
                         metadataSent = true;
                     } else {
                         FileLogger.log("SendFileActivity", "Metadata file path is null. Metadata file not sent.");
@@ -739,7 +832,7 @@ public class SendFileActivity extends AppCompatActivity {
                 try {
                     InputStream inputStream = getContentResolver().openInputStream(documentFile.getUri());
                     if (inputStream != null) {
-                        sendFile(documentFile.getUri().toString(), fileRelativePath);
+                        sendFile(documentFile.getUri().toString(), fileRelativePath, isEncryptionEnabled);
                         inputStream.close();
                     }
                 } catch (IOException e) {
@@ -748,29 +841,31 @@ public class SendFileActivity extends AppCompatActivity {
             }
         }
 
-        private void forceReleasePort(int port) {
-            try {
-                // Find and kill process using the port
-                Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
+    }
 
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("LISTEN")) {
-                        String[] parts = line.split("\\s+");
-                        if (parts.length > 1) {
-                            String pid = parts[1];
-                            Runtime.getRuntime().exec("kill -9 " + pid);
-                            FileLogger.log("SendFileActivity", "Killed process " + pid + " using port " + port);
-                        }
+    private void forceReleasePort() {
+        int port1 =FILE_TRANSFER_PORT;
+        try {
+            // Find and kill process using the port
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("LISTEN")) {
+                    String[] parts = line.split("\\s+");
+                    if (parts.length > 1) {
+                        String pid = parts[1];
+                        Runtime.getRuntime().exec("kill -9 " + pid);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
-
-                // Wait briefly for port to be fully released
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                FileLogger.log("SendFileActivity", "Error releasing port: " + port, e);
             }
+
+            // Wait briefly for port to be fully released
+            Thread.sleep(500);
+        } catch (Exception e) {
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
     }
     private void closeSocket() {
@@ -784,24 +879,35 @@ public class SendFileActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        closeSocket();
-        executorService.shutdown();
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        // Close sockets on activity destruction
+    private void closeAllSockets() {
         try {
-            if (socket != null) {
+            // Close socket-related resources
+            if (dos != null) {
+                dos.close();
+                FileLogger.log("SendFileActivity", "DataOutputStream closed");
+            }
+            if (dis != null) {
+                dis.close();
+                FileLogger.log("SendFileActivity", "DataInputStream closed");
+            }
+            if (socket != null && !socket.isClosed()) {
                 socket.close();
                 FileLogger.log("SendFileActivity", "Socket closed");
             }
+
+            // Shutdown executor
+            executorService.shutdown();
+            FileLogger.log("SendFileActivity", "ExecutorService shutdown");
+
+            finish(); // Close the activity
         } catch (IOException e) {
-            FileLogger.log("SendFileActivity", "Error closing socket", e);
+            FileLogger.log("SendFileActivity", "Error closing sockets", e);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        closeAllSockets();
     }
 }

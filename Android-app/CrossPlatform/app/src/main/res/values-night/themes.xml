@@ -1,8 +1,33 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme -->
     <style name="Base.Theme.CrossPlatform" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Primary brand colors -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- System UI handling - Base defaults -->
+        <item name="android:statusBarColor">#333333</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+
+    <!-- Android 13-14 specific (API 33-34) -->
+    <style name="Theme.CrossPlatform" parent="Base.Theme.CrossPlatform">
         <item name="android:statusBarColor">@color/dark_grey</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Android 15+ specific (API 35+) -->
+    <style name="Theme.CrossPlatform.API35" parent="Theme.CrossPlatform" tools:targetApi="35">
+        <item name="android:statusBarColor">@color/dark_grey</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:windowTranslucentStatus">false</item>
     </style>
 </resources>

@@ -29,6 +29,10 @@ public class FileLogger {
                 }
             }
             logFile = new File(mediaDir, "log.txt");
+            if (logFile.exists() && logFile.length() > 500 * 1024) {
+                logFile.delete();
+                logFile.createNewFile();
+            }
             if (!logFile.exists()) {
                 boolean created = logFile.createNewFile();
                 if (!created) {
