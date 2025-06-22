@@ -290,8 +290,8 @@ class ReceiveWorkerJava(QThread):
                                 file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
                                 file_progress = min(file_progress, 100)
                                 self.progress_update.emit(file_progress)
-                                self.file_progress_update.emit(os.path.basename(file_name), file_progress)
-
+                                display_name = os.path.basename(file_name)
+                                self.file_progress_update.emit(display_name, file_progress)
                     if encrypted_transfer:
                         self.encrypted_files.append(full_file_path)
 
@@ -767,8 +767,13 @@ class ReceiveAppPJava(QWidget):
             return
 
         # For individual files
+        base_filename = os.path.basename(filename)
         for row in range(self.files_table.rowCount()):
-            if self.files_table.item(row, 1).text() == filename:
+            table_filename = self.files_table.item(row, 1).text()
+            if table_filename.startswith("📁 "):
+                table_filename = table_filename[2:]
+                
+            if table_filename == base_filename or table_filename == base_filename.replace('.crypt', ''):
                 progress_item = QTableWidgetItem()
                 progress_item.setData(Qt.ItemDataRole.UserRole, progress)
                 self.files_table.setItem(row, 3, progress_item)
