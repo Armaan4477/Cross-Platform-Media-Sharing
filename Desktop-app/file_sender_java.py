@@ -257,11 +257,12 @@ class FileSenderJava(QThread):
         logger.debug("Sending file: %s", file_path)
 
         original_file_path = file_path
+        encrypted_file_path = None
 
-        # Handle file encryption if needed
         if encrypted_transfer:
             logger.debug("Encrypted transfer with password: %s", self.password)
-            file_path = encrypt_file(file_path, self.password)
+            encrypted_file_path = encrypt_file(file_path, self.password)
+            file_path = encrypted_file_path
 
         try:
             file_size = os.path.getsize(file_path)
@@ -310,7 +311,7 @@ class FileSenderJava(QThread):
             self.file_progress_update.emit(original_file_path, 100)
             
             # Update file count only for actual files, not metadata
-            if not file_path.endswith('metadata.json'):
+            if not original_file_path.endswith('metadata.json'):
                 self.files_sent += 1
                 pending = self.total_files - self.files_sent
                 self.file_count_update.emit(self.total_files, self.files_sent, pending)
@@ -320,13 +321,20 @@ class FileSenderJava(QThread):
                     self.overall_progress_update.emit(100)
 
             # Clean up encrypted file if it was created
-            if encrypted_transfer and os.path.exists(file_path + ".crypt"):
-                os.remove(file_path + ".crypt")
+            if encrypted_transfer and encrypted_file_path and os.path.exists(encrypted_file_path):
+                logger.debug(f"Cleaning up encrypted file: {encrypted_file_path}")
+                os.remove(encrypted_file_path)
 
             return True
 
         except Exception as e:
             logger.error("Error sending file: %s", str(e))
+            if encrypted_transfer and encrypted_file_path and os.path.exists(encrypted_file_path):
+                try:
+                    os.remove(encrypted_file_path)
+                    logger.debug(f"Cleaned up encrypted file after error: {encrypted_file_path}")
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to clean up encrypted file: {cleanup_error}")
             return False
 
     def update_transfer_stats(self):
