@@ -230,3 +230,46 @@ jobs:
         with:
           name: DataDash(windows x64)
           path: Desktop-app/dist/DataDash(windows x64).exe
+
+  build-windows-arm:
+    runs-on: windows-11-arm
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/requirements.txt
+
+      - name: Install pyinstaller
+        run: pip install pyinstaller
+
+      - name: Build for Windows ARM
+        run: |
+          cd Desktop-app
+          & pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+
+      - name: Rename Windows executable
+        run: |
+          cd Desktop-app
+          Rename-Item -Path "dist\DataDash.exe" -NewName "DataDash(windows arm).exe"
+
+      # - name: Install Inno Setup
+      #   run: |
+      #     choco install innosetup -y
+
+      # - name: Create Installer
+      #   run: |
+      #     cd Desktop-app
+      #     & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' dd.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(windows arm)
+          path: Desktop-app/dist/DataDash(windows arm).exe
