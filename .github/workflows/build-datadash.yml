@@ -178,36 +178,74 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      # - name: Install Docker and QEMU for ARM emulation
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y qemu qemu-user-static
-      #     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
 
-      - name: Build for Linux ARM using Docker
+      - name: Install dependencies
         run: |
-          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/Desktop-app \
-            --platform linux/arm64 python:3.13 bash -c "
-              pip install -r actions.txt &&
-              pip install wheel &&
-              pip install https://files.pythonhosted.org/packages/5a/5e/e77fa2761d809cd08d724f44af01a4b6ceb0ff9648e43173187b0e4fac4e/pyqt6-6.9.1-cp39-abi3-manylinux_2_39_aarch64.whl &&
-              pip install PyQt6-Qt6 PyQt6-sip &&
-              pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
-                --add-data 'broadcast.py:.' --add-data 'constant.py:.' \
-                --add-data 'credits_dialog.py:.' --add-data 'crypt_handler.py:.' \
-                --add-data 'file_receiver_android.py:.' --add-data 'file_receiver_python.py:.' \
-                --add-data 'file_receiver_swift.py:.' --add-data 'file_receiver.py:.' \
-                --add-data 'file_sender_java.py:.' --add-data 'file_sender_swift.py:.' \
-                --add-data 'file_sender.py:.' --add-data 'loges.py:.' \
-                --add-data 'portsss.py:.' --add-data 'preferences.py:.' \
-                --icon=./logo.png --name=DataDash main.py &&
-              mv dist/DataDash '/workspace/Desktop-app/DataDash(linux arm)'"
+          pip install -r Desktop-app/actions.txt
 
-      - name: Upload Linux ARM artifact
+      - name: Install PyQt6
+        run: |
+          pip install wheel
+          pip install https://files.pythonhosted.org/packages/5a/5e/e77fa2761d809cd08d724f44af01a4b6ceb0ff9648e43173187b0e4fac4e/pyqt6-6.9.1-cp39-abi3-manylinux_2_39_aarch64.whl
+          # Also install dependencies
+          pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Clean previous builds
+        run: |
+          rm -rf Desktop-app/build Desktop-app/dist Desktop-app/DataDash\(linux\ arm\)
+
+      - name: Build for Linux arm
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --add-data "broadcast.py:." --add-data "constant.py:." --add-data "credits_dialog.py:." --add-data "crypt_handler.py:." --add-data "file_receiver_android.py:." --add-data "file_receiver_python.py:." --add-data "file_receiver_swift.py:." --add-data "file_receiver.py:." --add-data "file_sender_java:." --add-data "file_sender_swift.py:." --add-data "file_sender.py:." --add-data "loges.py:." --add-data "portsss.py:." --add-data "preferences.py:." --name=DataDash main.py
+          mv dist/DataDash "../DataDash(linux arm)"
+
+      - name: Upload Linux arm artifact
         uses: actions/upload-artifact@v4
         with:
           name: DataDash(linux arm)
-          path: Desktop-app/DataDash(linux arm)
+          path: DataDash\(linux\ arm\)
+
+  # build-linux-arm:
+  #   runs-on: ubuntu-22.04-arm
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v4
+
+  #     # - name: Install Docker and QEMU for ARM emulation
+  #     #   run: |
+  #     #     sudo apt-get update
+  #     #     sudo apt-get install -y qemu qemu-user-static
+  #     #     docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+  #     - name: Build for Linux ARM using Docker
+  #       run: |
+  #         docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/Desktop-app \
+  #           --platform linux/arm64 python:3.13 bash -c "
+  #             pip install -r actions.txt &&
+  #             pip install wheel &&
+  #             pip install https://files.pythonhosted.org/packages/5a/5e/e77fa2761d809cd08d724f44af01a4b6ceb0ff9648e43173187b0e4fac4e/pyqt6-6.9.1-cp39-abi3-manylinux_2_39_aarch64.whl &&
+  #             pip install PyQt6-Qt6 PyQt6-sip &&
+  #             pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
+  #               --add-data 'broadcast.py:.' --add-data 'constant.py:.' \
+  #               --add-data 'credits_dialog.py:.' --add-data 'crypt_handler.py:.' \
+  #               --add-data 'file_receiver_android.py:.' --add-data 'file_receiver_python.py:.' \
+  #               --add-data 'file_receiver_swift.py:.' --add-data 'file_receiver.py:.' \
+  #               --add-data 'file_sender_java.py:.' --add-data 'file_sender_swift.py:.' \
+  #               --add-data 'file_sender.py:.' --add-data 'loges.py:.' \
+  #               --add-data 'portsss.py:.' --add-data 'preferences.py:.' \
+  #               --icon=./logo.png --name=DataDash main.py &&
+  #             mv dist/DataDash '/workspace/Desktop-app/DataDash(linux arm)'"
+
+  #     - name: Upload Linux ARM artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: DataDash(linux arm)
+  #         path: Desktop-app/DataDash(linux arm)
 
   build-windows-x64:
     runs-on: windows-latest
