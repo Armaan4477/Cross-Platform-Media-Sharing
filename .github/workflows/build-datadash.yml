@@ -55,14 +55,14 @@ jobs:
             --icon "DataDash.app" 100 150 \
             --app-drop-link 300 150 \
             --no-internet-enable \
-            "DataDash(macos-x64).dmg" \
+            "DataDash(macos x64).dmg" \
             "DataDash.app"
 
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
           name: DataDash-macOS-x64
-          path: Desktop-app/dist/DataDash(macos-x64).dmg
+          path: Desktop-app/dist/DataDash(macos x64).dmg
 
   build-macos-arm:
     runs-on: macos-15
@@ -111,14 +111,14 @@ jobs:
             --icon "DataDash.app" 100 150 \
             --app-drop-link 300 150 \
             --no-internet-enable \
-            "DataDash(macos-arm).dmg" \
+            "DataDash(macos arm).dmg" \
             "DataDash.app"
 
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
           name: DataDash-macOS-arm
-          path: Desktop-app/dist/DataDash(macos-arm).dmg
+          path: Desktop-app/dist/DataDash(macos arm).dmg
      
   build-linux-x64:
     runs-on: ubuntu-22.04
@@ -211,6 +211,11 @@ jobs:
           cd Desktop-app
           & pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
 
+      - name: Rename Windows executable
+        run: |
+          cd Desktop-app
+          Rename-Item -Path "dist\DataDash.exe" -NewName "DataDash(windows x64).exe"
+
       # - name: Install Inno Setup
       #   run: |
       #     choco install innosetup -y
@@ -224,4 +229,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DataDash(windows x64)
-          path: Desktop-app/dist/DataDash.exe
+          path: Desktop-app/dist/DataDash(windows x64).exe
