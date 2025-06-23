@@ -379,7 +379,7 @@ class PreferencesApp(QWidget):
 
         self.device_name_input = QLineEdit(self)
         self.device_name_input.setFont(QFont("Arial", 16))
-        self.device_name_input.setFixedHeight(35)
+        self.device_name_input.setFixedHeight(40)
         self.device_name_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.style_input(self.device_name_input)
         device_name_layout.addWidget(self.device_name_input)
@@ -400,7 +400,7 @@ class PreferencesApp(QWidget):
 
         self.save_to_path_input = QLineEdit(self)
         self.save_to_path_input.setFont(QFont("Arial", 16))
-        self.save_to_path_input.setFixedHeight(30)
+        self.save_to_path_input.setFixedHeight(40)
         self.save_to_path_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.style_input(self.save_to_path_input)
         layout.addWidget(self.save_to_path_input)
