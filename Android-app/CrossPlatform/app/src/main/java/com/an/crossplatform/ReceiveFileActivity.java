@@ -1,6 +1,7 @@
 package com.an.crossplatform;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -8,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -36,6 +38,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -58,8 +61,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private Button openFolder;
     private Button donebtn;
     private TextView txt_path;
+    private boolean isEncryptedTransfer;
+    private ArrayList<String> encryptedFiles = new ArrayList<String>();
     private final ExecutorService executorService = Executors.newFixedThreadPool(2);
     private static final int FILE_TRANSFER_PORT = 63152;
+    private static final int BUFFER_SIZE = 4096;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +75,17 @@ public class ReceiveFileActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Toast.makeText(ReceiveFileActivity.this, "Back navigation is disabled, Please Restart the App", Toast.LENGTH_SHORT).show();
-                // Do nothing to disable back navigation
+                new AlertDialog.Builder(ReceiveFileActivity.this)
+                        .setTitle("Exit")
+                        .setMessage("Are you sure you want to cancel the transfer?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            dialog.dismiss();
+                            closeAllSockets();
+                            forceReleasePort();
+                            Toast.makeText(ReceiveFileActivity.this, "Device Disconnected", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
         });
 
@@ -79,8 +94,8 @@ public class ReceiveFileActivity extends AppCompatActivity {
         animationView = findViewById(R.id.transfer_animation);
         waitingAnimation = findViewById(R.id.waiting_animation);
         openFolder = findViewById(R.id.openFolder);
-        donebtn = findViewById(R.id.donebtn);
-        donebtn.setOnClickListener(v -> ondonebtnclk());
+//        donebtn = findViewById(R.id.donebtn);
+//        donebtn.setOnClickListener(v -> ondonebtnclk());
         txt_path = findViewById(R.id.path);
 
         senderJson = getIntent().getStringExtra("receivedJson");
@@ -119,9 +134,6 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
     private boolean initializeConnection() {
         try {
-            // Force release port first
-            forceReleasePort(FILE_TRANSFER_PORT);
-
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true);
             serverSocket.bind(new InetSocketAddress(FILE_TRANSFER_PORT));
@@ -188,6 +200,13 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     String encryptionFlag = new String(encryptionFlagBytes).trim();
 
                     if (encryptionFlag.isEmpty() || encryptionFlag.charAt(encryptionFlag.length() - 1) == 'h') {
+
+                        if (isEncryptedTransfer) {
+                            // Handle encrypted files
+                            Intent intent = new Intent(ReceiveFileActivity.this, Decryptor.class);
+                            intent.putStringArrayListExtra("files", encryptedFiles);
+                            startActivity(intent);
+                        }
                         runOnUiThread(() -> {
                             txt_waiting.setText("File transfer completed");
                             progressBar.setProgress(0);
@@ -195,11 +214,15 @@ public class ReceiveFileActivity extends AppCompatActivity {
                             animationView.setVisibility(LottieAnimationView.INVISIBLE);
                             txt_path.setText("Files saved to: " + destinationFolder);
                             txt_path.setVisibility(TextView.VISIBLE);
-                            donebtn.setVisibility(Button.VISIBLE);
+//                            donebtn.setVisibility(Button.VISIBLE);
+                            TransferCompleteActivity transferCompleteActivity = new TransferCompleteActivity(ReceiveFileActivity.this);
+                            transferCompleteActivity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                            transferCompleteActivity.show();
                         });
-                        forceReleasePort(FILE_TRANSFER_PORT);
                         break;
                     }
+
+                    isEncryptedTransfer = encryptionFlag.equals("encyp: t");
 
                     byte[] fileNameSizeBytes = new byte[8];
                     clientSocket.getInputStream().read(fileNameSizeBytes);
@@ -290,7 +313,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
                 // Write file data
                 try (FileOutputStream fos = new FileOutputStream(receivedFile)) {
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[BUFFER_SIZE];
                     long receivedSize = 0;
 
                     while (receivedSize < fileSize) {
@@ -308,6 +331,10 @@ public class ReceiveFileActivity extends AppCompatActivity {
 
                 FileLogger.log("ReceiveFileActivity", "File written successfully: " + receivedFile.getName());
 
+                if (isEncryptedTransfer) {
+                    encryptedFiles.add(receivedFile.getPath());
+                    Log.d("ReceiveFileActivityPython", "Received encrypted file: " + receivedFile.getPath());
+                }
             } catch (IOException | JSONException e) {
                 FileLogger.log("ReceiveFileActivity", "Error handling file path: " + fileName, e);
             }
@@ -357,7 +384,7 @@ public class ReceiveFileActivity extends AppCompatActivity {
     private JSONArray receiveMetadata(long fileSize) {
         JSONArray metadataArray = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[BUFFER_SIZE];
             long receivedSize = 0;
             while (receivedSize < fileSize) {
                 int bytesRead = clientSocket.getInputStream().read(buffer, 0, (int) Math.min(buffer.length, fileSize - receivedSize));
@@ -440,10 +467,11 @@ public class ReceiveFileActivity extends AppCompatActivity {
         System.exit(0); // Ensure complete shutdown
     }
 
-    private void forceReleasePort(int port) {
+    private void forceReleasePort() {
+        int port1 =FILE_TRANSFER_PORT;
         try {
             // Find and kill process using the port
-            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port);
+            Process process = Runtime.getRuntime().exec("lsof -i tcp:" + port1);
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
 
@@ -453,48 +481,47 @@ public class ReceiveFileActivity extends AppCompatActivity {
                     if (parts.length > 1) {
                         String pid = parts[1];
                         Runtime.getRuntime().exec("kill -9 " + pid);
-                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port);
+                        FileLogger.log("ReceiveFileActivity", "Killed process " + pid + " using port " + port1);
                     }
                 }
             }
 
             // Wait briefly for port to be fully released
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
-            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port, e);
+            FileLogger.log("ReceiveFileActivity", "Error releasing port: " + port1, e);
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        executorService.shutdown(); // Add this to clean up thread pool
+    private void closeAllSockets() {
         try {
-            if (clientSocket != null) {
+            // Close client socket
+            if (clientSocket != null && !clientSocket.isClosed()) {
                 clientSocket.close();
+                FileLogger.log("ReceiveFileActivity", "Client Socket closed");
             }
-            if (serverSocket != null) {
+            
+            // Close server socket
+            if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
+                FileLogger.log("ReceiveFileActivity", "Server Socket closed");
             }
+
+            // Shutdown executor service
+            if (executorService != null && !executorService.isShutdown()) {
+                executorService.shutdown();
+                FileLogger.log("ReceiveFileActivity", "ExecutorService shutdown");
+            }
+
+            finish(); // Close the activity
         } catch (IOException e) {
             FileLogger.log("ReceiveFileActivity", "Error closing sockets", e);
         }
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        // Close sockets on activity destruction
-        try {
-            if (clientSocket != null && !clientSocket.isClosed()) {
-                clientSocket.close();
-            }
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
-            }
-        } catch (IOException e) {
-            FileLogger.log("ReceiveFileActivityPython", "Error closing sockets", e);
-        }
-        finish();
+    protected void onDestroy() {
+        super.onDestroy();
+        closeAllSockets();
     }
 }

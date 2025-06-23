@@ -1,34 +1,56 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/dialog_background"
-    android:padding="20dp">
+    android:padding="20dp"
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_discover"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Discover"
-        android:background="@drawable/state_list_drawable"
-        android:textColor="@android:color/white"
-        android:layout_marginBottom="20dp" />
+        android:layout_height="match_parent">
 
-    <ListView
-        android:id="@+id/list_devices"
-        android:layout_width="match_parent"
-        android:divider="@android:color/darker_gray"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="20dp"/>
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_discover"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Discover"
+            android:background="@drawable/state_list_drawable"
+            android:textColor="@android:color/white"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintWidth_percent="0.8"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_connect"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/state_list_drawable"
-        android:textColor="@android:color/white"
-        android:text="Connect"
-        />
-</LinearLayout>
+        <ListView
+            android:id="@+id/list_devices"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:divider="@android:color/darker_gray"
+            app:layout_constraintTop_toBottomOf="@id/btn_discover"
+            app:layout_constraintBottom_toTopOf="@id/btn_connect"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="20dp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_connect"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/state_list_drawable"
+            android:textColor="@android:color/white"
+            android:text="Connect"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintWidth_percent="0.8"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</RelativeLayout>

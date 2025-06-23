@@ -1,0 +1,4 @@
+wheel
+cryptography
+requests
+pyinstaller

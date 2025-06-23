@@ -1,3 +1,4 @@
+from constant import ConfigManager
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QApplication,
                              QLabel, QFrame, QGraphicsDropShadowEffect, QMessageBox)
 from PyQt6.QtGui import QScreen, QFont, QColor, QIcon, QMovie
@@ -7,10 +8,12 @@ import os
 from file_receiver import ReceiveApp
 from broadcast import Broadcast
 from preferences import PreferencesApp
-from constant import logger, get_config
 import platform
 import requests
 import ctypes
+from loges import logger
+import subprocess
+import json
 
 class VersionCheck(QThread):
     update_available = pyqtSignal()
@@ -18,6 +21,7 @@ class VersionCheck(QThread):
     def __init__(self):
         super().__init__()
         self.uga_version = None
+        self.config_manager = ConfigManager()
 
     def run(self):
         self.currentversion()
@@ -48,7 +52,6 @@ class VersionCheck(QThread):
         v1_parts = [int(part) for part in v1.split('.')]
         v2_parts = [int(part) for part in v2.split('.')]
         
-        # Pad the shorter version with zeros
         while len(v1_parts) < 4:
             v1_parts.append(0)
         while len(v2_parts) < 4:
@@ -57,11 +60,12 @@ class VersionCheck(QThread):
         return (v1_parts > v2_parts) - (v1_parts < v2_parts)
 
     def currentversion(self):
-        config= get_config()
-        self.uga_version = config["version"]
+        self.uga_version = self.config_manager.get_config()["version"]
+        logger.info(f"Current App version: {self.uga_version}")
 
     def get_platform_link(self):
-        channel = get_config()["update_channel"]
+        config = self.config_manager.get_config()
+        channel = config["update_channel"]
         logger.info(f"Checking for updates in channel: {channel}")
         if platform.system() == 'Windows':
                 platform_name = 'windows'
@@ -85,12 +89,114 @@ class VersionCheck(QThread):
             url = f"https://datadashshare.vercel.app/api/platformNumberbeta?platform=python_{platform_name}"
         return url
 
+class NetworkCheck(QThread):
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        if platform.system() == 'Windows':
+            self.check_network_type_windows()
+            logger.info("Network check completed")
+
+    def check_network_type_windows(self):
+        try:
+            cmd = '''
+            $connections = @()
+            Get-NetConnectionProfile | ForEach-Object {
+                $connections += [PSCustomObject]@{
+                    Name = (Get-NetAdapter -InterfaceIndex $_.InterfaceIndex).Name
+                    NetworkCategory = $_.NetworkCategory.ToString()
+                    Status = (Get-NetAdapter -InterfaceIndex $_.InterfaceIndex).Status
+                }
+            }
+            $activeConnections = $connections | Where-Object { $_.Status -eq 'Up' }
+            if ($activeConnections) {
+                $activeConnections | ConvertTo-Json
+            }
+            '''
+            
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
+            result = subprocess.run(['powershell', '-ExecutionPolicy', 'Bypass', '-Command', cmd], 
+                                 capture_output=True, 
+                                 text=True,
+                                 startupinfo=startupinfo)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                try:
+                    network_data = json.loads(result.stdout)
+                    if not isinstance(network_data, list):
+                        network_data = [network_data]
+                    
+                    for network in network_data:
+                        logger.info(f"Network interface: {network.get('Name')} - Category: {network.get('NetworkCategory')}")
+                        if network.get('NetworkCategory', '').lower() == 'public':
+                            logger.warning(f"Public network detected on interface: {network.get('Name')}")
+                            return 'Public'
+                    
+                    logger.info("All network connections are Private")
+                    return 'Private'
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse JSON: {e}\nOutput: {result.stdout}")
+                    return None
+            else:
+                logger.error(f"PowerShell command failed: {result.stderr}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error checking network type: {e}")
+            return None
+
 class MainApp(QWidget):
     def __init__(self, skip_version_check=False):
         super().__init__()
-        self.initUI(skip_version_check)
-        self.setFixedSize(853, 480) 
+        self.config_manager = ConfigManager()
+        self.config_manager.config_updated.connect(self.on_config_updated)
+        self.config_manager.log_message.connect(logger.info)
+        self.config_manager.config_ready.connect(self.on_config_ready)
+        self.config_manager.start()
+        self.skip_version_check = skip_version_check
+        self.network_thread = NetworkCheck()
+       # self.network_thread.start() #comment out after testing is over, lot of overhead on windows
+        self.version_thread = None
+        self.broadcast_app = None
+        self.receive_app = None
+        self.preferences_app = None
+
+    def cleanup(self):
+        if self.network_thread and self.network_thread.isRunning():
+            self.network_thread.quit()
+            self.network_thread.wait()
+
+        if self.version_thread and self.version_thread.isRunning():
+            self.version_thread.quit()
+            self.version_thread.wait()
+
+        if self.broadcast_app:
+            self.broadcast_app.close()
+        if self.receive_app:
+            self.receive_app.close()
+        if self.preferences_app:
+            self.preferences_app.close()
+
+        if hasattr(self, 'config_manager'):
+            self.config_manager.quit()
+            self.config_manager.wait()
+
+    def closeEvent(self, event):
+        self.cleanup()
+        QApplication.quit()
+        event.accept()
+
+    def on_config_ready(self):
+        self.initUI(self.skip_version_check)
+        self.setFixedSize(853, 480)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
+    def on_config_updated(self, config):
+        self.current_config = config
 
     def initUI(self, skip_version_check=False):
         self.setWindowTitle('DataDash')
@@ -111,8 +217,6 @@ class MainApp(QWidget):
         header.setStyleSheet("background-color: #333; padding: 0px;")
         header_layout = QHBoxLayout(header)
 
-        # Create and add the IconButton instead of using SvgButton
-        # Settings button
         settings_button = QPushButton()
         settings_button.setFixedSize(44, 44)
         settings_icon_path = os.path.join(os.path.dirname(__file__), "icons", "settings.svg")
@@ -140,64 +244,52 @@ class MainApp(QWidget):
 
         header_layout.addWidget(settings_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # Add a stretch after the settings button
         header_layout.addStretch()
 
-        # Title label
         title_label = QLabel("DataDash: CrossPlatform Data Sharing")
         title_label.setFont(QFont("Arial", 20, QFont.Weight.Bold))
         title_label.setStyleSheet("color: white;")
         header_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Add another stretch after the title to balance the layout
         header_layout.addStretch()
 
         main_layout.addWidget(header)
 
-        # Reduce the vertical spacing before the GIF
-        main_layout.addSpacing(20)  # Decrease spacing from 105 to 50
+        main_layout.addSpacing(20)
 
-        # Wifi Animation Widget
         gif_label = QLabel()
-        gif_label.setStyleSheet("background-color: transparent;")  # Add this line
+        gif_label.setStyleSheet("background-color: transparent;")
         movie = QMovie(os.path.join(os.path.dirname(__file__), "assets", "wifi.gif"))
         gif_label.setMovie(movie)
-        movie.setScaledSize(QSize(500, 450))  # Decrease height from 500 to 400
+        movie.setScaledSize(QSize(500, 450))
         movie.start()
         main_layout.addWidget(gif_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         icon_path_send = os.path.join(os.path.dirname(__file__), "icons", "send.svg")
         icon_path_receive = os.path.join(os.path.dirname(__file__), "icons", "receive.svg")
 
-
-        # Buttons Layout
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(8)  # Reduced spacing between Send and Receive buttons
+        button_layout.setSpacing(8)
         button_layout.setContentsMargins(30, 0, 30, 0)
 
-        # Send File Button
         self.send_button = QPushButton('Send File')
         self.send_button.setIcon(QIcon(icon_path_send))
-        self.send_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
+        self.send_button.setIconSize(QSize(24, 24))
         self.style_button(self.send_button)
         self.send_button.clicked.connect(self.sendFile)
         self.send_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Send File</b><br><i style='font-size: 12px;'>Send a folder or multiple files to another device</i>")
         button_layout.addWidget(self.send_button)
 
-        # Receive File Button
         self.receive_button = QPushButton('Receive File')
         self.receive_button.setIcon(QIcon(icon_path_receive))
-        self.receive_button.setIconSize(QSize(24, 24))  # Adjust icon size as needed
+        self.receive_button.setIconSize(QSize(24, 24))
         self.style_button(self.receive_button)
         self.receive_button.clicked.connect(self.receiveFile)
         self.receive_button.setToolTip("<b style='color: #FFA500; font-size: 14px;'>Receive File</b><br><i style='font-size: 12px;'>Receive a folder or multiple files from another device</i>")
         button_layout.addWidget(self.receive_button)
 
-        # Add the first button layout to the main layout
         main_layout.addLayout(button_layout)
-
-        # Add some vertical space above the Credits button layout
-        main_layout.addSpacing(20)  # Moves buttons up and adds spacing between buttons and Credits
+        main_layout.addSpacing(20)
 
         self.setLayout(main_layout)
         logger.info("Started Main App")
@@ -255,30 +347,28 @@ class MainApp(QWidget):
 
     def center_window(self):
         screen = QScreen.availableGeometry(QApplication.primaryScreen())
-        window_width, window_height = 853, 480  # Changed from 700 to 853 for 16:9 ratio
+        window_width, window_height = 853, 480
         x = (screen.width() - window_width) // 2
         y = (screen.height() - window_height) // 2
         self.setGeometry(x, y, window_width, window_height)
         #com.an.Datadash
-        dest = get_config()["save_to_directory"]
+        dest = self.config_manager.get_config()["save_to_directory"]
         if not os.path.exists(dest):
             os.makedirs(dest)
             logger.info("Created folder to receive files")
 
+
     def sendFile(self):
-        # Check if warnings should be shown
-        if get_config()["show_warning"]:
+        if self.config_manager.get_config()["show_warning"]:
             send_dialog = QMessageBox(self)
             send_dialog.setWindowTitle("Note")
             send_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
             """)
             send_dialog.setIcon(QMessageBox.Icon.Warning)
 
-            # Add buttons
             proceed_button = send_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
             cancel_button = send_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-            # Apply consistent styling with a gradient background and transparent text area
             send_dialog.setStyleSheet("""
                 QMessageBox {
                     background: qlineargradient(
@@ -321,7 +411,6 @@ class MainApp(QWidget):
                 }
             """)
 
-            # Execute dialog and handle response
             send_dialog.exec()
             if send_dialog.clickedButton() == proceed_button:
                 logger.info("Started Send File App")
@@ -336,19 +425,16 @@ class MainApp(QWidget):
             self.broadcast_app.show()
 
     def receiveFile(self):
-        # Check if warnings should be shown
-        if get_config()["show_warning"]:
+        if self.config_manager.get_config()["show_warning"]:
             receive_dialog = QMessageBox(self)
             receive_dialog.setWindowTitle("Note")
             receive_dialog.setText("""Before starting the transfer, please ensure both the sender and receiver devices are connected to the same network.
             """)
             receive_dialog.setIcon(QMessageBox.Icon.Warning)
 
-            # Add buttons
             proceed_button = receive_dialog.addButton("Proceed", QMessageBox.ButtonRole.AcceptRole)
             cancel_button = receive_dialog.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
 
-            # Apply consistent styling with a gradient background and transparent text area
             receive_dialog.setStyleSheet("""
                 QMessageBox {
                     background: qlineargradient(
@@ -391,7 +477,6 @@ class MainApp(QWidget):
                 }
             """)
 
-            # Execute dialog and handle response
             receive_dialog.exec()
             if receive_dialog.clickedButton() == proceed_button:
                 logger.info("Started Receive File App")
@@ -416,8 +501,11 @@ class MainApp(QWidget):
         self.preferences_handler()
 
     def check_update(self):
-        if get_config()["check_update"]:
+        if self.config_manager.get_config()["check_update"]:
             logger.info("Checking for updates")
+            self.version_thread = VersionCheck()
+            self.version_thread.config_manager = self.config_manager
+            self.version_thread.update_available.connect(self.showmsgbox)
             self.version_thread.start()
         else:
             logger.info("Update check disabled")
@@ -479,33 +567,9 @@ class MainApp(QWidget):
         if reply == QMessageBox.StandardButton.Open:
             self.openSettings()
 
-
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    if platform.system() == 'Windows':
-        try:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin()
-        except:
-            is_admin = False
-        if not is_admin:
-            # Relaunch the script with admin rights
-            script = os.path.abspath(sys.argv[0])
-            params = ' '.join(['"' + arg + '"' for arg in sys.argv[1:]])
-            result = ctypes.windll.shell32.ShellExecuteW(
-                None, "runas", sys.executable, f'"{script}" {params}', None, 1)
-            if result <= 32:
-                # The user declined the UAC prompt or an error occurred
-                msg_box = QMessageBox()
-                msg_box.setIcon(QMessageBox.Icon.Critical)
-                msg_box.setWindowTitle("Admin Privileges Required")
-                msg_box.setText("This application requires administrator privileges to run.")
-                msg_box.setWindowFlags(msg_box.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
-                msg_box.raise_()
-                msg_box.activateWindow()
-                msg_box.exec()
-                sys.exit()
-            sys.exit()
+    app.setQuitOnLastWindowClosed(True)
     main = MainApp()
     main.show()
     sys.exit(app.exec())

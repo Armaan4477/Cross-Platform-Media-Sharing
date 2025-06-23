@@ -6,7 +6,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/dialog_background">
+    android:background="@drawable/dialog_background"
+    android:fitsSystemWindows="true">
 
     <ImageButton
         android:id="@+id/close_button"

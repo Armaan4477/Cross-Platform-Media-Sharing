@@ -1,202 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:fitsSystemWindows="true"
     android:background="@drawable/dialog_background">
 
-    <!-- Device Name Label -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#333"
+        android:fitsSystemWindows="true">
 
-    <!-- Device Name Input -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="@color/white"
+            android:textSize="24dp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+    </androidx.appcompat.widget.Toolbar>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_credits"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
-        android:background="@drawable/state_list_drawable"
-        android:padding="16dp"
-        android:text="Credits"
-        android:textColor="@color/white"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/device_name_label"
+        style="@style/SettingsButtonStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
-        android:text="Device Name"
-        android:textColor="@android:color/white"
-        android:textSize="32sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/device_name_input"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:hint="Enter Device Name"
-        android:textColor="@android:color/white"
-        android:textColorHint="#D4D4D4"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/device_name_label"
-        app:layout_constraintWidth_percent="1.0" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/device_name_reset_button"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/state_list_drawable"
-        android:text="Reset"
-        android:textColor="@android:color/white"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/device_name_input" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/save_to_path_reset_button"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/state_list_drawable"
-        android:text="Reset"
-        android:textColor="@android:color/white"
-        app:layout_constraintStart_toEndOf="@id/save_to_path_picker_button"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_input" />
-
-    <TextView
-        android:id="@+id/save_to_path_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Save to Path"
-        android:textColor="@android:color/white"
-        android:textSize="32sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/device_name_reset_button" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/save_to_path_picker_button"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/state_list_drawable"
-        android:text="Pick Directory"
-        android:textColor="@android:color/white"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_input" />
-
-    <EditText
-        android:id="@+id/save_to_path_input"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Select Directory"
-        android:textColor="@android:color/white"
-        android:textColorHint="#D4D4D4"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_label"
-        app:layout_constraintWidth_percent="1.0" />
-
-    <LinearLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_input">
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/app_version_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
-        android:text="App Version: "
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_reset_button" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/check_for_update_button"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
+        android:layout_below="@id/toolbar"
         android:layout_marginTop="8dp"
-        android:background="@drawable/state_list_drawable"
-        android:text="Check for Update"
-        android:textColor="@android:color/white"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/app_version_label" />
-
-
-    <!-- Reset Device Name Button -->
-
-    <!-- Save to Path Label -->
-
-    <!-- Save to Path Input -->
-
-    <!-- Buttons for Save Path: Pick and Reset -->
-
-    <!-- Main Menu and Submit Buttons -->
-    <LinearLayout
-        android:id="@+id/buttons_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/save_to_path_picker_button"
-        tools:ignore="NotSibling">
-
-    </LinearLayout>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/main_menu_button"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/state_list_drawable"
-        android:text="Main Menu"
-        android:textColor="@android:color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/submit_button"
-        android:text="Submit"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
-        android:background="@drawable/state_list_drawable"
-        android:textColor="@android:color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp" />
+        android:text="Credits" />
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="96dp"
-        android:layout_height="101dp"
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:layout_below="@id/toolbar"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
         android:adjustViewBounds="true"
         android:background="@drawable/glow"
         android:scaleType="fitCenter"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/bulb" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <ScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/btn_credits"
+        android:layout_above="@id/bottom_buttons"
+        android:fillViewport="true"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollIndicators="bottom"
+        android:scrollbarSize="8dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/activity_horizontal_margin">
+
+            <include
+                android:id="@+id/content_layout"
+                layout="@layout/content_settings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_normal" />
+
+        </RelativeLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/bottom_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginTop="@dimen/spacing_normal"
+        android:layout_margin="10dp"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/main_menu_button"
+            style="@style/SettingsButtonStyle"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/spacing_small"
+            android:text="Main Menu" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/submit_button"
+            style="@style/SettingsButtonStyle"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_small"
+            android:text="Submit" />
+    </LinearLayout>
+</RelativeLayout>

@@ -1,36 +1,50 @@
-<?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity"
     android:background="@drawable/gradient_background">
 
     <androidx.appcompat.widget.Toolbar
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#333">
+        android:background="#333"
+        android:fitsSystemWindows="true">
 
-        <ImageButton
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/setting_icon"
-            android:background="#333"
-            android:id="@+id/btn_preferences"
-            android:layout_gravity="start"
-            android:layout_marginEnd="16dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="DataDash: CrossPlatform Data Sharing"
-            android:textColor="@color/white"
-            android:textSize="24dp"
-            android:textStyle="bold"
-            android:layout_gravity="center" />
+            <ImageButton
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/setting_icon"
+                android:background="#333"
+                android:id="@+id/btn_preferences"
+                android:layout_marginEnd="2dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="24sp"
+                android:autoSizeMinTextSize="14sp"
+                android:autoSizeStepGranularity="2sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="DataDash: CrossPlatform Data Sharing"
+                android:textColor="@color/white"
+                android:textStyle="bold" />
+        </LinearLayout>
+
     </androidx.appcompat.widget.Toolbar>
 
     <com.airbnb.lottie.LottieAnimationView
@@ -45,48 +59,58 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_alignParentBottom="true"
         android:gravity="center"
-        android:layout_marginBottom="32dp">
+        android:layout_marginBottom="32dp"
+        android:paddingVertical="16dp"
+        android:layout_marginHorizontal="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:paddingVertical="8dp"
+            android:weightSum="2">
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_send"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:padding="20dp"
+                android:layout_weight="0.8"
+                android:padding="12dp"
                 android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
-                android:textAlignment="viewStart"
+                android:textSize="14sp"
+                android:textAlignment="center"
                 android:text="Send"
                 android:drawableStart="@drawable/send"
-                android:drawablePadding="10dp"
+                android:drawablePadding="8dp"
                 android:gravity="center_vertical"
+                android:layout_marginBottom="0dp"
                 tools:ignore="RtlCompat" />
 
             <View
-                android:layout_width="80dp"
-                android:layout_height="match_parent" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.3" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_receive"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:padding="20dp"
+                android:layout_weight="0.8"
+                android:padding="12dp"
                 android:background="@drawable/state_list_drawable"
                 android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textAlignment="center"
                 android:text="Receive"
                 android:drawableStart="@drawable/receive"
-            android:drawablePadding="10dp"
-            android:gravity="center_vertical"
-            />
+                android:layout_marginBottom="0dp"
+                android:drawablePadding="8dp" />
         </LinearLayout>
     </LinearLayout>
 
