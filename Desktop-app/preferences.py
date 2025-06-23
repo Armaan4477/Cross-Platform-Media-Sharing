@@ -914,6 +914,8 @@ class PreferencesApp(QWidget):
         
         from main import MainApp
         self.main_app = MainApp(skip_version_check=True)
+        self.main_app.setFixedSize(853, 480)
+        self.main_app.center_window()
         self.main_app.show()
 
     def center_window(self):
