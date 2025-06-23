@@ -170,6 +170,10 @@ class ReceiveWorkerJava(QThread):
         encrypted_transfer = False
         file_name = None  # Initialize file_name
         original_filename = None  # Initialize original_filename
+        overall_received_bytes = 0
+        overall_total_bytes = 0
+        self.total_received_bytes = 0
+        self.total_folder_size = 0 
 
         while True:
             try:
@@ -224,6 +228,8 @@ class ReceiveWorkerJava(QThread):
                             default_dir = self.config_manager.get_config()["save_to_directory"]
                             self.destination_folder = default_dir
                         self.update_files_table_signal.emit(self.metadata)
+                        
+                        overall_total_bytes = self.total_folder_size
                         continue
 
                     # Determine file path based on transfer type
@@ -259,6 +265,7 @@ class ReceiveWorkerJava(QThread):
                             self.total_bytes_received = received_total
                             self.total_received_bytes += len(data)
                             self.bytes_since_last_update += len(data)
+                            overall_received_bytes += len(data)
 
                             # Calculate transfer statistics every 0.5 seconds
                             if current_time - self.last_speed_update_time >= 0.5:
@@ -280,18 +287,16 @@ class ReceiveWorkerJava(QThread):
                                 self.bytes_since_last_update = 0
 
                             # For folder transfers, only update the overall folder progress
-                            if is_folder_transfer:
-                                folder_progress = int((self.total_received_bytes * 100) / self.total_folder_size)
-                                folder_progress = min(folder_progress, 100)
-                                self.progress_update.emit(folder_progress)
-                                self.file_progress_update.emit(self.base_folder_name, folder_progress)
-                            else:
-                                # For individual files, update file-specific progress
-                                file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
-                                file_progress = min(file_progress, 100)
-                                self.progress_update.emit(file_progress)
-                                display_name = os.path.basename(file_name)
-                                self.file_progress_update.emit(display_name, file_progress)
+                            if self.total_folder_size > 0:
+                                overall_progress = int((self.total_received_bytes * 100) / self.total_folder_size)
+                                overall_progress = min(overall_progress, 100)
+                                self.progress_update.emit(overall_progress)
+                            
+                            # For individual file progress
+                            file_progress = int((received_size * 100) / file_size) if file_size > 0 else 0
+                            file_progress = min(file_progress, 100)
+                            display_name = os.path.basename(file_name)
+                            self.file_progress_update.emit(display_name, file_progress)
                     if encrypted_transfer:
                         self.encrypted_files.append(full_file_path)
 
