@@ -17,6 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install -r Desktop-app/requirements.txt
+          pip3 install --only-binary=:all: PyQt6==6.9.1
           pip3 install pyinstaller
 
       - name: Build for macOS
@@ -73,6 +74,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install -r Desktop-app/requirements.txt --break-system-packages
+          pip3 install --only-binary=:all: PyQt6==6.9.1 --break-system-packages
           pip3 install pyinstaller --break-system-packages
 
       - name: Build for macOS
@@ -134,6 +136,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r Desktop-app/requirements.txt
+          pip install --only-binary=:all: PyQt6==6.9.1
 
       - name: Install pyinstaller
         run: pip install pyinstaller
@@ -171,6 +174,7 @@ jobs:
           docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/Desktop-app \
             --platform linux/arm64 python:3.13 bash -c "
               pip install pyinstaller && pip install -r requirements.txt &&
+              pip install --only-binary=:all: PyQt6==6.9.1 &&
               pyinstaller --onefile --add-data './icons:icons' --add-data './assets:assets' \
                 --add-data 'broadcast.py:.' --add-data 'constant.py:.' \
                 --add-data 'credits_dialog.py:.' --add-data 'crypt_handler.py:.' \
@@ -202,6 +206,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r Desktop-app/requirements.txt
+          pip install --only-binary=:all: PyQt6==6.9.1
 
       - name: Install pyinstaller
         run: pip install pyinstaller
@@ -245,6 +250,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r Desktop-app/requirements.txt
+          pip install --only-binary=:all: PyQt6==6.9.1
 
       - name: Install pyinstaller
         run: pip install pyinstaller

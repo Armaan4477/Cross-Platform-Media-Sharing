@@ -1,4 +1,4 @@
 wheel
-PyQt6==6.7.1
+# PyQt6==6.9.1 - will be installed directly from wheel
 cryptography
 requests
