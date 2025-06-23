@@ -1,4 +1,4 @@
 wheel
-PyQt6==6.9.1
+PyQt6==6.8.1
 cryptography
 requests
