@@ -379,7 +379,7 @@ class PreferencesApp(QWidget):
 
         self.device_name_input = QLineEdit(self)
         self.device_name_input.setFont(QFont("Arial", 16))
-        self.device_name_input.setFixedHeight(30)
+        self.device_name_input.setFixedHeight(35)
         self.device_name_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.style_input(self.device_name_input)
         device_name_layout.addWidget(self.device_name_input)
@@ -483,7 +483,7 @@ class PreferencesApp(QWidget):
                 background-color: transparent;
                 border: 1px solid #444;
                 border-radius: 4px;
-                padding: 5px;
+                padding: 4px;
             }
             QLineEdit:focus {
                 border: 2px solid #333333;
