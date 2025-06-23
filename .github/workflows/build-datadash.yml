@@ -268,6 +268,26 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Download Visual Studio Build Tools
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "$env:TEMP\vs_buildtools.exe"
+
+      - name: Install Visual Studio Build Tools
+        run: |
+          Start-Process -FilePath "$env:TEMP\vs_buildtools.exe" -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", "--installPath", "C:\BuildTools", "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64", "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -Wait -NoNewWindow
+
+      - name: Install Rust
+        run: |
+          Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile "$env:TEMP\rustup-init.exe"
+          Start-Process -FilePath "$env:TEMP\rustup-init.exe" -ArgumentList "-y", "--default-host", "aarch64-pc-windows-msvc" -Wait -NoNewWindow
+          $env:Path += ";$env:USERPROFILE\.cargo\bin"
+          rustup default stable
+
+      - name: Set up environment for building
+        run: |
+          $env:PY_VCRUNTIME_REDIST = "false"
+          $env:PATH = "C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX86\ARM64;C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64;$env:PATH"
+
       - name: Install PyQt6
         run: |
           pip install wheel
