@@ -1,0 +1,324 @@
+name: Build DataDash
+
+on:
+  push:
+    branches:
+      - main
+      - Extra-Builds
+      - Beta-Builds
+
+jobs:
+  build-macos-x64:
+    runs-on: macos-13
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip3 install -r Desktop-app/actions.txt
+
+      - name: Install PyQt6
+        run: |
+          # Download and install PyQt6 wheel directly from the URL
+          pip3 install wheel
+          pip3 install https://files.pythonhosted.org/packages/18/c4/fc2a69cf3df09b213185ef5a677c3940cd20e7855d29e40061a685b9c6ee/pyqt6-6.9.1-cp39-abi3-macosx_10_14_universal2.whl
+          # Also install dependencies
+          pip3 install PyQt6-Qt6 PyQt6-sip
+
+      - name: Build for macOS
+        run: |
+          cd Desktop-app
+          pyinstaller --windowed \
+          --icon=icon.icns \
+          --name="DataDash" \
+          --add-data "icons/*:icons" \
+          --add-data "assets/*:assets" \
+          --add-data "broadcast.py:." \
+          --add-data "constant.py:." \
+          --add-data "portsss.py:." \
+          --add-data "loges.py:." \
+          --add-data "credits_dialog.py:." \
+          --add-data "crypt_handler.py:." \
+          --add-data "file_receiver.py:." \
+          --add-data "file_receiver_android.py:." \
+          --add-data "file_receiver_python.py:." \
+          --add-data "file_sender.py:." \
+          --add-data "file_sender_java.py:." \
+          --add-data "preferences.py:." \
+          main.py
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          cd Desktop-app/dist
+          create-dmg \
+            --volname "DataDash" \
+            --window-pos 200 120 \
+            --window-size 400 400 \
+            --icon-size 128 \
+            --icon "DataDash.app" 100 150 \
+            --app-drop-link 300 150 \
+            --no-internet-enable \
+            "DataDash(macos x64).dmg" \
+            "DataDash.app"
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash-macOS-x64
+          path: Desktop-app/dist/DataDash(macos x64).dmg
+
+  build-macos-arm:
+    runs-on: macos-15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip3 install -r Desktop-app/actions.txt --break-system-packages
+
+      - name: Install PyQt6
+        run: |
+          # Download and install PyQt6 wheel directly from the URL
+          pip3 install wheel --break-system-packages
+          pip3 install https://files.pythonhosted.org/packages/18/c4/fc2a69cf3df09b213185ef5a677c3940cd20e7855d29e40061a685b9c6ee/pyqt6-6.9.1-cp39-abi3-macosx_10_14_universal2.whl --break-system-packages
+          # Also install dependencies
+          pip3 install PyQt6-Qt6 PyQt6-sip --break-system-packages
+
+      - name: Build for macOS
+        run: |
+          cd Desktop-app
+          pyinstaller --windowed \
+          --icon=icon.icns \
+          --name="DataDash" \
+          --add-data "icons/*:icons" \
+          --add-data "assets/*:assets" \
+          --add-data "broadcast.py:." \
+          --add-data "constant.py:." \
+          --add-data "portsss.py:." \
+          --add-data "loges.py:." \
+          --add-data "credits_dialog.py:." \
+          --add-data "crypt_handler.py:." \
+          --add-data "file_receiver.py:." \
+          --add-data "file_receiver_android.py:." \
+          --add-data "file_receiver_python.py:." \
+          --add-data "file_sender.py:." \
+          --add-data "file_sender_java.py:." \
+          --add-data "preferences.py:." \
+          main.py
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          cd Desktop-app/dist
+          create-dmg \
+            --volname "DataDash" \
+            --window-pos 200 120 \
+            --window-size 400 400 \
+            --icon-size 128 \
+            --icon "DataDash.app" 100 150 \
+            --app-drop-link 300 150 \
+            --no-internet-enable \
+            "DataDash(macos arm).dmg" \
+            "DataDash.app"
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash-macOS-arm
+          path: Desktop-app/dist/DataDash(macos arm).dmg
+     
+  build-linux-x64:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/actions.txt
+
+      - name: Install PyQt6
+        run: |
+          pip install wheel
+          pip install https://files.pythonhosted.org/packages/d5/78/92f3c46440a83ebe22ae614bd6792e7b052bcb58ff128f677f5662015184/pyqt6-6.9.1-cp39-abi3-manylinux_2_28_x86_64.whl
+          # Also install dependencies
+          pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Clean previous builds
+        run: |
+          rm -rf Desktop-app/build Desktop-app/dist Desktop-app/DataDash\(linux\ x64\)
+
+      - name: Build for Linux x64
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --add-data "broadcast.py:." --add-data "constant.py:." --add-data "credits_dialog.py:." --add-data "crypt_handler.py:." --add-data "file_receiver_android.py:." --add-data "file_receiver_python.py:." --add-data "file_receiver_swift.py:." --add-data "file_receiver.py:." --add-data "file_sender_java.py:." --add-data "file_sender_swift.py:." --add-data "file_sender.py:." --add-data "loges.py:." --add-data "portsss.py:." --add-data "preferences.py:." --name=DataDash main.py
+          mv dist/DataDash "../DataDash(linux x64)"
+
+      - name: Upload Linux x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(linux x64)
+          path: DataDash\(linux\ x64\)
+
+  build-linux-arm:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/actions.txt
+
+      - name: Install PyQt6
+        run: |
+          pip install wheel
+          pip install https://files.pythonhosted.org/packages/5a/5e/e77fa2761d809cd08d724f44af01a4b6ceb0ff9648e43173187b0e4fac4e/pyqt6-6.9.1-cp39-abi3-manylinux_2_39_aarch64.whl
+          # Also install dependencies
+          pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Clean previous builds
+        run: |
+          rm -rf Desktop-app/build Desktop-app/dist Desktop-app/DataDash\(linux\ arm\)
+
+      - name: Build for Linux arm
+        run: |
+          cd Desktop-app
+          pyinstaller --onefile --clean --add-data "./icons:icons" --add-data "./assets:assets" --add-data "broadcast.py:." --add-data "constant.py:." --add-data "credits_dialog.py:." --add-data "crypt_handler.py:." --add-data "file_receiver_android.py:." --add-data "file_receiver_python.py:." --add-data "file_receiver_swift.py:." --add-data "file_receiver.py:." --add-data "file_sender_java.py:." --add-data "file_sender_swift.py:." --add-data "file_sender.py:." --add-data "loges.py:." --add-data "portsss.py:." --add-data "preferences.py:." --name=DataDash main.py
+          mv dist/DataDash "../DataDash(linux arm)"
+
+      - name: Upload Linux arm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(linux arm)
+          path: DataDash\(linux\ arm\)
+
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/actions.txt
+
+      - name: Install PyQt6
+        run: |
+          pip install wheel
+          pip install https://files.pythonhosted.org/packages/c4/09/69cf80456b6a985e06dd24ed0c2d3451e43567bf2807a5f3a86ef7a74a2e/pyqt6-6.9.1-cp39-abi3-win_amd64.whl
+          # Also install dependencies
+          pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Build for Windows x64
+        run: |
+          cd Desktop-app
+          & pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+
+      - name: Rename Windows executable
+        run: |
+          cd Desktop-app
+          Rename-Item -Path "dist\DataDash.exe" -NewName "DataDash(windows x64).exe"
+
+      # - name: Install Inno Setup
+      #   run: |
+      #     choco install innosetup -y
+
+      # - name: Create Installer
+      #   run: |
+      #     cd Desktop-app
+      #     & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' dd.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(windows x64)
+          path: Desktop-app/dist/DataDash(windows x64).exe
+
+  build-windows-arm:
+    runs-on: windows-11-arm
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Download Visual Studio Build Tools
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "$env:TEMP\vs_buildtools.exe"
+
+      - name: Install Visual Studio Build Tools
+        run: |
+          Start-Process -FilePath "$env:TEMP\vs_buildtools.exe" -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", "--installPath", "C:\BuildTools", "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64", "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "--add", "Microsoft.VisualStudio.Component.Windows11SDK.22000" -Wait -NoNewWindow
+
+      - name: Install Rust
+        run: |
+          Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile "$env:TEMP\rustup-init.exe"
+          Start-Process -FilePath "$env:TEMP\rustup-init.exe" -ArgumentList "-y", "--default-host", "aarch64-pc-windows-msvc" -Wait -NoNewWindow
+          $env:Path += ";$env:USERPROFILE\.cargo\bin"
+          rustup default stable
+
+      - name: Set up environment for building
+        run: |
+          $env:PY_VCRUNTIME_REDIST = "false"
+          $env:PATH = "C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX86\ARM64;C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64;$env:PATH"
+
+      - name: Install PyQt6
+        run: |
+          pip install wheel
+          pip install https://files.pythonhosted.org/packages/52/b3/0839d8fd18b86362a4de384740f2f6b6885b5d06fda7720f8a335425e316/pyqt6-6.9.1-cp39-abi3-win_arm64.whl
+          pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Install dependencies
+        run: |
+          pip install -r Desktop-app/actions.txt
+
+      - name: Build for Windows ARM
+        run: |
+          cd Desktop-app
+          & pyinstaller --onefile --windowed --uac-admin --icon=logo.ico --name="DataDash" --add-data "icons/*;icons" --add-data "assets/*;assets" --add-data "broadcast.py;." --add-data "constant.py;." --add-data "portsss.py;." --add-data "loges.py;." --add-data "credits_dialog.py;." --add-data "crypt_handler.py;." --add-data "file_receiver.py;." --add-data "file_receiver_android.py;." --add-data "file_receiver_python.py;." --add-data "file_sender.py;." --add-data "file_sender_java.py;." --add-data "preferences.py;."  main.py
+
+      - name: Rename Windows executable
+        run: |
+          cd Desktop-app
+          Rename-Item -Path "dist\DataDash.exe" -NewName "DataDash(windows arm).exe"
+
+      # - name: Install Inno Setup
+      #   run: |
+      #     choco install innosetup -y
+
+      # - name: Create Installer
+      #   run: |
+      #     cd Desktop-app
+      #     & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' dd.iss
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataDash(windows arm)
+          path: Desktop-app/dist/DataDash(windows arm).exe
