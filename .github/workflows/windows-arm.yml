@@ -19,31 +19,17 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Download Visual Studio Build Tools
-        run: |
-          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "$env:TEMP\vs_buildtools.exe"
-
-      - name: Install Visual Studio Build Tools
-        run: |
-          Start-Process -FilePath "$env:TEMP\vs_buildtools.exe" -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", "--installPath", "C:\BuildTools", "--add", "Microsoft.VisualStudio.Component.VC.Tools.ARM64", "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "--add", "Microsoft.VisualStudio.Component.Windows11SDK.22000" -Wait -NoNewWindow
-
-      - name: Install Rust
-        run: |
-          Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile "$env:TEMP\rustup-init.exe"
-          Start-Process -FilePath "$env:TEMP\rustup-init.exe" -ArgumentList "-y", "--default-host", "aarch64-pc-windows-msvc" -Wait -NoNewWindow
-          $env:Path += ";$env:USERPROFILE\.cargo\bin"
-          rustup default stable
-
-      - name: Set up environment for building
-        run: |
-          $env:PY_VCRUNTIME_REDIST = "false"
-          $env:PATH = "C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX86\ARM64;C:\BuildTools\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64;$env:PATH"
 
       - name: Install PyQt6
         run: |
           pip install wheel
           pip install https://files.pythonhosted.org/packages/52/b3/0839d8fd18b86362a4de384740f2f6b6885b5d06fda7720f8a335425e316/pyqt6-6.9.1-cp39-abi3-win_arm64.whl
           pip install PyQt6-Qt6 PyQt6-sip
+
+      - name: Install cryptography
+        run: |
+          cd Desktop-app/github_build
+          pip install cryptography-44.0.2-cp37-abi3-win_arm64.whl
 
       - name: Install dependencies
         run: |
